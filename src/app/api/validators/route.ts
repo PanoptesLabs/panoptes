@@ -42,16 +42,44 @@ export async function GET(request: NextRequest) {
       orderBy: { [sort]: order },
       skip: offset,
       take: limit,
+      include: {
+        scores: {
+          orderBy: { timestamp: "desc" },
+          take: 1,
+        },
+      },
     }),
     prisma.validator.count({ where }),
   ]);
 
-  const items = validators.map((v) => ({
-    ...v,
-    lastJailedAt: v.lastJailedAt?.toISOString() ?? null,
-    firstSeen: v.firstSeen.toISOString(),
-    lastUpdated: v.lastUpdated.toISOString(),
-  }));
+  const items = validators.map((v) => {
+    const latestScore = v.scores[0] ?? null;
+    return {
+      id: v.id,
+      moniker: v.moniker,
+      status: v.status,
+      tokens: v.tokens,
+      commission: v.commission,
+      jailed: v.jailed,
+      uptime: v.uptime,
+      votingPower: v.votingPower,
+      missedBlocks: v.missedBlocks,
+      jailCount: v.jailCount,
+      lastJailedAt: v.lastJailedAt?.toISOString() ?? null,
+      firstSeen: v.firstSeen.toISOString(),
+      lastUpdated: v.lastUpdated.toISOString(),
+      score: latestScore
+        ? {
+            score: latestScore.score,
+            missedBlockRate: latestScore.missedBlockRate,
+            jailPenalty: latestScore.jailPenalty,
+            stakeStability: latestScore.stakeStability,
+            commissionScore: latestScore.commissionScore,
+            timestamp: latestScore.timestamp.toISOString(),
+          }
+        : null,
+    };
+  });
 
   return jsonResponse({ validators: items, total, limit, offset }, rl.headers);
 }

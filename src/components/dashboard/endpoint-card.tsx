@@ -7,6 +7,7 @@ import { formatLatency, formatUptime, formatBlockHeight, formatNumber } from "@/
 import { timeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { ExternalLink, Award } from "lucide-react";
+import { ScoreBadge } from "./score-badge";
 import type { EndpointItem } from "@/types";
 
 interface EndpointCardProps {
@@ -40,7 +41,10 @@ export function EndpointCard({ endpoint: ep }: EndpointCardProps) {
               <ExternalLink className="size-3 shrink-0" />
             </a>
           </div>
-          <StatusBadge status={isHealthy ? "healthy" : "unhealthy"} />
+          <div className="flex items-center gap-2">
+            <ScoreBadge score={ep.score?.score ?? null} />
+            <StatusBadge status={isHealthy ? "healthy" : "unhealthy"} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

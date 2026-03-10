@@ -2,6 +2,7 @@
 
 import { useNetworkStats } from "@/hooks/use-stats";
 import { useEndpoints } from "@/hooks/use-endpoints";
+import { useAnomalies } from "@/hooks/use-anomalies";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import {
   Coins,
   Globe,
   Activity,
+  AlertTriangle,
 } from "lucide-react";
 
 export function Overview() {
@@ -34,6 +36,7 @@ export function Overview() {
     data: endpoints,
     isLoading: endpointsLoading,
   } = useEndpoints();
+  const { data: anomalyData } = useAnomalies({ resolved: false });
 
   const current = stats?.current;
   const history = stats?.history ?? [];
@@ -135,6 +138,48 @@ export function Overview() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Active anomalies */}
+      {anomalyData && anomalyData.total > 0 && (
+        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-dusty-lavender/70">
+              <AlertTriangle className="size-4" />
+              Active Anomalies ({anomalyData.total})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {anomalyData.anomalies.slice(0, 5).map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between rounded-lg border border-slate-DEFAULT/10 bg-slate-dark/30 px-4 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-mist">
+                      {a.title}
+                    </p>
+                    <p className="truncate text-xs text-dusty-lavender/50">
+                      {a.entityType} &middot; {a.type}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      a.severity === "critical"
+                        ? "bg-rose-dark/50 text-rose-light"
+                        : a.severity === "high"
+                          ? "bg-amber-dark/50 text-amber-light"
+                          : "bg-slate-dark/50 text-slate-light"
+                    }`}
+                  >
+                    {a.severity}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Endpoint health summary */}

@@ -12,6 +12,7 @@ import { formatTokensShort, formatCommission } from "@/lib/formatters";
 import { timeAgo } from "@/lib/time";
 import { getValidatorStatusInfo } from "@/lib/status";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
+import { ScoreBadge } from "./score-badge";
 import type { ValidatorListItem } from "@/types";
 
 const STATUS_OPTIONS = [
@@ -55,9 +56,9 @@ export function ValidatorsList() {
   };
 
   // Client-side moniker search filter
-  const filtered = data?.validators.filter((v) =>
+  const filtered = data?.validators.filter((v: ValidatorListItem) =>
     search ? v.moniker.toLowerCase().includes(search.toLowerCase()) : true
-  );
+  ) as ValidatorListItem[] | undefined;
 
   const columns: Column<ValidatorListItem>[] = [
     {
@@ -102,6 +103,14 @@ export function ValidatorsList() {
         <span className="text-dusty-lavender/70">
           {formatCommission(row.commission)}
         </span>
+      ),
+    },
+    {
+      key: "score" as keyof ValidatorListItem,
+      header: "Score",
+      className: "text-center",
+      render: (row: ValidatorListItem) => (
+        <ScoreBadge score={row.score?.score ?? null} />
       ),
     },
     {

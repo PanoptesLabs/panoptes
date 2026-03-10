@@ -6,6 +6,9 @@ vi.mock("@/lib/db", () => ({
     validatorSnapshot: { deleteMany: vi.fn() },
     endpointHealth: { deleteMany: vi.fn() },
     networkStats: { deleteMany: vi.fn() },
+    endpointScore: { deleteMany: vi.fn() },
+    validatorScore: { deleteMany: vi.fn() },
+    anomaly: { deleteMany: vi.fn() },
   },
 }));
 
@@ -25,6 +28,9 @@ describe("cleanupOldData", () => {
       { count: 100 },
       { count: 50 },
       { count: 25 },
+      { count: 10 },
+      { count: 5 },
+      { count: 3 },
     ]);
 
     const result = await cleanupOldData();
@@ -32,11 +38,17 @@ describe("cleanupOldData", () => {
     expect(result.deletedSnapshots).toBe(100);
     expect(result.deletedHealthChecks).toBe(50);
     expect(result.deletedStats).toBe(25);
+    expect(result.deletedScores).toBe(10);
+    expect(result.deletedValidatorScores).toBe(5);
+    expect(result.deletedAnomalies).toBe(3);
     expect(result.duration).toBeGreaterThanOrEqual(0);
   });
 
   it("handles empty tables", async () => {
     mockPrisma.$transaction.mockResolvedValue([
+      { count: 0 },
+      { count: 0 },
+      { count: 0 },
       { count: 0 },
       { count: 0 },
       { count: 0 },
