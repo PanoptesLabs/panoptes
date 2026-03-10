@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
 import { aggregateStats } from "@/lib/indexer";
+import { computeEndpointScores, computeValidatorScores, detectAnomalies } from "@/lib/intelligence";
 
 export async function POST(request: NextRequest) {
   const authError = validateCronAuth(request);
@@ -11,8 +12,26 @@ export async function POST(request: NextRequest) {
   if ("response" in rl) return rl.response;
 
   try {
-    const result = await aggregateStats();
-    return NextResponse.json({ success: true, ...result });
+    // Aggregate stats first (provides fresh data), then run intelligence in parallel
+    const stats = await aggregateStats();
+    const [endpointScores, validatorScores, anomalies] = await Promise.all([
+      computeEndpointScores(),
+      computeValidatorScores(),
+      detectAnomalies(),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      ...stats,
+      scoring: {
+        endpoints: endpointScores.scored,
+        validators: validatorScores.scored,
+      },
+      anomalies: {
+        detected: anomalies.detected,
+        resolved: anomalies.resolved,
+      },
+    });
   } catch (error) {
     console.error("[Cron Stats]", error);
     const message =
