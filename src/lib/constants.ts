@@ -2,7 +2,7 @@ export const APP_NAME = "Panoptes";
 export const APP_TAGLINE = "Chain Intelligence, Unblinking.";
 export const APP_DESCRIPTION =
   "Chain intelligence platform for Republic AI - Validator monitoring, endpoint health tracking, and smart routing.";
-export const APP_VERSION = "0.2.1";
+export const APP_VERSION = "0.3.0";
 
 export const REPUBLIC_CHAIN = {
   chainId: "republic-testnet-1",
@@ -62,4 +62,36 @@ export const HEALTH_THRESHOLDS = {
   LATENCY_HEALTHY_MS: 5000,
   BLOCK_HEIGHT_STALE: 10,
   ENDPOINT_TIMEOUT_MS: 5000,
+} as const;
+
+export const SCORING = {
+  ENDPOINT_WEIGHTS: {
+    uptime: 0.40,
+    latency: 0.25,
+    freshness: 0.20,
+    errorRate: 0.15,
+  },
+  VALIDATOR_WEIGHTS: {
+    missedBlockRate: 0.45,
+    jailPenalty: 0.25,
+    stakeStability: 0.15,
+    commissionScore: 0.15,
+  },
+  EMA_ALPHA: 0.3,
+  LATENCY_BASELINE_MS: 200,
+  LATENCY_MAX_MS: 5000,
+} as const;
+
+export const ANOMALY_THRESHOLDS = {
+  LARGE_STAKE_CHANGE_PCT: 10,
+  COMMISSION_SPIKE_PCT: 5,
+  ENDPOINT_DOWN_CONSECUTIVE: 3,
+  BLOCK_STALE_BEHIND: 10,
+  MASS_UNBONDING_PCT: 5,
+} as const;
+
+export const PREFLIGHT = {
+  MIN_GAS_BALANCE: "1000",
+  DEFAULT_GAS_LIMIT: 200_000,
+  TIMEOUT_MS: 10_000,
 } as const;
