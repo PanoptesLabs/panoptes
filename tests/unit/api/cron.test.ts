@@ -15,6 +15,12 @@ vi.mock("@/lib/indexer", () => ({
   cleanupOldData: vi.fn(),
 }));
 
+vi.mock("@/lib/intelligence", () => ({
+  computeEndpointScores: vi.fn().mockResolvedValue({ scored: 3, duration: 100 }),
+  computeValidatorScores: vi.fn().mockResolvedValue({ scored: 5, duration: 200 }),
+  detectAnomalies: vi.fn().mockResolvedValue({ detected: 0, resolved: 0, duration: 50 }),
+}));
+
 import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
 import { checkEndpoints, aggregateStats, cleanupOldData } from "@/lib/indexer";

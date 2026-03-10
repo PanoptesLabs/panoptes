@@ -13,6 +13,10 @@ export async function GET(request: NextRequest) {
         orderBy: { timestamp: "desc" },
         take: 1,
       },
+      scores: {
+        orderBy: { timestamp: "desc" },
+        take: 1,
+      },
     },
   });
 
@@ -42,6 +46,7 @@ export async function GET(request: NextRequest) {
           : 0;
 
       const latestCheck = ep.healthChecks[0] ?? null;
+      const latestScore = ep.scores[0] ?? null;
 
       return {
         id: ep.id,
@@ -60,6 +65,16 @@ export async function GET(request: NextRequest) {
             })
           : null,
         stats24h: { uptimePercent, avgLatency, checkCount, errorCount },
+        score: latestScore
+          ? {
+              score: latestScore.score,
+              uptime: latestScore.uptime,
+              latency: latestScore.latency,
+              freshness: latestScore.freshness,
+              errorRate: latestScore.errorRate,
+              timestamp: latestScore.timestamp.toISOString(),
+            }
+          : null,
       };
     }),
   );

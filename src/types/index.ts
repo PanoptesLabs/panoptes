@@ -9,6 +9,70 @@ export type ValidatorStatus =
 
 export type PreflightStatus = "pass" | "warn" | "fail";
 
+// Intelligence Types
+export type AnomalyType = "jailing" | "large_stake_change" | "commission_spike" | "endpoint_down" | "block_stale" | "mass_unbonding";
+export type AnomalySeverity = "low" | "medium" | "high" | "critical";
+export type AnomalyEntityType = "validator" | "endpoint" | "network";
+
+export interface EndpointScoreItem {
+  score: number;
+  uptime: number;
+  latency: number;
+  freshness: number;
+  errorRate: number;
+  timestamp: string;
+}
+
+export interface ValidatorScoreItem {
+  score: number;
+  missedBlockRate: number;
+  jailPenalty: number;
+  stakeStability: number;
+  commissionScore: number;
+  timestamp: string;
+}
+
+export interface AnomalyItem {
+  id: string;
+  type: AnomalyType;
+  severity: AnomalySeverity;
+  entityType: AnomalyEntityType;
+  entityId: string | null;
+  title: string;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  resolved: boolean;
+  detectedAt: string;
+  resolvedAt: string | null;
+}
+
+export interface AnomalyApiResponse {
+  anomalies: AnomalyItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PreflightCheck {
+  name: string;
+  status: PreflightStatus;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface PreflightResponse {
+  overall: PreflightStatus;
+  checks: PreflightCheck[];
+  timestamp: string;
+  duration: number;
+}
+
+export interface SmartRouteResponse {
+  endpoint: (EndpointItem & { score?: EndpointScoreItem | null }) | null;
+  alternatives: (EndpointItem & { score?: EndpointScoreItem | null })[];
+  strategy: "score_weighted" | "fallback";
+}
+
 // API Response Types
 
 export interface ValidatorListItem {
@@ -25,6 +89,7 @@ export interface ValidatorListItem {
   lastJailedAt: string | null;
   firstSeen: string;
   lastUpdated: string;
+  score?: ValidatorScoreItem | null;
 }
 
 export interface ValidatorApiResponse {
@@ -75,6 +140,7 @@ export interface EndpointItem {
   isOfficial: boolean;
   latestCheck: EndpointHealthCheck | null;
   stats24h: EndpointStats24h;
+  score?: EndpointScoreItem | null;
 }
 
 export interface EndpointApiResponse {

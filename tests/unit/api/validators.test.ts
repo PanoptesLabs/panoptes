@@ -36,6 +36,7 @@ const mockValidator = {
   lastJailedAt: null,
   firstSeen: new Date("2025-01-01"),
   lastUpdated: new Date("2025-06-01"),
+  scores: [],
 };
 
 describe("GET /api/validators", () => {

@@ -8,6 +8,7 @@ import {
   Shield,
   Globe,
   Activity,
+  AlertTriangle,
   Menu,
   X,
   Eye,
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/validators", label: "Validators", icon: Shield },
   { href: "/dashboard/endpoints", label: "Endpoints", icon: Globe },
+  { href: "/dashboard/anomalies", label: "Anomalies", icon: AlertTriangle },
   { href: "/dashboard/network", label: "Network", icon: Activity },
 ];
 

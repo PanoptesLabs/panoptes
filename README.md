@@ -10,9 +10,12 @@ Validator monitoring, endpoint health tracking, and smart routing engine.
 - Real-time validator monitoring and historical snapshots
 - Endpoint health tracking with uptime/latency stats
 - Network statistics with bonded ratio and block time trends
-- Smart endpoint routing (best endpoint by latency)
+- **Intelligence Layer:** Composite scoring for endpoints and validators (EMA-smoothed)
+- **Smart Routing:** Score-weighted endpoint selection with quadratic bias
+- **Anomaly Detection:** 6 detectors (jailing, stake change, commission spike, endpoint down, block stale, mass unbonding)
+- **Preflight Validation:** 6-step transaction pre-check pipeline with timeout protection
 - REST API with rate limiting, caching, and security headers
-- Interactive dashboard with charts and filtering
+- Interactive dashboard with score badges, anomaly alerts, and filtering
 
 ## Tech Stack
 

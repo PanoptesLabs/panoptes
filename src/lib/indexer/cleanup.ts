@@ -6,6 +6,9 @@ export async function cleanupOldData(): Promise<{
   deletedSnapshots: number;
   deletedHealthChecks: number;
   deletedStats: number;
+  deletedScores: number;
+  deletedValidatorScores: number;
+  deletedAnomalies: number;
   duration: number;
 }> {
   const start = Date.now();
@@ -26,7 +29,10 @@ export async function cleanupOldData(): Promise<{
       statsCutoff.getDate() - RETENTION.NETWORK_STATS,
     );
 
-    const [snapshots, healthChecks, stats] = await prisma.$transaction([
+    const scoreCutoff = new Date(Date.now() - 7 * 86400000);
+    const anomalyCutoff = new Date(Date.now() - 30 * 86400000);
+
+    const [snapshots, healthChecks, stats, scores, vScores, anomalies] = await prisma.$transaction([
       prisma.validatorSnapshot.deleteMany({
         where: { timestamp: { lt: snapshotCutoff } },
       }),
@@ -36,12 +42,24 @@ export async function cleanupOldData(): Promise<{
       prisma.networkStats.deleteMany({
         where: { timestamp: { lt: statsCutoff } },
       }),
+      prisma.endpointScore.deleteMany({
+        where: { timestamp: { lt: scoreCutoff } },
+      }),
+      prisma.validatorScore.deleteMany({
+        where: { timestamp: { lt: scoreCutoff } },
+      }),
+      prisma.anomaly.deleteMany({
+        where: { resolved: true, resolvedAt: { lt: anomalyCutoff } },
+      }),
     ]);
 
     return {
       deletedSnapshots: snapshots.count,
       deletedHealthChecks: healthChecks.count,
       deletedStats: stats.count,
+      deletedScores: scores.count,
+      deletedValidatorScores: vScores.count,
+      deletedAnomalies: anomalies.count,
       duration: Date.now() - start,
     };
   } catch (error) {

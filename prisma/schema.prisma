@@ -22,6 +22,7 @@ model Validator {
   firstSeen        DateTime            @default(now())
   lastUpdated      DateTime            @updatedAt
   snapshots        ValidatorSnapshot[]
+  scores           ValidatorScore[]
 
   @@index([status])
   @@index([jailed])
@@ -51,6 +52,7 @@ model Endpoint {
   isActive     Boolean          @default(true)
   createdAt    DateTime         @default(now())
   healthChecks EndpointHealth[]
+  scores       EndpointScore[]
 
   @@index([type])
   @@index([isActive])
@@ -82,4 +84,53 @@ model NetworkStats {
   timestamp        DateTime @default(now())
 
   @@index([timestamp])
+}
+
+model EndpointScore {
+  id         String   @id @default(cuid())
+  endpointId String
+  endpoint   Endpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  score      Float
+  uptime     Float
+  latency    Float
+  freshness  Float
+  errorRate  Float
+  timestamp  DateTime @default(now())
+
+  @@index([endpointId, timestamp])
+  @@index([timestamp])
+}
+
+model ValidatorScore {
+  id              String    @id @default(cuid())
+  validatorId     String
+  validator       Validator @relation(fields: [validatorId], references: [id], onDelete: Cascade)
+  score           Float
+  missedBlockRate Float
+  jailPenalty     Float
+  stakeStability  Float
+  commissionScore Float
+  timestamp       DateTime  @default(now())
+
+  @@index([validatorId, timestamp])
+  @@index([timestamp])
+}
+
+model Anomaly {
+  id          String    @id @default(cuid())
+  type        String
+  severity    String
+  entityType  String
+  entityId    String?
+  title       String
+  description String
+  metadata    String?
+  resolved    Boolean   @default(false)
+  detectedAt  DateTime  @default(now())
+  resolvedAt  DateTime?
+
+  @@index([type])
+  @@index([severity])
+  @@index([detectedAt])
+  @@index([resolved])
 }

@@ -51,6 +51,7 @@ const mockEndpoint = {
       timestamp: new Date("2025-06-01T12:00:00Z"),
     },
   ],
+  scores: [],
 };
 
 const mockHealthChecks = [
