@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { withRateLimit, jsonResponse } from "@/lib/api-helpers";
 import { validatePreflight } from "@/lib/intelligence";
+import { addressToBytes } from "republic-sdk";
 
 export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
@@ -45,14 +46,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate address format (basic rai prefix check)
-  if (!from.startsWith("rai1") || !to.startsWith("rai1")) {
-    return jsonResponse(
-      { error: "Invalid address format: must start with 'rai1'" },
-      rl.headers,
-      400,
-      { cache: false },
-    );
+  // Validate address format (bech32 checksum verification)
+  for (const [label, addr] of [["from", from], ["to", to]] as const) {
+    if (!addr.startsWith("rai1")) {
+      return jsonResponse(
+        { error: `Invalid ${label} address: must start with 'rai1'` },
+        rl.headers,
+        400,
+        { cache: false },
+      );
+    }
+    try {
+      addressToBytes(addr);
+    } catch {
+      return jsonResponse(
+        { error: `Invalid ${label} address: bech32 checksum verification failed` },
+        rl.headers,
+        400,
+        { cache: false },
+      );
+    }
   }
 
   // Validate denom if provided

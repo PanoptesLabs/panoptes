@@ -145,7 +145,7 @@ describe("selectBestEndpoint", () => {
     ]);
 
     const result = await selectBestEndpoint("rpc");
-    expect(["score_weighted", "fallback", "random"]).toContain(result.strategy);
+    expect(["score_weighted", "fallback"]).toContain(result.strategy);
   });
 });
 

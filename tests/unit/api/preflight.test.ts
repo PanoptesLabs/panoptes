@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+vi.mock("republic-sdk", () => ({
+  addressToBytes: vi.fn((addr: string) => {
+    // Simulate bech32 decode: reject addresses that don't look valid
+    if (addr.includes("invalid") || addr.includes("bad")) {
+      throw new Error("Invalid checksum");
+    }
+    return new Uint8Array(20);
+  }),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     endpointScore: { findFirst: vi.fn() },
@@ -145,7 +155,25 @@ describe("POST /api/preflight", () => {
     expect(res.status).toBe(400);
 
     const body = await res.json();
-    expect(body.error).toContain("Invalid address");
+    expect(body.error).toContain("Invalid from address");
+  });
+
+  it("returns 400 for invalid bech32 checksum", async () => {
+    const { POST } = await import("@/app/api/preflight/route");
+    const req = new NextRequest("http://localhost/api/preflight", {
+      method: "POST",
+      body: JSON.stringify({
+        from: "rai1invalidchecksum",
+        to: "rai1def...",
+        amount: "1000000",
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+
+    const body = await res.json();
+    expect(body.error).toContain("bech32 checksum");
   });
 
   it("returns 400 for invalid JSON", async () => {

@@ -70,7 +70,7 @@ export interface PreflightResponse {
 export interface SmartRouteResponse {
   endpoint: (EndpointItem & { score?: EndpointScoreItem | null }) | null;
   alternatives: (EndpointItem & { score?: EndpointScoreItem | null })[];
-  strategy: "score_weighted" | "fallback" | "random";
+  strategy: "score_weighted" | "fallback";
 }
 
 // API Response Types

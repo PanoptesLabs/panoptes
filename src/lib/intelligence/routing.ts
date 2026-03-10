@@ -19,11 +19,11 @@ function weightedRandomSelect(endpoints: ScoredEndpoint[]): ScoredEndpoint {
 
 export async function selectBestEndpoint(
   type: string,
-  options?: { excludeIds?: string[]; preferProvider?: string },
+  options?: { excludeIds?: string[] },
 ): Promise<{
   endpoint: ScoredEndpoint | null;
   alternatives: ScoredEndpoint[];
-  strategy: "score_weighted" | "fallback" | "random";
+  strategy: "score_weighted" | "fallback";
 }> {
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
