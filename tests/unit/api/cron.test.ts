@@ -16,6 +16,7 @@ vi.mock("@/lib/indexer", () => ({
 }));
 
 import { validateCronAuth } from "@/lib/cron-auth";
+import { withRateLimit } from "@/lib/api-helpers";
 import { checkEndpoints, aggregateStats, cleanupOldData } from "@/lib/indexer";
 
 function makeCronRequest(): NextRequest {
@@ -29,6 +30,39 @@ describe("Cron Routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(validateCronAuth).mockReturnValue(null);
+    vi.mocked(withRateLimit).mockReturnValue({
+      headers: { "X-RateLimit-Limit": "60" },
+    });
+  });
+
+  describe("shared cron guards", () => {
+    it("returns 401 when auth fails (before rate limit runs)", async () => {
+      const { NextResponse } = await import("next/server");
+      vi.mocked(validateCronAuth).mockReturnValue(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      );
+
+      const { POST } = await import("@/app/api/cron/health/route");
+      const res = await POST(makeCronRequest());
+
+      expect(res.status).toBe(401);
+      expect(withRateLimit).not.toHaveBeenCalled();
+    });
+
+    it("returns 429 when rate limited (after auth passes)", async () => {
+      const { NextResponse } = await import("next/server");
+      vi.mocked(withRateLimit).mockReturnValue({
+        response: NextResponse.json(
+          { error: "Too many requests" },
+          { status: 429 },
+        ),
+      });
+
+      const { POST } = await import("@/app/api/cron/health/route");
+      const res = await POST(makeCronRequest());
+
+      expect(res.status).toBe(429);
+    });
   });
 
   describe("POST /api/cron/health", () => {
