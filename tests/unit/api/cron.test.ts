@@ -5,6 +5,10 @@ vi.mock("@/lib/cron-auth", () => ({
   validateCronAuth: vi.fn(),
 }));
 
+vi.mock("@/lib/api-helpers", () => ({
+  withRateLimit: vi.fn(() => ({ headers: { "X-RateLimit-Limit": "60" } })),
+}));
+
 vi.mock("@/lib/indexer", () => ({
   checkEndpoints: vi.fn(),
   aggregateStats: vi.fn(),

@@ -13,6 +13,12 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json-summary"],
       include: ["src/lib/**", "src/hooks/**"],
+      thresholds: {
+        statements: 75,
+        branches: 65,
+        functions: 65,
+        lines: 75,
+      },
     },
   },
   resolve: {
