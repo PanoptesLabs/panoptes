@@ -3,6 +3,7 @@ import "dotenv/config";
 import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../src/generated/prisma/client.js";
+import { hashToken } from "../src/lib/workspace-auth.js";
 import ws from "ws";
 
 neonConfig.webSocketConstructor = ws;
@@ -50,6 +51,32 @@ async function main() {
       },
     });
     console.log(`  + ${ep.url} (${ep.type})`);
+  }
+
+  // Seed default workspace
+  const adminToken = process.env.PANOPTES_ADMIN_TOKEN;
+  if (adminToken) {
+    const tokenHash = hashToken(adminToken);
+    await prisma.workspace.upsert({
+      where: { slug: "default" },
+      create: {
+        name: "Default Workspace",
+        slug: "default",
+        adminTokenHash: tokenHash,
+      },
+      update: {
+        adminTokenHash: tokenHash,
+      },
+    });
+    console.log("  + Default workspace (slug: default)");
+  } else if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "PANOPTES_ADMIN_TOKEN is required in production. Generate with: openssl rand -hex 32",
+    );
+  } else {
+    console.warn(
+      "  ⚠ PANOPTES_ADMIN_TOKEN not set, skipping workspace seed (non-production)",
+    );
   }
 
   console.log("[seed] Done.");
