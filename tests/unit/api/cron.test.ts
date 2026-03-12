@@ -15,6 +15,10 @@ vi.mock("@/lib/indexer", () => ({
   cleanupOldData: vi.fn(),
 }));
 
+vi.mock("@/lib/webhooks/dispatch", () => ({
+  dispatchWebhooks: vi.fn(),
+}));
+
 vi.mock("@/lib/intelligence", () => ({
   computeEndpointScores: vi.fn().mockResolvedValue({ scored: 3, duration: 100 }),
   computeValidatorScores: vi.fn().mockResolvedValue({ scored: 5, duration: 200 }),
@@ -24,6 +28,7 @@ vi.mock("@/lib/intelligence", () => ({
 import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
 import { checkEndpoints, aggregateStats, cleanupOldData } from "@/lib/indexer";
+import { dispatchWebhooks } from "@/lib/webhooks/dispatch";
 
 function makeCronRequest(): NextRequest {
   return new NextRequest("http://localhost/api/cron/health", {
@@ -149,6 +154,51 @@ describe("Cron Routes", () => {
       );
 
       const { POST } = await import("@/app/api/cron/cleanup/route");
+      const res = await POST(makeCronRequest());
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.success).toBe(false);
+    });
+  });
+
+  describe("POST /api/cron/webhooks", () => {
+    it("returns 401 when auth fails", async () => {
+      const { NextResponse } = await import("next/server");
+      vi.mocked(validateCronAuth).mockReturnValue(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      );
+
+      const { POST } = await import("@/app/api/cron/webhooks/route");
+      const res = await POST(makeCronRequest());
+
+      expect(res.status).toBe(401);
+    });
+
+    it("returns success on dispatchWebhooks", async () => {
+      vi.mocked(dispatchWebhooks).mockResolvedValue({
+        dispatched: 5,
+        delivered: 4,
+        retried: 2,
+        failed: 1,
+        duration: 1200,
+      });
+
+      const { POST } = await import("@/app/api/cron/webhooks/route");
+      const res = await POST(makeCronRequest());
+      const body = await res.json();
+
+      expect(body.success).toBe(true);
+      expect(body.dispatched).toBe(5);
+      expect(body.delivered).toBe(4);
+    });
+
+    it("returns 500 on dispatch error", async () => {
+      vi.mocked(dispatchWebhooks).mockRejectedValue(
+        new Error("Dispatch failed"),
+      );
+
+      const { POST } = await import("@/app/api/cron/webhooks/route");
       const res = await POST(makeCronRequest());
       const body = await res.json();
 
