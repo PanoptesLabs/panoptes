@@ -10,6 +10,7 @@ vi.mock("@/lib/db", () => ({
     validatorScore: { deleteMany: vi.fn() },
     anomaly: { deleteMany: vi.fn() },
     outboxEvent: { deleteMany: vi.fn() },
+    webhookDelivery: { deleteMany: vi.fn() },
   },
 }));
 
@@ -33,6 +34,8 @@ describe("cleanupOldData", () => {
       { count: 5 },
       { count: 3 },
       { count: 7 },
+      { count: 12 },
+      { count: 4 },
     ]);
 
     const result = await cleanupOldData();
@@ -44,11 +47,14 @@ describe("cleanupOldData", () => {
     expect(result.deletedValidatorScores).toBe(5);
     expect(result.deletedAnomalies).toBe(3);
     expect(result.deletedOutboxEvents).toBe(7);
+    expect(result.deletedDeliveries).toBe(16);
     expect(result.duration).toBeGreaterThanOrEqual(0);
   });
 
   it("handles empty tables", async () => {
     mockPrisma.$transaction.mockResolvedValue([
+      { count: 0 },
+      { count: 0 },
       { count: 0 },
       { count: 0 },
       { count: 0 },
@@ -64,6 +70,7 @@ describe("cleanupOldData", () => {
     expect(result.deletedHealthChecks).toBe(0);
     expect(result.deletedStats).toBe(0);
     expect(result.deletedOutboxEvents).toBe(0);
+    expect(result.deletedDeliveries).toBe(0);
   });
 
   it("throws IndexerError on failure", async () => {

@@ -125,3 +125,18 @@ export const STREAM_DEFAULTS = {
 export const OUTBOX_RETENTION = {
   HOURS: 24,
 } as const;
+
+export const WEBHOOK_DISPATCH = {
+  BATCH_SIZE: 50,
+  RETRY_BATCH_SIZE: 20,
+  TIMEOUT_MS: 5_000,
+  MAX_ATTEMPTS: 5,
+  RETRY_DELAYS_S: [30, 120, 600, 3_600, 21_600],
+  BUDGET_MS: 45_000,
+  STALE_CLAIM_MS: 300_000,
+} as const;
+
+export const DELIVERY_RETENTION = {
+  SUCCESS_DAYS: 7,
+  FAILURE_DAYS: 30,
+} as const;
