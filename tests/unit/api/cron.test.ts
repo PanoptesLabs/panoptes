@@ -126,15 +126,20 @@ describe("Cron Routes", () => {
       expect(body.incidents.created).toBe(1);
     });
 
-    it("returns 500 on error", async () => {
+    it("returns 207 partial when one step fails", async () => {
       vi.mocked(aggregateStats).mockRejectedValue(new Error("Stats failed"));
 
       const { POST } = await import("@/app/api/cron/stats/route");
       const res = await POST(makeCronRequest());
       const body = await res.json();
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(207);
       expect(body.success).toBe(false);
+      expect(body.partial).toBe(true);
+      expect(body.errors).toHaveLength(1);
+      expect(body.errors[0].step).toBe("aggregateStats");
+      expect(body.slos.evaluated).toBe(2);
+      expect(body.incidents.created).toBe(1);
     });
   });
 
