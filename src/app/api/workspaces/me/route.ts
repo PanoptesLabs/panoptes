@@ -93,3 +93,18 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ workspace: updated }, { headers: rl.headers });
 }
+
+export async function DELETE(request: NextRequest) {
+  const rl = withRateLimit(request);
+  if ("response" in rl) return rl.response;
+
+  const auth = await requireWorkspace(request);
+  if (auth.error) return auth.error;
+
+  await prisma.workspace.update({
+    where: { id: auth.workspace.id },
+    data: { isActive: false },
+  });
+
+  return new NextResponse(null, { status: 204, headers: rl.headers });
+}
