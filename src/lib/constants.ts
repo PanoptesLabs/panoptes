@@ -246,3 +246,10 @@ export const CONTROL_PLANE_RETENTION = {
   DELEGATION_SNAPSHOTS_DAYS: 30,
   POLICY_EXECUTIONS_DAYS: 30,
 } as const;
+
+export const LEADERBOARD_DEFAULTS = {
+  MAX_LIMIT: 100,
+  DEFAULT_LIMIT: 20,
+  MAX_COMPARE: 5,
+  TREND_PERIODS: ["7d", "30d", "90d"] as const,
+} as const;
