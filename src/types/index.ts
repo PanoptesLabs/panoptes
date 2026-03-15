@@ -186,3 +186,97 @@ export interface HealthCheckResult {
     lastCronRun?: string;
   };
 }
+
+// SLO Types
+export interface SloItem {
+  id: string;
+  name: string;
+  indicator: string;
+  entityType: string;
+  entityId: string;
+  target: number;
+  windowDays: number;
+  isActive: boolean;
+  isBreaching: boolean;
+  currentValue: number | null;
+  budgetConsumed: number | null;
+  lastEvaluatedAt: string | null;
+  createdAt: string;
+}
+
+export interface SloSummary {
+  total: number;
+  active: number;
+  breaching: number;
+  budgetExhausted: number;
+  healthyPct: number;
+  slos: SloItem[];
+}
+
+// Incident Types
+export interface IncidentEventItem {
+  id: string;
+  incidentId: string;
+  eventType: IncidentEventType;
+  message: string;
+  metadata: string | null;
+  createdAt: string;
+}
+
+export interface IncidentItem {
+  id: string;
+  workspaceId: string;
+  entityType: string;
+  entityId: string;
+  status: IncidentStatus;
+  severity: string;
+  title: string;
+  description: string;
+  detectedAt: string;
+  acknowledgedAt: string | null;
+  resolvedAt: string | null;
+  events?: IncidentEventItem[];
+}
+
+export interface IncidentListResponse {
+  incidents: IncidentItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface IncidentSummary {
+  total: number;
+  open: number;
+  acknowledged: number;
+  resolved: number;
+  critical: number;
+}
+
+// Webhook Types
+export interface WebhookItem {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  isActive: boolean;
+  createdAt: string;
+  secret?: string;
+}
+
+export interface WebhookDeliveryItem {
+  id: string;
+  eventType: string;
+  statusCode: number | null;
+  success: boolean;
+  attempts: number;
+  deliveredAt: string | null;
+  createdAt: string;
+}
+
+export interface WebhookDeliveryResponse {
+  deliveries: WebhookDeliveryItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}

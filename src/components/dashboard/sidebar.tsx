@@ -11,16 +11,28 @@ import {
   AlertTriangle,
   Menu,
   X,
+  Target,
+  Siren,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PrismIcon } from "@/components/icons/prism-icon";
 
-const navItems = [
+const monitoringItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/validators", label: "Validators", icon: Shield },
   { href: "/dashboard/endpoints", label: "Endpoints", icon: Globe },
   { href: "/dashboard/anomalies", label: "Anomalies", icon: AlertTriangle },
   { href: "/dashboard/network", label: "Network", icon: Activity },
+];
+
+const reliabilityItems = [
+  { href: "/dashboard/slos", label: "SLOs", icon: Target },
+  { href: "/dashboard/incidents", label: "Incidents", icon: Siren },
+];
+
+const settingsItems = [
+  { href: "/dashboard/settings/webhooks", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -43,7 +55,72 @@ export function Sidebar() {
         </h2>
       </div>
       <nav className="mt-2 space-y-1 px-3">
-        {navItems.map((item) => {
+        {monitoringItems.map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                active
+                  ? "bg-soft-violet/15 text-soft-violet shadow-sm"
+                  : "text-dusty-lavender/70 hover:bg-deep-iris/15 hover:text-dusty-lavender"
+              )}
+            >
+              <item.icon
+                className={cn(
+                  "size-4 shrink-0 transition-colors",
+                  active
+                    ? "text-soft-violet"
+                    : "text-dusty-lavender/40 group-hover:text-dusty-lavender/70"
+                )}
+              />
+              {item.label}
+              {active && (
+                <span className="ml-auto size-1.5 rounded-full bg-soft-violet" />
+              )}
+            </Link>
+          );
+        })}
+
+        <div className="border-t border-slate-DEFAULT/10 my-2" />
+        <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
+          Reliability
+        </p>
+        {reliabilityItems.map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                active
+                  ? "bg-soft-violet/15 text-soft-violet shadow-sm"
+                  : "text-dusty-lavender/70 hover:bg-deep-iris/15 hover:text-dusty-lavender"
+              )}
+            >
+              <item.icon
+                className={cn(
+                  "size-4 shrink-0 transition-colors",
+                  active
+                    ? "text-soft-violet"
+                    : "text-dusty-lavender/40 group-hover:text-dusty-lavender/70"
+                )}
+              />
+              {item.label}
+              {active && (
+                <span className="ml-auto size-1.5 rounded-full bg-soft-violet" />
+              )}
+            </Link>
+          );
+        })}
+
+        <div className="border-t border-slate-DEFAULT/10 my-2" />
+        {settingsItems.map((item) => {
           const active = isActive(item.href);
           return (
             <Link
