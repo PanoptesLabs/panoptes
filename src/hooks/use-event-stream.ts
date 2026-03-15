@@ -11,6 +11,12 @@ export const DEFAULT_REVALIDATE_MAP: Record<string, string[]> = {
   "endpoint.down": ["/api/endpoints", "/api/anomalies"],
   "endpoint.recovered": ["/api/endpoints", "/api/anomalies"],
   "stats.updated": ["/api/stats"],
+  "slo.breached": ["/api/slos/summary", "/api/slos"],
+  "slo.recovered": ["/api/slos/summary", "/api/slos"],
+  "slo.budget_exhausted": ["/api/slos/summary", "/api/slos"],
+  "incident.created": ["/api/incidents/summary", "/api/incidents"],
+  "incident.acknowledged": ["/api/incidents/summary", "/api/incidents"],
+  "incident.resolved": ["/api/incidents/summary", "/api/incidents"],
 };
 
 interface UseEventStreamOptions {

@@ -4,6 +4,9 @@ import dynamic from "next/dynamic";
 import { useNetworkStats } from "@/hooks/use-stats";
 import { useEndpoints } from "@/hooks/use-endpoints";
 import { useAnomalies } from "@/hooks/use-anomalies";
+import { useWorkspace } from "@/hooks/use-workspace";
+import { useSloSummary } from "@/hooks/use-slos";
+import { useIncidentSummary } from "@/hooks/use-incidents";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +34,8 @@ import {
   Globe,
   Activity,
   AlertTriangle,
+  Target,
+  Siren,
 } from "lucide-react";
 
 export function Overview() {
@@ -45,6 +50,9 @@ export function Overview() {
     isLoading: endpointsLoading,
   } = useEndpoints();
   const { data: anomalyData } = useAnomalies({ resolved: false });
+  const { token } = useWorkspace();
+  const { data: sloSummary } = useSloSummary(token);
+  const { data: incidentSummary } = useIncidentSummary(token);
 
   const current = stats?.current;
   const history = stats?.history ?? [];
@@ -119,6 +127,28 @@ export function Overview() {
           isLoading={endpointsLoading}
         />
       </div>
+
+      {/* Reliability widgets (workspace-scoped) */}
+      {token && (sloSummary || incidentSummary) && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {sloSummary && (
+            <StatCard
+              title="SLO Health"
+              value={`${sloSummary.healthyPct.toFixed(1)}%`}
+              subtitle={`${sloSummary.breaching} breaching / ${sloSummary.total} total`}
+              icon={<Target className="size-4" />}
+            />
+          )}
+          {incidentSummary && (
+            <StatCard
+              title="Active Incidents"
+              value={String(incidentSummary.open)}
+              subtitle={incidentSummary.critical > 0 ? `${incidentSummary.critical} critical` : "no critical"}
+              icon={<Siren className="size-4" />}
+            />
+          )}
+        </div>
+      )}
 
       {/* Trend charts */}
       {history.length > 1 && (
