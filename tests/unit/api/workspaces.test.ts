@@ -340,3 +340,37 @@ describe("POST /api/workspaces - timing-safe comparison", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("DELETE /api/workspaces/me", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authSuccess();
+  });
+
+  it("deactivates workspace and returns 204", async () => {
+    vi.mocked(prisma.workspace.update).mockResolvedValue({ id: "ws-1", isActive: false } as never);
+
+    const { DELETE } = await import("@/app/api/workspaces/me/route");
+    const req = new NextRequest("http://localhost/api/workspaces/me", {
+      method: "DELETE",
+      headers: { Authorization: "Bearer ws_token" },
+    });
+    const res = await DELETE(req);
+
+    expect(res.status).toBe(204);
+    expect(prisma.workspace.update).toHaveBeenCalledWith({
+      where: { id: "ws-1" },
+      data: { isActive: false },
+    });
+  });
+
+  it("returns 401 without auth", async () => {
+    authFail();
+    const { DELETE } = await import("@/app/api/workspaces/me/route");
+    const req = new NextRequest("http://localhost/api/workspaces/me", {
+      method: "DELETE",
+    });
+    const res = await DELETE(req);
+    expect(res.status).toBe(401);
+  });
+});
