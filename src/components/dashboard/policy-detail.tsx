@@ -16,6 +16,8 @@ import {
   Trash2,
   TestTube,
 } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 export function PolicyDetail({ policyId }: { policyId: string }) {
   const { token } = useWorkspace();
@@ -96,8 +98,9 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
             </CardTitle>
             <div className="flex items-center gap-2">
               {data.dryRun && (
-                <span className="rounded bg-amber-DEFAULT/15 px-2 py-0.5 text-xs font-medium text-amber-DEFAULT">
+                <span className="inline-flex items-center gap-1 rounded bg-amber-DEFAULT/15 px-2 py-0.5 text-xs font-medium text-amber-DEFAULT">
                   DRY RUN
+                  <HelpTooltip content={helpContent.policies.concepts.dryRun} side="bottom" />
                 </span>
               )}
               <span className={`text-xs ${data.isActive ? "text-teal-DEFAULT" : "text-dusty-lavender/40"}`}>
@@ -112,11 +115,17 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
           )}
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <p className="text-xs text-dusty-lavender/50">Priority</p>
+              <p className="flex items-center gap-1 text-xs text-dusty-lavender/50">
+                Priority
+                <HelpTooltip content={helpContent.policies.concepts.priority} side="right" />
+              </p>
               <p className="font-mono text-sm text-mist">{data.priority}</p>
             </div>
             <div>
-              <p className="text-xs text-dusty-lavender/50">Cooldown</p>
+              <p className="flex items-center gap-1 text-xs text-dusty-lavender/50">
+                Cooldown
+                <HelpTooltip content={helpContent.policies.concepts.cooldown} side="right" />
+              </p>
               <p className="text-sm text-mist">{data.cooldownMinutes} min</p>
             </div>
             <div>
@@ -215,7 +224,19 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
             {data.conditions.map((c, i) => (
               <div key={i} className="flex items-center gap-2 rounded bg-slate-dark/30 px-3 py-2 text-xs">
                 <code className="text-soft-violet">{c.field}</code>
+                {helpContent.policies.conditionFields[c.field as keyof typeof helpContent.policies.conditionFields] && (
+                  <HelpTooltip
+                    content={helpContent.policies.conditionFields[c.field as keyof typeof helpContent.policies.conditionFields]}
+                    side="top"
+                  />
+                )}
                 <span className="text-amber-DEFAULT">{c.operator}</span>
+                {helpContent.policies.operators[c.operator as keyof typeof helpContent.policies.operators] && (
+                  <HelpTooltip
+                    content={helpContent.policies.operators[c.operator as keyof typeof helpContent.policies.operators]}
+                    side="top"
+                  />
+                )}
                 <code className="text-teal-DEFAULT">{JSON.stringify(c.value)}</code>
               </div>
             ))}
@@ -235,6 +256,12 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
                 <span className="rounded bg-soft-violet/15 px-2 py-0.5 font-medium text-soft-violet">
                   {a.type}
                 </span>
+                {helpContent.policies.actionTypes[a.type as keyof typeof helpContent.policies.actionTypes] && (
+                  <HelpTooltip
+                    content={helpContent.policies.actionTypes[a.type as keyof typeof helpContent.policies.actionTypes]}
+                    side="right"
+                  />
+                )}
                 {a.config && (
                   <code className="text-dusty-lavender/50">{JSON.stringify(a.config)}</code>
                 )}

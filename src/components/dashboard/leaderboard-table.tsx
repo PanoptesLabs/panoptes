@@ -23,6 +23,8 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 const CATEGORIES = [
   { key: "overall", label: "Overall", icon: Trophy },
@@ -77,6 +79,10 @@ export function LeaderboardTable() {
             >
               <cat.icon className="size-4" />
               {cat.label}
+              <HelpTooltip
+                content={helpContent.leaderboard.categories[cat.key as keyof typeof helpContent.leaderboard.categories]}
+                side="bottom"
+              />
             </button>
           );
         })}

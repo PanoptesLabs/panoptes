@@ -5,6 +5,8 @@ import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { Loader2, ArrowLeftRight, ArrowUpRight, ArrowDownRight, AlertTriangle } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 const TYPE_CONFIG = {
   delegate: { label: "Delegate", color: "text-teal-DEFAULT", icon: ArrowUpRight },
@@ -39,6 +41,7 @@ export function DelegationList() {
             <CardTitle className="flex items-center gap-2 text-amber-DEFAULT">
               <AlertTriangle className="size-4" />
               Whale Movements ({unresolvedWhales.length})
+              <HelpTooltip content={helpContent.delegations.types.whale} side="right" />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -82,7 +85,15 @@ export function DelegationList() {
                     <Icon className={`size-3.5 shrink-0 ${config.color}`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 text-xs">
-                        <span className={`font-medium ${config.color}`}>{config.label}</span>
+                        <span className={`inline-flex items-center gap-1 font-medium ${config.color}`}>
+                          {config.label}
+                          {helpContent.delegations.types[e.type as keyof typeof helpContent.delegations.types] && (
+                            <HelpTooltip
+                              content={helpContent.delegations.types[e.type as keyof typeof helpContent.delegations.types]}
+                              side="top"
+                            />
+                          )}
+                        </span>
                         <span className="font-mono text-dusty-lavender/50 truncate max-w-[120px]">
                           {e.delegator}
                         </span>

@@ -13,6 +13,8 @@ import { timeAgo } from "@/lib/time";
 import { getValidatorStatusInfo } from "@/lib/status";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { ScoreBadge } from "./score-badge";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 import type { ValidatorListItem } from "@/types";
 
 const STATUS_OPTIONS = [
@@ -96,7 +98,12 @@ export function ValidatorsList() {
     },
     {
       key: "commission",
-      header: "Commission",
+      header: (
+        <span className="flex items-center gap-1">
+          Commission
+          <HelpTooltip content={helpContent.validators.fields.commission} side="bottom" />
+        </span>
+      ),
       sortable: true,
       className: "text-right",
       render: (row) => (
@@ -107,7 +114,12 @@ export function ValidatorsList() {
     },
     {
       key: "score" as keyof ValidatorListItem,
-      header: "Score",
+      header: (
+        <span className="flex items-center gap-1">
+          Score
+          <HelpTooltip content={helpContent.validators.fields.score} side="bottom" />
+        </span>
+      ),
       className: "text-center",
       render: (row: ValidatorListItem) => (
         <ScoreBadge score={row.score?.score ?? null} />
@@ -115,7 +127,12 @@ export function ValidatorsList() {
     },
     {
       key: "jailed",
-      header: "Jailed",
+      header: (
+        <span className="flex items-center gap-1">
+          Jailed
+          <HelpTooltip content={helpContent.validators.fields.jailed} side="bottom" />
+        </span>
+      ),
       render: (row) =>
         row.jailed ? (
           <ShieldAlert className="size-4 text-rose-DEFAULT" />

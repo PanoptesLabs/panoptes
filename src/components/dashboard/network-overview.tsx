@@ -23,6 +23,8 @@ import {
   TrendingUp,
   Percent,
 } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 export function NetworkOverview() {
   const { data, error, isLoading, mutate } = useNetworkStats();
@@ -72,7 +74,12 @@ export function NetworkOverview() {
           isLoading={isLoading}
         />
         <StatCard
-          title="Block Height"
+          title={
+            <span className="flex items-center gap-1">
+              Block Height
+              <HelpTooltip content={helpContent.network.fields.blockHeight} side="bottom" />
+            </span>
+          }
           value={current ? formatBlockHeight(current.blockHeight) : "--"}
           subtitle={
             current?.avgBlockTime
@@ -131,6 +138,7 @@ export function NetworkOverview() {
                 <CardTitle className="flex items-center gap-2 text-sm font-medium text-dusty-lavender/70">
                   <Percent className="size-4" />
                   Bonded Ratio
+                  <HelpTooltip content={helpContent.network.fields.bondedRatio} side="right" />
                 </CardTitle>
               </CardHeader>
               <CardContent>

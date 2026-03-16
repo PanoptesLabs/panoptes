@@ -6,7 +6,7 @@ import { Sparkline } from "@/components/charts/sparkline";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 interface StatCardProps {
-  title: string;
+  title: React.ReactNode;
   value: string;
   subtitle?: string;
   trend?: { value: number; label: string };

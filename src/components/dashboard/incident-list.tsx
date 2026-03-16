@@ -11,6 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { Siren, AlertTriangle, CheckCircle, Eye, ShieldAlert } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 const STATUS_OPTIONS = [
   { label: "All Statuses", value: "" },
@@ -103,9 +105,30 @@ export function IncidentList() {
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <FilterSelect label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
-        <FilterSelect label="Severity" options={SEVERITY_OPTIONS} value={severity} onChange={setSeverity} />
-        <FilterSelect label="Entity" options={ENTITY_OPTIONS} value={entityType} onChange={setEntityType} />
+        <div className="flex items-center gap-1">
+          <FilterSelect label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+          {status && helpContent.incidents.statuses[status as keyof typeof helpContent.incidents.statuses] && (
+            <HelpTooltip
+              content={helpContent.incidents.statuses[status as keyof typeof helpContent.incidents.statuses]}
+              side="right"
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <FilterSelect label="Severity" options={SEVERITY_OPTIONS} value={severity} onChange={setSeverity} />
+          {severity && (
+            <HelpTooltip content={helpContent.incidents.concepts.severity} side="right" />
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <FilterSelect label="Entity" options={ENTITY_OPTIONS} value={entityType} onChange={setEntityType} />
+          {entityType && helpContent.anomalies.entityTypes[entityType as keyof typeof helpContent.anomalies.entityTypes] && (
+            <HelpTooltip
+              content={helpContent.anomalies.entityTypes[entityType as keyof typeof helpContent.anomalies.entityTypes]}
+              side="right"
+            />
+          )}
+        </div>
       </div>
 
       {/* Loading */}

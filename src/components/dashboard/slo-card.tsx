@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Target, AlertTriangle, CheckCircle } from "lucide-react";
 import { timeAgo } from "@/lib/time";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 import type { SloItem } from "@/types";
 
 interface SloCardProps {
@@ -61,8 +63,9 @@ export function SloCard({ slo }: SloCardProps) {
         {/* Target vs Current */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/40">
               Target
+              <HelpTooltip content={helpContent.slos.concepts.target} side="top" />
             </p>
             <p className="font-mono text-sm font-medium text-mist">
               {(slo.target * 100).toFixed(2)}%
@@ -81,7 +84,10 @@ export function SloCard({ slo }: SloCardProps) {
         {/* Error budget bar */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-dusty-lavender/40">Error Budget</span>
+            <span className="flex items-center gap-1 text-dusty-lavender/40">
+              Error Budget
+              <HelpTooltip content={helpContent.slos.concepts.errorBudget} side="top" />
+            </span>
             <span className="font-mono font-medium text-mist">
               {slo.budgetConsumed !== null ? `${slo.budgetConsumed.toFixed(1)}%` : "--"}
             </span>
@@ -96,7 +102,10 @@ export function SloCard({ slo }: SloCardProps) {
 
         {/* Footer info */}
         <div className="flex items-center justify-between text-[10px] text-dusty-lavender/40">
-          <span>{slo.windowDays}d window</span>
+          <span className="flex items-center gap-1">
+            {slo.windowDays}d window
+            <HelpTooltip content={helpContent.slos.concepts.windowDays} side="top" />
+          </span>
           <span>
             {slo.lastEvaluatedAt ? `Evaluated ${timeAgo(slo.lastEvaluatedAt)}` : "Not evaluated"}
           </span>

@@ -8,6 +8,8 @@ import { ErrorState } from "./error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 import { ScrollText, Plus, X, Loader2, Play, Pause } from "lucide-react";
 
 const CONDITION_FIELD_OPTIONS = [
@@ -115,24 +117,42 @@ export function PolicyList() {
               className="h-9 w-full rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:border-soft-violet/50"
             />
             <div className="flex gap-2">
-              <select
-                value={formField}
-                onChange={(e) => setFormField(e.target.value)}
-                className="h-9 flex-1 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist outline-none"
-              >
-                {CONDITION_FIELD_OPTIONS.map((f) => (
-                  <option key={f} value={f}>{f}</option>
-                ))}
-              </select>
-              <select
-                value={formOperator}
-                onChange={(e) => setFormOperator(e.target.value)}
-                className="h-9 w-20 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist outline-none"
-              >
-                {["eq", "neq", "gt", "gte", "lt", "lte", "in"].map((op) => (
-                  <option key={op} value={op}>{op}</option>
-                ))}
-              </select>
+              <div className="flex flex-1 items-center gap-1">
+                <select
+                  value={formField}
+                  onChange={(e) => setFormField(e.target.value)}
+                  className="h-9 flex-1 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist outline-none"
+                >
+                  {CONDITION_FIELD_OPTIONS.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+                <HelpTooltip
+                  content={
+                    helpContent.policies.conditionFields[formField as keyof typeof helpContent.policies.conditionFields]
+                    ?? "Select a field to evaluate in the condition."
+                  }
+                  side="top"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <select
+                  value={formOperator}
+                  onChange={(e) => setFormOperator(e.target.value)}
+                  className="h-9 w-20 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist outline-none"
+                >
+                  {["eq", "neq", "gt", "gte", "lt", "lte", "in"].map((op) => (
+                    <option key={op} value={op}>{op}</option>
+                  ))}
+                </select>
+                <HelpTooltip
+                  content={
+                    helpContent.policies.operators[formOperator as keyof typeof helpContent.policies.operators]
+                    ?? "Comparison operator."
+                  }
+                  side="top"
+                />
+              </div>
               <input
                 value={formValue}
                 onChange={(e) => setFormValue(e.target.value)}
@@ -151,14 +171,24 @@ export function PolicyList() {
                   <option key={a.value} value={a.value}>{a.label}</option>
                 ))}
               </select>
+              <HelpTooltip
+                content={
+                  helpContent.policies.actionTypes[formActionType as keyof typeof helpContent.policies.actionTypes]
+                  ?? "Action to execute when conditions are met."
+                }
+                side="right"
+              />
             </div>
-            <Button
-              onClick={handleCreate}
-              disabled={isCreating || !formName.trim() || !formValue.trim()}
-              className="w-full bg-soft-violet text-white hover:bg-soft-violet/80"
-            >
-              {isCreating ? <Loader2 className="size-4 animate-spin" /> : "Create Policy (Dry Run)"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleCreate}
+                disabled={isCreating || !formName.trim() || !formValue.trim()}
+                className="flex-1 bg-soft-violet text-white hover:bg-soft-violet/80"
+              >
+                {isCreating ? <Loader2 className="size-4 animate-spin" /> : "Create Policy (Dry Run)"}
+              </Button>
+              <HelpTooltip content={helpContent.policies.concepts.dryRun} side="right" />
+            </div>
           </CardContent>
         </Card>
       )}
