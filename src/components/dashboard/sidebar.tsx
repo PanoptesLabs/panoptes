@@ -18,6 +18,7 @@ import {
   ScrollText,
   Vote,
   ArrowLeftRight,
+  Trophy,
   Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const reliabilityItems = [
 const intelligenceItems = [
   { href: "/dashboard/governance", label: "Governance", icon: Vote },
   { href: "/dashboard/delegations", label: "Delegations", icon: ArrowLeftRight },
+  { href: "/dashboard/validators/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
 const settingsItems = [
