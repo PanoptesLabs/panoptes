@@ -13,14 +13,7 @@ vi.mock("@/lib/db", () => ({
     slo: { count: vi.fn() },
     webhook: { count: vi.fn() },
     incident: { count: vi.fn() },
-    $transaction: vi.fn((fn: (tx: unknown) => unknown) =>
-      fn({
-        workspace: {
-          findUnique: vi.fn().mockResolvedValue({ id: "ws-1" }),
-          update: vi.fn().mockResolvedValue({ id: "ws-1" }),
-        },
-      }),
-    ),
+    $transaction: vi.fn(),
   },
 }));
 
@@ -53,21 +46,44 @@ function authFail() {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TxFn = (tx: any) => any;
+
+// Helper to set up the transaction mock for workspace creation
+function setupCreateTransaction(opts?: { slugExists?: boolean; limitReached?: boolean }) {
+  vi.mocked(prisma.$transaction).mockImplementation((async (fn: TxFn) =>
+    fn({
+      workspace: {
+        findUnique: vi.fn().mockResolvedValue(opts?.slugExists ? { id: "existing" } : null),
+        count: vi.fn().mockResolvedValue(opts?.limitReached ? 100 : 0),
+        create: vi.fn().mockResolvedValue({
+          id: "ws-new",
+          name: "New WS",
+          slug: "new-ws",
+          createdAt: new Date("2026-01-01"),
+        }),
+      },
+    })) as never,
+  );
+}
+
+// Helper to set up the transaction mock for token rotation
+function setupRotateTransaction() {
+  vi.mocked(prisma.$transaction).mockImplementation((async (fn: TxFn) =>
+    fn({
+      workspace: {
+        findUnique: vi.fn().mockResolvedValue({ id: "ws-1" }),
+        update: vi.fn().mockResolvedValue({ id: "ws-1" }),
+      },
+    })) as never,
+  );
+}
+
 describe("POST /api/workspaces", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("PANOPTES_ADMIN_SECRET", "test-admin-secret");
-    vi.mocked(prisma.workspace.findUnique).mockResolvedValue(null);
-    vi.mocked(prisma.workspace.count).mockResolvedValue(0);
-    vi.mocked(prisma.workspace.create).mockResolvedValue({
-      id: "ws-new",
-      name: "New WS",
-      slug: "new-ws",
-      adminTokenHash: "hashed",
-      isActive: true,
-      createdAt: new Date("2026-01-01"),
-      updatedAt: new Date("2026-01-01"),
-    } as never);
+    setupCreateTransaction();
   });
 
   it("creates workspace with valid admin secret", async () => {
@@ -128,7 +144,7 @@ describe("POST /api/workspaces", () => {
   });
 
   it("returns 409 for duplicate slug", async () => {
-    vi.mocked(prisma.workspace.findUnique).mockResolvedValue({ id: "existing" } as never);
+    setupCreateTransaction({ slugExists: true });
 
     const { POST } = await import("@/app/api/workspaces/route");
     const req = new NextRequest("http://localhost/api/workspaces", {
@@ -247,6 +263,7 @@ describe("POST /api/workspaces/me/rotate-token", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authSuccess();
+    setupRotateTransaction();
   });
 
   it("rotates token and returns new one", async () => {
@@ -309,6 +326,7 @@ describe("POST /api/workspaces - timing-safe comparison", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("PANOPTES_ADMIN_SECRET", "test-admin-secret");
+    setupCreateTransaction();
   });
 
   it("rejects when PANOPTES_ADMIN_SECRET is not set", async () => {

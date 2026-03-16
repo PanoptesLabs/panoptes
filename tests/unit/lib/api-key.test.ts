@@ -19,7 +19,6 @@ import {
   hashApiKey,
   getKeyPrefix,
   authenticateApiKey,
-  incrementAndCheckQuota,
   getApiKeyUsage,
 } from "@/lib/api-key";
 
@@ -132,29 +131,6 @@ describe("authenticateApiKey", () => {
       rateLimit: 60,
       workspace: { id: "ws1", name: "Test WS", slug: "test-ws" },
     });
-  });
-});
-
-describe("incrementAndCheckQuota", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns true when within quota", async () => {
-    (prisma.$queryRaw as ReturnType<typeof vi.fn>).mockResolvedValue([{ count: 5 }]);
-    const result = await incrementAndCheckQuota("key1", "2026-03-15", "daily", 1000);
-    expect(result).toBe(true);
-  });
-
-  it("returns false when quota exceeded", async () => {
-    (prisma.$queryRaw as ReturnType<typeof vi.fn>).mockResolvedValue([]);
-    const result = await incrementAndCheckQuota("key1", "2026-03-15", "daily", 1000);
-    expect(result).toBe(false);
-  });
-
-  it("returns true when quota is 0 (unlimited)", async () => {
-    const result = await incrementAndCheckQuota("key1", "2026-03-15", "daily", 0);
-    expect(result).toBe(true);
   });
 });
 

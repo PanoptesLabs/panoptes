@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { requireWorkspace } from "@/lib/workspace-auth";
+import { safeParseJSON } from "@/lib/policy-validation";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const { id } = await ctx.params;
@@ -24,8 +25,8 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
   }
 
   const url = new URL(request.url);
-  const limit = Math.min(Number(url.searchParams.get("limit")) || 20, 100);
-  const offset = Number(url.searchParams.get("offset")) || 0;
+  const limit = Math.min(Math.max(1, Number(url.searchParams.get("limit")) || 20), 100);
+  const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
 
   const [executions, total] = await Promise.all([
     prisma.policyExecution.findMany({
@@ -40,9 +41,9 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
   return NextResponse.json({
     executions: executions.map((e) => ({
       ...e,
-      conditionsMet: JSON.parse(e.conditionsMet),
-      actionsTaken: JSON.parse(e.actionsTaken),
-      actionsResults: JSON.parse(e.actionsResults),
+      conditionsMet: safeParseJSON(e.conditionsMet, []),
+      actionsTaken: safeParseJSON(e.actionsTaken, []),
+      actionsResults: safeParseJSON(e.actionsResults, []),
     })),
     total,
     limit,

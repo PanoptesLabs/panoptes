@@ -2,83 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { requireWorkspace } from "@/lib/workspace-auth";
-import { POLICY_DEFAULTS, POLICY_OPERATORS, POLICY_ACTION_TYPES } from "@/lib/constants";
-import type { PolicyCondition, PolicyAction } from "@/types";
-import { ALLOWED_FIELDS } from "@/lib/intelligence/policy-conditions";
-
-function validatePolicyCreate(body: unknown): {
-  name: string;
-  description?: string;
-  conditions: PolicyCondition[];
-  actions: PolicyAction[];
-  dryRun?: boolean;
-  priority?: number;
-  cooldownMinutes?: number;
-} | { error: string } {
-  if (!body || typeof body !== "object") return { error: "Invalid request body" };
-
-  const b = body as Record<string, unknown>;
-
-  if (typeof b.name !== "string" || b.name.trim().length < 2) {
-    return { error: "Name must be at least 2 characters" };
-  }
-
-  if (!Array.isArray(b.conditions) || b.conditions.length === 0) {
-    return { error: "At least one condition is required" };
-  }
-  if (b.conditions.length > POLICY_DEFAULTS.MAX_CONDITIONS) {
-    return { error: `Maximum ${POLICY_DEFAULTS.MAX_CONDITIONS} conditions allowed` };
-  }
-
-  for (const c of b.conditions) {
-    if (!c || typeof c !== "object" || !c.field || !c.operator || c.value === undefined) {
-      return { error: "Each condition must have field, operator, and value" };
-    }
-    if (!(POLICY_OPERATORS as readonly string[]).includes(c.operator)) {
-      return { error: `Invalid operator: ${c.operator}` };
-    }
-    if (!ALLOWED_FIELDS.has(c.field)) {
-      return { error: `Invalid condition field: ${c.field}` };
-    }
-  }
-
-  if (!Array.isArray(b.actions) || b.actions.length === 0) {
-    return { error: "At least one action is required" };
-  }
-  if (b.actions.length > POLICY_DEFAULTS.MAX_ACTIONS) {
-    return { error: `Maximum ${POLICY_DEFAULTS.MAX_ACTIONS} actions allowed` };
-  }
-
-  for (const a of b.actions) {
-    if (!(POLICY_ACTION_TYPES as readonly string[]).includes(a.type)) {
-      return { error: `Invalid action type: ${a.type}` };
-    }
-  }
-
-  if (b.cooldownMinutes !== undefined) {
-    if (typeof b.cooldownMinutes !== "number" ||
-        b.cooldownMinutes < POLICY_DEFAULTS.MIN_COOLDOWN_MINUTES ||
-        b.cooldownMinutes > POLICY_DEFAULTS.MAX_COOLDOWN_MINUTES) {
-      return { error: `Cooldown must be between ${POLICY_DEFAULTS.MIN_COOLDOWN_MINUTES} and ${POLICY_DEFAULTS.MAX_COOLDOWN_MINUTES} minutes` };
-    }
-  }
-
-  return {
-    name: b.name.trim(),
-    description: typeof b.description === "string" ? b.description.trim() : undefined,
-    conditions: b.conditions as PolicyCondition[],
-    actions: b.actions as PolicyAction[],
-    dryRun: typeof b.dryRun === "boolean" ? b.dryRun : undefined,
-    priority: typeof b.priority === "number" ? b.priority : undefined,
-    cooldownMinutes: b.cooldownMinutes as number | undefined,
-  };
-}
+import { POLICY_DEFAULTS } from "@/lib/constants";
+import { validatePolicyCreate, safeParseJSON } from "@/lib/policy-validation";
 
 export async function GET(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const policies = await prisma.policy.findMany({
@@ -101,8 +32,8 @@ export async function GET(request: NextRequest) {
 
   const parsed = policies.map((p) => ({
     ...p,
-    conditions: JSON.parse(p.conditions),
-    actions: JSON.parse(p.actions),
+    conditions: safeParseJSON(p.conditions, []),
+    actions: safeParseJSON(p.actions, []),
   }));
 
   return NextResponse.json({ policies: parsed }, { headers: rl.headers });
@@ -112,7 +43,7 @@ export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   let body: unknown;
@@ -174,8 +105,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(
     {
       ...policy,
-      conditions: JSON.parse(policy.conditions),
-      actions: JSON.parse(policy.actions),
+      conditions: safeParseJSON(policy.conditions, []),
+      actions: safeParseJSON(policy.actions, []),
     },
     { status: 201, headers: rl.headers },
   );

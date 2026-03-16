@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const type = url.searchParams.get("type");
   const validatorId = url.searchParams.get("validatorId");
-  const limit = Math.min(Number(url.searchParams.get("limit")) || 20, 100);
-  const offset = Number(url.searchParams.get("offset")) || 0;
+  const limit = Math.min(Math.max(1, Number(url.searchParams.get("limit")) || 20), 100);
+  const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
 
   const where: Record<string, unknown> = {};
   if (type) where.type = type;
