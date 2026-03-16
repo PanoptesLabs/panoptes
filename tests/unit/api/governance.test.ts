@@ -60,6 +60,42 @@ describe("GET /api/governance", () => {
 
     expect(body.proposals).toHaveLength(0);
   });
+
+  it("clamps negative limit to 1", async () => {
+    vi.mocked(prisma.governanceProposal.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.governanceProposal.count).mockResolvedValue(0);
+
+    const { GET } = await import("@/app/api/governance/route");
+    const req = new NextRequest("http://localhost/api/governance?limit=-5");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(body.limit).toBeGreaterThanOrEqual(1);
+  });
+
+  it("clamps negative offset to 0", async () => {
+    vi.mocked(prisma.governanceProposal.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.governanceProposal.count).mockResolvedValue(0);
+
+    const { GET } = await import("@/app/api/governance/route");
+    const req = new NextRequest("http://localhost/api/governance?offset=-10");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(body.offset).toBe(0);
+  });
+
+  it("clamps excessive limit to 100", async () => {
+    vi.mocked(prisma.governanceProposal.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.governanceProposal.count).mockResolvedValue(0);
+
+    const { GET } = await import("@/app/api/governance/route");
+    const req = new NextRequest("http://localhost/api/governance?limit=500");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(body.limit).toBe(100);
+  });
 });
 
 describe("GET /api/governance/:id", () => {

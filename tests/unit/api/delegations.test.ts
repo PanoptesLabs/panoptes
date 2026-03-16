@@ -95,6 +95,30 @@ describe("GET /api/delegations", () => {
 
     expect(body.limit).toBe(100);
   });
+
+  it("clamps negative limit to 1", async () => {
+    vi.mocked(prisma.delegationEvent.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.delegationEvent.count).mockResolvedValue(0);
+
+    const { GET } = await import("@/app/api/delegations/route");
+    const req = new NextRequest("http://localhost/api/delegations?limit=-10");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(body.limit).toBeGreaterThanOrEqual(1);
+  });
+
+  it("clamps negative offset to 0", async () => {
+    vi.mocked(prisma.delegationEvent.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.delegationEvent.count).mockResolvedValue(0);
+
+    const { GET } = await import("@/app/api/delegations/route");
+    const req = new NextRequest("http://localhost/api/delegations?offset=-5");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(body.offset).toBe(0);
+  });
 });
 
 describe("GET /api/delegations/flow", () => {
@@ -141,6 +165,17 @@ describe("GET /api/delegations/flow", () => {
     const body = await res.json();
 
     expect(body.days).toBe(30);
+  });
+
+  it("clamps negative days to 1", async () => {
+    vi.mocked(prisma.delegationSnapshot.findMany).mockResolvedValue([]);
+
+    const { GET } = await import("@/app/api/delegations/flow/route");
+    const req = new NextRequest("http://localhost/api/delegations/flow?days=-3");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(body.days).toBeGreaterThanOrEqual(1);
   });
 
   it("returns empty flow when no snapshots", async () => {
