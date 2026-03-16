@@ -19,6 +19,7 @@ import {
   Vote,
   ArrowLeftRight,
   TrendingUp,
+  Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PrismIcon } from "@/components/icons/prism-icon";
@@ -45,6 +46,7 @@ const intelligenceItems = [
 const settingsItems = [
   { href: "/dashboard/settings/webhooks", label: "Webhooks", icon: Settings },
   { href: "/dashboard/settings/policies", label: "Policies", icon: ScrollText },
+  { href: "/dashboard/settings/api-keys", label: "API Keys", icon: Key },
   { href: "/dashboard/settings/workspace", label: "Workspace", icon: Building },
 ];
 

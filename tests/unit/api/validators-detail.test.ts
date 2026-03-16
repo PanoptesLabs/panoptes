@@ -10,6 +10,7 @@ vi.mock("@/lib/db", () => ({
       findMany: vi.fn(),
       count: vi.fn(),
     },
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -122,6 +123,44 @@ describe("GET /api/validators/[id]", () => {
         }),
       }),
     );
+  });
+
+  it("returns hourly interval snapshots via $queryRaw", async () => {
+    vi.mocked(prisma.validator.findUnique).mockResolvedValue(mockValidator as never);
+    (prisma.$queryRaw as ReturnType<typeof vi.fn>).mockResolvedValue([mockSnapshot]);
+
+    const { GET } = await import("@/app/api/validators/[id]/route");
+    const req = new NextRequest(
+      "http://localhost/api/validators/raivaloper1abc?interval=hourly",
+    );
+    const res = await GET(req, {
+      params: Promise.resolve({ id: "raivaloper1abc" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.interval).toBe("hourly");
+    expect(body.snapshots).toHaveLength(1);
+    expect(prisma.$queryRaw).toHaveBeenCalled();
+  });
+
+  it("returns daily interval snapshots via $queryRaw", async () => {
+    vi.mocked(prisma.validator.findUnique).mockResolvedValue(mockValidator as never);
+    (prisma.$queryRaw as ReturnType<typeof vi.fn>).mockResolvedValue([mockSnapshot]);
+
+    const { GET } = await import("@/app/api/validators/[id]/route");
+    const req = new NextRequest(
+      "http://localhost/api/validators/raivaloper1abc?interval=daily",
+    );
+    const res = await GET(req, {
+      params: Promise.resolve({ id: "raivaloper1abc" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.interval).toBe("daily");
+    expect(body.snapshots).toHaveLength(1);
+    expect(prisma.$queryRaw).toHaveBeenCalled();
   });
 
   it("respects snapshot limit", async () => {

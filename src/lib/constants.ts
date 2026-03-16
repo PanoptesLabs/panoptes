@@ -241,6 +241,21 @@ export const DELEGATION_DEFAULTS = {
   FETCH_TIMEOUT_MS: 10_000,
 } as const;
 
+export const API_KEY_TIERS = {
+  anonymous: { rateLimit: 30, dailyQuota: 500, monthlyQuota: 0 },
+  free:      { rateLimit: 60, dailyQuota: 1000, monthlyQuota: 10000 },
+  pro:       { rateLimit: 300, dailyQuota: 50000, monthlyQuota: 500000 },
+} as const;
+
+export type ApiKeyTier = keyof typeof API_KEY_TIERS;
+
+export const API_KEY_DEFAULTS = {
+  MAX_PER_WORKSPACE: 10,
+  NAME_MIN_LENGTH: 1,
+  NAME_MAX_LENGTH: 100,
+  KEY_PREFIX: "pk_",
+} as const;
+
 export const CONTROL_PLANE_RETENTION = {
   DELEGATION_EVENTS_DAYS: 30,
   DELEGATION_SNAPSHOTS_DAYS: 30,

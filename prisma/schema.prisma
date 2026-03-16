@@ -149,6 +149,7 @@ model Workspace {
   slos           Slo[]
   incidents      Incident[]
   policies       Policy[]
+  apiKeys        ApiKey[]
 
   @@index([slug])
 }
@@ -421,4 +422,38 @@ model Forecast {
   @@index([metric])
   @@index([validUntil])
   @@index([createdAt])
+}
+
+model ApiKey {
+  id            String              @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace           @relation(fields: [workspaceId], references: [id])
+  name          String
+  keyHash       String              @unique
+  keyPrefix     String
+  tier          String              @default("free")
+  isActive      Boolean             @default(true)
+  rateLimit     Int                 @default(60)
+  dailyQuota    Int                 @default(1000)
+  monthlyQuota  Int                 @default(10000)
+  lastUsedAt    DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime            @default(now())
+  usageCounters ApiKeyUsageCounter[]
+
+  @@index([workspaceId])
+  @@index([keyHash])
+}
+
+model ApiKeyUsageCounter {
+  id         String   @id @default(cuid())
+  apiKeyId   String
+  apiKey     ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  period     String
+  periodType String
+  count      Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([apiKeyId, period, periodType])
+  @@index([apiKeyId])
 }
