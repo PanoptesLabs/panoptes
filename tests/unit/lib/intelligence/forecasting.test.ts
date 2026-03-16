@@ -1,18 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    endpoint: { findMany: vi.fn() },
-    validator: { findMany: vi.fn() },
-    slo: { findMany: vi.fn() },
-    forecast: {
-      deleteMany: vi.fn(),
-      createMany: vi.fn(),
-      findMany: vi.fn(),
-      count: vi.fn(),
+vi.mock("@/lib/db", () => {
+  const forecastModel = {
+    deleteMany: vi.fn(),
+    createMany: vi.fn(),
+    findMany: vi.fn(),
+    count: vi.fn(),
+  };
+  return {
+    prisma: {
+      endpoint: { findMany: vi.fn() },
+      validator: { findMany: vi.fn() },
+      slo: { findMany: vi.fn() },
+      forecast: forecastModel,
+      $transaction: vi.fn(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+        return fn({
+          forecast: forecastModel,
+        });
+      }),
     },
-  },
-}));
+  };
+});
 
 import { prisma } from "@/lib/db";
 import {

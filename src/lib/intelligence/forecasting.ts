@@ -389,26 +389,28 @@ export async function generateForecasts(): Promise<{
   ];
 
   if (allForecasts.length > 0) {
-    // Delete expired forecasts first
-    await prisma.forecast.deleteMany({
-      where: { validUntil: { lt: new Date() } },
-    });
+    await prisma.$transaction(async (tx) => {
+      // Delete expired forecasts first
+      await tx.forecast.deleteMany({
+        where: { validUntil: { lt: new Date() } },
+      });
 
-    // Bulk create new forecasts
-    await prisma.forecast.createMany({
-      data: allForecasts.map((f) => ({
-        entityType: f.entityType,
-        entityId: f.entityId,
-        metric: f.metric,
-        prediction: f.prediction,
-        confidence: f.confidence,
-        timeHorizon: f.timeHorizon,
-        currentValue: f.currentValue,
-        predictedValue: f.predictedValue,
-        threshold: f.threshold,
-        reasoning: f.reasoning,
-        validUntil: f.validUntil,
-      })),
+      // Bulk create new forecasts
+      await tx.forecast.createMany({
+        data: allForecasts.map((f) => ({
+          entityType: f.entityType,
+          entityId: f.entityId,
+          metric: f.metric,
+          prediction: f.prediction,
+          confidence: f.confidence,
+          timeHorizon: f.timeHorizon,
+          currentValue: f.currentValue,
+          predictedValue: f.predictedValue,
+          threshold: f.threshold,
+          reasoning: f.reasoning,
+          validUntil: f.validUntil,
+        })),
+      });
     });
   }
 
