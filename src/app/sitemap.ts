@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://panoptes.republicai.io";
+  process.env.NEXT_PUBLIC_APP_URL || "https://panoptes.cc";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
