@@ -38,11 +38,11 @@ const nextConfig: NextConfig = {
           { key: "Access-Control-Allow-Origin", value: appUrl },
           {
             key: "Access-Control-Allow-Methods",
-            value: "GET, POST, OPTIONS",
+            value: "GET, POST, PATCH, DELETE, OPTIONS",
           },
           {
             key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization",
+            value: "Content-Type, Authorization, x-api-key",
           },
         ],
       },
