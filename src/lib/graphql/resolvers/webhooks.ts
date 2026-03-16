@@ -2,6 +2,7 @@ import { GraphQLError } from "graphql";
 import { prisma } from "@/lib/db";
 import { validateWebhookCreate } from "@/lib/webhook-validation";
 import { encryptSecret, generateWebhookSecret } from "@/lib/webhook-crypto";
+import { WEBHOOK_DEFAULTS } from "@/lib/constants";
 import type { GraphQLContext } from "../context";
 
 export const webhookResolvers = {
@@ -54,22 +55,34 @@ export const webhookResolvers = {
       const plainSecret = generateWebhookSecret();
       const secretEncrypted = encryptSecret(plainSecret);
 
-      const webhook = await prisma.webhook.create({
-        data: {
-          workspaceId: context.workspace.id,
-          name: validated.name,
-          url: validated.url,
-          events: validated.events,
-          secretEncrypted,
-        },
-        select: {
-          id: true,
-          name: true,
-          url: true,
-          events: true,
-          isActive: true,
-          createdAt: true,
-        },
+      const webhook = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${context.workspace!.id} FOR UPDATE`;
+        const count = await tx.webhook.count({
+          where: { workspaceId: context.workspace!.id },
+        });
+        if (count >= WEBHOOK_DEFAULTS.MAX_PER_WORKSPACE) {
+          throw new GraphQLError(
+            `Workspace webhook limit reached (max ${WEBHOOK_DEFAULTS.MAX_PER_WORKSPACE})`,
+            { extensions: { code: "LIMIT_EXCEEDED" } },
+          );
+        }
+        return tx.webhook.create({
+          data: {
+            workspaceId: context.workspace!.id,
+            name: validated.name,
+            url: validated.url,
+            events: validated.events,
+            secretEncrypted,
+          },
+          select: {
+            id: true,
+            name: true,
+            url: true,
+            events: true,
+            isActive: true,
+            createdAt: true,
+          },
+        });
       });
 
       return {

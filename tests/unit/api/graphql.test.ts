@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => {
+  const webhookModel = {
+    findMany: vi.fn(),
+    create: vi.fn(),
+    findFirst: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  };
   return {
     prisma: {
       validator: {
@@ -28,15 +35,16 @@ vi.mock("@/lib/db", () => {
         findMany: vi.fn(),
         count: vi.fn(),
       },
-      webhook: {
-        findMany: vi.fn(),
-        create: vi.fn(),
-        findFirst: vi.fn(),
-        delete: vi.fn(),
-      },
+      webhook: webhookModel,
       governanceProposal: {
         findMany: vi.fn(),
       },
+      $transaction: vi.fn(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+        return fn({
+          $queryRaw: vi.fn(),
+          webhook: webhookModel,
+        });
+      }),
     },
   };
 });
@@ -444,6 +452,7 @@ describe("createWebhook mutation", () => {
   });
 
   it("creates webhook for authenticated workspace", async () => {
+    vi.mocked(prisma.webhook.count).mockResolvedValue(0);
     vi.mocked(prisma.webhook.create).mockResolvedValue({
       id: "wh-new",
       name: "Test Webhook",

@@ -40,6 +40,18 @@ export const sloResolvers = {
         });
       }
 
+      const { input } = args;
+      if (typeof input.target !== "number" || input.target < 0 || input.target > 1) {
+        throw new GraphQLError("Target must be between 0 and 1", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+      if (typeof input.windowDays !== "number" || input.windowDays < 1 || input.windowDays > 365) {
+        throw new GraphQLError("Window days must be between 1 and 365", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
       const slo = await prisma.slo.create({
         data: {
           workspaceId: context.workspace.id,
