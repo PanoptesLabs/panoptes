@@ -60,19 +60,7 @@ export async function GET(
       }),
     ]);
   } else {
-    const trunc = interval === "hourly" ? "hour" : "day";
-    snapshots = await prisma.$queryRawUnsafe(
-      `SELECT DISTINCT ON (DATE_TRUNC('${trunc}', "timestamp"))
-        "id", "tokens", "status", "commission", "jailed", "votingPower", "timestamp"
-      FROM "ValidatorSnapshot"
-      WHERE "validatorId" = $1 AND "timestamp" >= $2 AND "timestamp" <= $3
-      ORDER BY DATE_TRUNC('${trunc}', "timestamp") DESC, "timestamp" DESC
-      LIMIT $4`,
-      id,
-      from,
-      to,
-      limit,
-    ) as Array<{
+    type SnapshotRow = {
       id: string;
       tokens: string;
       status: string;
@@ -80,7 +68,25 @@ export async function GET(
       jailed: boolean;
       votingPower: string;
       timestamp: Date;
-    }>;
+    };
+
+    if (interval === "hourly") {
+      snapshots = await prisma.$queryRaw<SnapshotRow[]>`
+        SELECT DISTINCT ON (DATE_TRUNC('hour', "timestamp"))
+          "id", "tokens", "status", "commission", "jailed", "votingPower", "timestamp"
+        FROM "ValidatorSnapshot"
+        WHERE "validatorId" = ${id} AND "timestamp" >= ${from} AND "timestamp" <= ${to}
+        ORDER BY DATE_TRUNC('hour', "timestamp") DESC, "timestamp" DESC
+        LIMIT ${limit}`;
+    } else {
+      snapshots = await prisma.$queryRaw<SnapshotRow[]>`
+        SELECT DISTINCT ON (DATE_TRUNC('day', "timestamp"))
+          "id", "tokens", "status", "commission", "jailed", "votingPower", "timestamp"
+        FROM "ValidatorSnapshot"
+        WHERE "validatorId" = ${id} AND "timestamp" >= ${from} AND "timestamp" <= ${to}
+        ORDER BY DATE_TRUNC('day', "timestamp") DESC, "timestamp" DESC
+        LIMIT ${limit}`;
+    }
     snapshotCount = snapshots.length;
   }
 
