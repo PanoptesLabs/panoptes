@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const keys = await prisma.apiKey.findMany({
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   let body: unknown;

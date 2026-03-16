@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if ("response" in rl) return rl.response;
 
   const url = new URL(request.url);
-  const days = Math.min(Number(url.searchParams.get("days")) || 7, 30);
+  const days = Math.min(Math.max(1, Number(url.searchParams.get("days")) || 7), 30);
 
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 

@@ -79,10 +79,13 @@ function getQueryDepthFromAST(doc: DocumentNode): number {
   return maxDepth;
 }
 
-// Block all __ prefixed fields (introspection) in production
+// Block __schema and __type introspection in production.
+// __typename is part of the GraphQL spec and must remain accessible.
+const BLOCKED_INTROSPECTION = new Set(["__schema", "__type"]);
+
 const NoIntrospectionRule: ValidationRule = (context) => ({
   Field(node) {
-    if (node.name.value.startsWith("__")) {
+    if (BLOCKED_INTROSPECTION.has(node.name.value)) {
       context.reportError(
         new GraphQLError("Introspection is disabled", { nodes: [node] }),
       );

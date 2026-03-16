@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit } from "@/lib/api-helpers";
-import {
-  authenticateWorkspace,
-  extractApiKey,
-} from "@/lib/workspace-auth";
+import { authenticateWorkspace, extractApiKey } from "@/lib/workspace-auth";
+import { authenticateApiKey } from "@/lib/api-key";
 import { createStreamToken } from "@/lib/stream-token";
 import { STREAM_DEFAULTS } from "@/lib/constants";
 
@@ -11,19 +9,14 @@ export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  // Try Bearer token first, then fall back to x-api-key header.
-  // This is a compatibility bridge for SDK/external clients until
-  // the dedicated ApiKey model lands in v1.3.1.
+  // Try Bearer token first, then fall back to x-api-key header
   let workspace = await authenticateWorkspace(request);
 
   if (!workspace) {
-    const apiKey = extractApiKey(request);
-    if (apiKey) {
-      // Re-use the same auth pipeline with the API key value
-      const syntheticReq = new NextRequest(request.url, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-      });
-      workspace = await authenticateWorkspace(syntheticReq);
+    const rawKey = extractApiKey(request);
+    if (rawKey) {
+      const keyCtx = await authenticateApiKey(rawKey);
+      if (keyCtx) workspace = keyCtx.workspace;
     }
   }
 

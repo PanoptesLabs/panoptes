@@ -87,10 +87,11 @@ export async function authenticateWorkspace(
 /**
  * Require workspace authentication for a route handler.
  * Returns 401 if not authenticated.
- * Use in write endpoints (POST/PATCH/DELETE for webhooks, SLOs, policies).
+ * Pass rl.headers to include rate limit info on 401 responses.
  */
 export function requireWorkspace(
   request: NextRequest,
+  headers?: Record<string, string>,
 ): Promise<
   | { workspace: WorkspaceContext; error?: never }
   | { workspace?: never; error: NextResponse }
@@ -100,7 +101,7 @@ export function requireWorkspace(
       return {
         error: NextResponse.json(
           { error: "Unauthorized — valid workspace token required" },
-          { status: 401 },
+          { status: 401, headers: headers ?? {} },
         ),
       };
     }

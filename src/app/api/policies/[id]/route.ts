@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { requireWorkspace } from "@/lib/workspace-auth";
-import { POLICY_DEFAULTS, POLICY_OPERATORS, POLICY_ACTION_TYPES } from "@/lib/constants";
-import { ALLOWED_FIELDS } from "@/lib/intelligence/policy-conditions";
+import { validateConditions, validateActions, validateCooldown, safeParseJSON } from "@/lib/policy-validation";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -11,7 +10,7 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const { id } = await ctx.params;
@@ -32,13 +31,13 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
 
   return NextResponse.json({
     ...policy,
-    conditions: JSON.parse(policy.conditions),
-    actions: JSON.parse(policy.actions),
+    conditions: safeParseJSON(policy.conditions, []),
+    actions: safeParseJSON(policy.actions, []),
     executions: policy.executions.map((e) => ({
       ...e,
-      conditionsMet: JSON.parse(e.conditionsMet),
-      actionsTaken: JSON.parse(e.actionsTaken),
-      actionsResults: JSON.parse(e.actionsResults),
+      conditionsMet: safeParseJSON(e.conditionsMet, []),
+      actionsTaken: safeParseJSON(e.actionsTaken, []),
+      actionsResults: safeParseJSON(e.actionsResults, []),
     })),
   }, { headers: rl.headers });
 }
@@ -47,7 +46,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const { id } = await ctx.params;
@@ -85,57 +84,25 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
   if (typeof b.dryRun === "boolean") updateData.dryRun = b.dryRun;
   if (typeof b.priority === "number") updateData.priority = b.priority;
   if (typeof b.cooldownMinutes === "number") {
-    if (b.cooldownMinutes < POLICY_DEFAULTS.MIN_COOLDOWN_MINUTES ||
-        b.cooldownMinutes > POLICY_DEFAULTS.MAX_COOLDOWN_MINUTES) {
-      return NextResponse.json(
-        { error: `Cooldown must be between ${POLICY_DEFAULTS.MIN_COOLDOWN_MINUTES} and ${POLICY_DEFAULTS.MAX_COOLDOWN_MINUTES} minutes` },
-        { status: 400, headers: rl.headers },
-      );
+    const cdErr = validateCooldown(b.cooldownMinutes);
+    if (cdErr) {
+      return NextResponse.json({ error: cdErr }, { status: 400, headers: rl.headers });
     }
     updateData.cooldownMinutes = b.cooldownMinutes;
   }
 
   if (Array.isArray(b.conditions)) {
-    if (b.conditions.length === 0) {
-      return NextResponse.json({ error: "At least one condition is required" }, { status: 400, headers: rl.headers });
-    }
-    if (b.conditions.length > POLICY_DEFAULTS.MAX_CONDITIONS) {
-      return NextResponse.json(
-        { error: `Maximum ${POLICY_DEFAULTS.MAX_CONDITIONS} conditions allowed` },
-        { status: 400, headers: rl.headers },
-      );
-    }
-    for (const c of b.conditions) {
-      if (!c || typeof c !== "object" || !c.field || !c.operator || c.value === undefined) {
-        return NextResponse.json(
-          { error: "Each condition must have field, operator, and value" },
-          { status: 400, headers: rl.headers },
-        );
-      }
-      if (!(POLICY_OPERATORS as readonly string[]).includes(c.operator)) {
-        return NextResponse.json({ error: `Invalid operator: ${c.operator}` }, { status: 400, headers: rl.headers });
-      }
-      if (!ALLOWED_FIELDS.has(c.field)) {
-        return NextResponse.json({ error: `Invalid condition field: ${c.field}` }, { status: 400, headers: rl.headers });
-      }
+    const condErr = validateConditions(b.conditions);
+    if (condErr) {
+      return NextResponse.json({ error: condErr }, { status: 400, headers: rl.headers });
     }
     updateData.conditions = JSON.stringify(b.conditions);
   }
 
   if (Array.isArray(b.actions)) {
-    if (b.actions.length === 0) {
-      return NextResponse.json({ error: "At least one action is required" }, { status: 400, headers: rl.headers });
-    }
-    if (b.actions.length > POLICY_DEFAULTS.MAX_ACTIONS) {
-      return NextResponse.json(
-        { error: `Maximum ${POLICY_DEFAULTS.MAX_ACTIONS} actions allowed` },
-        { status: 400, headers: rl.headers },
-      );
-    }
-    for (const a of b.actions) {
-      if (!a || typeof a !== "object" || !(POLICY_ACTION_TYPES as readonly string[]).includes(a.type)) {
-        return NextResponse.json({ error: `Invalid action type: ${a?.type}` }, { status: 400, headers: rl.headers });
-      }
+    const actErr = validateActions(b.actions);
+    if (actErr) {
+      return NextResponse.json({ error: actErr }, { status: 400, headers: rl.headers });
     }
     updateData.actions = JSON.stringify(b.actions);
   }
@@ -164,8 +131,8 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
 
   return NextResponse.json({
     ...updated,
-    conditions: JSON.parse(updated.conditions),
-    actions: JSON.parse(updated.actions),
+    conditions: safeParseJSON(updated.conditions, []),
+    actions: safeParseJSON(updated.actions, []),
   }, { headers: rl.headers });
 }
 
@@ -173,7 +140,7 @@ export async function DELETE(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const { id } = await ctx.params;

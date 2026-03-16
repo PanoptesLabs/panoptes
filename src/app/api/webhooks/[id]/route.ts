@@ -12,7 +12,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const { id } = await context.params;
@@ -66,7 +66,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const { id } = await context.params;

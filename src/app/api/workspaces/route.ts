@@ -64,42 +64,50 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check slug uniqueness
-  const existing = await prisma.workspace.findUnique({
-    where: { slug: validated.slug },
-  });
-  if (existing) {
-    return NextResponse.json(
-      { error: "Workspace slug already exists" },
-      { status: 409, headers: rl.headers },
-    );
-  }
-
-  // Check workspace limit
-  const count = await prisma.workspace.count();
-  if (count >= WORKSPACE_DEFAULTS.MAX_WORKSPACES) {
-    return NextResponse.json(
-      { error: `Maximum workspace limit reached (${WORKSPACE_DEFAULTS.MAX_WORKSPACES})` },
-      { status: 409, headers: rl.headers },
-    );
-  }
-
   const rawToken = generateWorkspaceToken();
   const tokenHash = hashToken(rawToken);
 
-  const workspace = await prisma.workspace.create({
-    data: {
-      name: validated.name,
-      slug: validated.slug,
-      adminTokenHash: tokenHash,
-    },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      createdAt: true,
-    },
-  });
+  let workspace;
+  try {
+    workspace = await prisma.$transaction(async (tx) => {
+      const existing = await tx.workspace.findUnique({
+        where: { slug: validated.slug },
+        select: { id: true },
+      });
+      if (existing) throw new Error("SLUG_EXISTS");
+
+      const count = await tx.workspace.count();
+      if (count >= WORKSPACE_DEFAULTS.MAX_WORKSPACES) throw new Error("LIMIT_REACHED");
+
+      return tx.workspace.create({
+        data: {
+          name: validated.name,
+          slug: validated.slug,
+          adminTokenHash: tokenHash,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          createdAt: true,
+        },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "SLUG_EXISTS") {
+      return NextResponse.json(
+        { error: "Workspace slug already exists" },
+        { status: 409, headers: rl.headers },
+      );
+    }
+    if (e instanceof Error && e.message === "LIMIT_REACHED") {
+      return NextResponse.json(
+        { error: `Maximum workspace limit reached (${WORKSPACE_DEFAULTS.MAX_WORKSPACES})` },
+        { status: 409, headers: rl.headers },
+      );
+    }
+    throw e;
+  }
 
   return NextResponse.json(
     { workspace, token: rawToken },

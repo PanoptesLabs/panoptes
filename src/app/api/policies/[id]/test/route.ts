@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { requireWorkspace } from "@/lib/workspace-auth";
+import { safeParseJSON } from "@/lib/policy-validation";
 import type { PolicyCondition } from "@/types";
 import { evaluateAllConditions, type EvaluationContext } from "@/lib/intelligence/policy-conditions";
 
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request);
+  const auth = await requireWorkspace(request, rl.headers);
   if (auth.error) return auth.error;
 
   const { id } = await ctx.params;
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest, ctx: RouteContext) {
     // No body = use empty context
   }
 
-  const conditions: PolicyCondition[] = JSON.parse(policy.conditions);
+  const conditions: PolicyCondition[] = safeParseJSON(policy.conditions, []) as PolicyCondition[];
   const { allMet, metConditions } = evaluateAllConditions(conditions, testContext);
 
   return NextResponse.json({

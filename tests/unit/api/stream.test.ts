@@ -29,6 +29,10 @@ vi.mock("@/lib/workspace-auth", () => ({
   extractApiKey: vi.fn(),
 }));
 
+vi.mock("@/lib/api-key", () => ({
+  authenticateApiKey: vi.fn(),
+}));
+
 vi.mock("@/lib/stream-token", () => ({
   createStreamToken: vi.fn(() => "mock-token.mock-sig"),
   verifyStreamToken: vi.fn(),
@@ -39,6 +43,7 @@ import {
   authenticateWorkspace,
   extractApiKey,
 } from "@/lib/workspace-auth";
+import { authenticateApiKey } from "@/lib/api-key";
 import { verifyStreamToken } from "@/lib/stream-token";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,18 +72,21 @@ describe("POST /api/stream/token", () => {
     expect(body.expiresIn).toBe(300);
   });
 
-  it("returns token when authenticated via x-api-key (stream-only bridge)", async () => {
-    // First call: Bearer auth fails (no header)
-    // Second call: synthetic Bearer request with API key succeeds
-    vi.mocked(authenticateWorkspace)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(mockWorkspace);
-    vi.mocked(extractApiKey).mockReturnValue("ws_api_key_123");
+  it("returns token when authenticated via x-api-key", async () => {
+    vi.mocked(authenticateWorkspace).mockResolvedValue(null);
+    vi.mocked(extractApiKey).mockReturnValue("pk_api_key_123");
+    vi.mocked(authenticateApiKey).mockResolvedValue({
+      id: "key-1",
+      workspaceId: "ws-1",
+      tier: "free" as const,
+      rateLimit: 60,
+      workspace: mockWorkspace,
+    });
 
     const { POST } = await import("@/app/api/stream/token/route");
     const req = new NextRequest("http://localhost/api/stream/token", {
       method: "POST",
-      headers: { "x-api-key": "ws_api_key_123" },
+      headers: { "x-api-key": "pk_api_key_123" },
     });
     const res = await POST(req);
     const body = await res.json();
@@ -86,13 +94,12 @@ describe("POST /api/stream/token", () => {
     expect(res.status).toBe(200);
     expect(body.token).toBeDefined();
     expect(body.expiresIn).toBe(300);
-
-    // authenticateWorkspace called twice: once for Bearer, once for API key
-    expect(authenticateWorkspace).toHaveBeenCalledTimes(2);
+    expect(authenticateApiKey).toHaveBeenCalledWith("pk_api_key_123");
   });
 
   it("returns 401 without any auth", async () => {
     vi.mocked(authenticateWorkspace).mockResolvedValue(null);
+    vi.mocked(extractApiKey).mockReturnValue(null);
 
     const { POST } = await import("@/app/api/stream/token/route");
     const req = new NextRequest("http://localhost/api/stream/token", {
@@ -106,12 +113,13 @@ describe("POST /api/stream/token", () => {
 
   it("returns 401 when x-api-key is invalid", async () => {
     vi.mocked(authenticateWorkspace).mockResolvedValue(null);
-    vi.mocked(extractApiKey).mockReturnValue("ws_bad_key");
+    vi.mocked(extractApiKey).mockReturnValue("pk_bad_key");
+    vi.mocked(authenticateApiKey).mockResolvedValue(null);
 
     const { POST } = await import("@/app/api/stream/token/route");
     const req = new NextRequest("http://localhost/api/stream/token", {
       method: "POST",
-      headers: { "x-api-key": "ws_bad_key" },
+      headers: { "x-api-key": "pk_bad_key" },
     });
     const res = await POST(req);
     expect(res.status).toBe(401);
