@@ -149,17 +149,16 @@ describe("forecastJailRisk", () => {
     vi.clearAllMocks();
   });
 
-  it("detects increasing missed blocks", async () => {
+  it("detects increasing missed block rate", async () => {
     mockPrisma.validator.findMany.mockResolvedValue([
       {
         id: "val1",
         moniker: "TestVal",
-        missedBlocks: 100,
         jailed: false,
-        snapshots: [
-          { timestamp: hoursAgo(48) },
-          { timestamp: hoursAgo(24) },
-          { timestamp: now },
+        scores: [
+          { timestamp: hoursAgo(48), missedBlockRate: 0.1 },
+          { timestamp: hoursAgo(24), missedBlockRate: 0.4 },
+          { timestamp: now, missedBlockRate: 0.7 },
         ],
       },
     ]);
@@ -168,16 +167,36 @@ describe("forecastJailRisk", () => {
     expect(results.length).toBe(1);
     expect(results[0].metric).toBe("jail_risk");
     expect(results[0].entityType).toBe("validator");
+    expect(results[0].currentValue).toBeCloseTo(0.7);
+    expect(results[0].predictedValue).toBeGreaterThan(0.7);
   });
 
-  it("skips validators with insufficient snapshots", async () => {
+  it("returns normal for stable missed block rate", async () => {
     mockPrisma.validator.findMany.mockResolvedValue([
       {
         id: "val1",
         moniker: "TestVal",
-        missedBlocks: 0,
         jailed: false,
-        snapshots: [{ timestamp: now }],
+        scores: [
+          { timestamp: hoursAgo(48), missedBlockRate: 0.01 },
+          { timestamp: hoursAgo(24), missedBlockRate: 0.01 },
+          { timestamp: now, missedBlockRate: 0.01 },
+        ],
+      },
+    ]);
+
+    const results = await forecastJailRisk();
+    expect(results.length).toBe(1);
+    expect(results[0].prediction).toBe("normal");
+  });
+
+  it("skips validators with insufficient scores", async () => {
+    mockPrisma.validator.findMany.mockResolvedValue([
+      {
+        id: "val1",
+        moniker: "TestVal",
+        jailed: false,
+        scores: [{ timestamp: now, missedBlockRate: 0.1 }],
       },
     ]);
 

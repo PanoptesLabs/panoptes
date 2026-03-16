@@ -65,6 +65,13 @@ export async function deliverWebhook(
       redirect: "manual",
     });
 
+    // 4. Post-fetch DNS rebinding check: re-resolve and verify IP is still safe
+    try {
+      await assertUrlNotPrivate(target.url);
+    } catch {
+      return { success: false, statusCode: null, responseBody: null, error: "SSRF: DNS rebinding detected" };
+    }
+
     const responseBody = await response.text().catch(() => null);
 
     return {

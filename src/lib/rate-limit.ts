@@ -44,6 +44,9 @@ export function checkRateLimit(ip: string): {
 } {
   ensureCleanup();
   const now = Date.now();
+  const maxRequests = ip === "unknown"
+    ? Math.floor(RATE_LIMIT.MAX_REQUESTS / 2)
+    : RATE_LIMIT.MAX_REQUESTS;
   const entry = store.get(ip);
 
   if (!entry || entry.resetAt < now) {
@@ -54,14 +57,14 @@ export function checkRateLimit(ip: string): {
     store.set(ip, { count: 1, resetAt });
     return {
       allowed: true,
-      remaining: RATE_LIMIT.MAX_REQUESTS - 1,
+      remaining: maxRequests - 1,
       resetAt,
     };
   }
 
   entry.count++;
 
-  if (entry.count > RATE_LIMIT.MAX_REQUESTS) {
+  if (entry.count > maxRequests) {
     return {
       allowed: false,
       remaining: 0,
@@ -71,7 +74,7 @@ export function checkRateLimit(ip: string): {
 
   return {
     allowed: true,
-    remaining: RATE_LIMIT.MAX_REQUESTS - entry.count,
+    remaining: maxRequests - entry.count,
     resetAt: entry.resetAt,
   };
 }

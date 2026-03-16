@@ -6,7 +6,8 @@ export type LeaderboardCategory =
   | "commission"
   | "governance"
   | "rising"
-  | "stake_magnet";
+  | "stake_magnet"
+  | "reliable";
 
 export const VALID_CATEGORIES: LeaderboardCategory[] = [
   "overall",
@@ -15,6 +16,7 @@ export const VALID_CATEGORIES: LeaderboardCategory[] = [
   "governance",
   "rising",
   "stake_magnet",
+  "reliable",
 ];
 
 export interface LeaderboardEntry {
@@ -86,6 +88,12 @@ export async function getLeaderboard(
           break;
         case "governance":
           value = s.governanceScore;
+          break;
+        case "reliable":
+          value =
+            (1 - s.missedBlockRate) * 0.5 +
+            (1 - s.jailPenalty) * 0.3 +
+            s.stakeStability * 0.2;
           break;
         default:
           value = s.score;

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { STREAM_DEFAULTS } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -50,7 +51,7 @@ export function createSSEStream(
               currentSeq = event.seq;
             }
           } catch (error) {
-            console.error("[SSE] Poll error:", error);
+            logger.error("SSE", error);
           }
 
           // Heartbeat every ~5 poll cycles (15s)
