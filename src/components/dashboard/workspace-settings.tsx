@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { toast } from "sonner";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { workspaceSwrConfig } from "@/hooks/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "./error-state";
+import { WorkspaceConnectForm } from "./workspace-connect-form";
 import { timeAgo } from "@/lib/time";
 import {
   Building,
@@ -18,6 +20,7 @@ import {
   Copy,
   Check,
   AlertTriangle,
+  LogOut,
 } from "lucide-react";
 
 interface WorkspaceMeResponse {
@@ -36,7 +39,7 @@ interface WorkspaceMeResponse {
 }
 
 export function WorkspaceSettings() {
-  const { token, setToken } = useWorkspace();
+  const { token, setToken, clearToken } = useWorkspace();
   const { data, error, isLoading, mutate } = useSWR<WorkspaceMeResponse>(
     token ? "/api/workspaces/me" : null,
     workspaceSwrConfig(token),
@@ -52,6 +55,16 @@ export function WorkspaceSettings() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  if (!token) {
+    return (
+      <WorkspaceConnectForm
+        subtitle="Enter your workspace token to manage settings"
+        showHelp
+      />
+    );
+  }
 
   const handleRotateToken = async () => {
     if (!token) return;
@@ -71,6 +84,7 @@ export function WorkspaceSettings() {
       setNewToken(body.token);
       setToken(body.token);
       setShowConfirm(false);
+      toast.success("Token rotated");
     } catch {
       setRotateError("Network error");
     } finally {
@@ -85,7 +99,17 @@ export function WorkspaceSettings() {
   };
 
   const handleSaveName = async () => {
-    if (!token || !editName.trim()) return;
+    if (!token) return;
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      setNameError("Name is required");
+      return;
+    }
+    if (trimmed.length < 2) {
+      setNameError("Name must be at least 2 characters");
+      return;
+    }
+    setNameError(null);
     setIsSaving(true);
     try {
       const res = await fetch("/api/workspaces/me", {
@@ -94,18 +118,25 @@ export function WorkspaceSettings() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: editName.trim() }),
+        body: JSON.stringify({ name: trimmed }),
       });
       if (res.ok) {
         mutate();
         setIsEditing(false);
+        toast.success("Workspace updated");
+      } else {
+        setNameError("Failed to update name");
+        toast.error("Failed to update workspace");
       }
+    } catch {
+      setNameError("Network error");
+      toast.error("Network error");
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (error) return <ErrorState message="Failed to load workspace" />;
+  if (error) return <ErrorState message="Failed to load workspace" onRetry={() => mutate()} />;
 
   if (isLoading || !data) {
     return (
@@ -122,6 +153,19 @@ export function WorkspaceSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Disconnect */}
+      <div className="flex items-center justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearToken}
+          className="text-dusty-lavender/50 hover:text-rose-DEFAULT"
+        >
+          <LogOut className="size-3.5" />
+          Disconnect
+        </Button>
+      </div>
+
       {/* Workspace Info */}
       <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
         <CardHeader>
@@ -135,19 +179,27 @@ export function WorkspaceSettings() {
             <div>
               <p className="text-xs font-medium text-dusty-lavender/50">Name</p>
               {isEditing ? (
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="h-8 rounded border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-sm text-mist outline-none focus:border-soft-violet/50"
-                    autoFocus
-                  />
-                  <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="size-3 animate-spin" /> : "Save"}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
-                    Cancel
-                  </Button>
+                <div className="mt-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={editName}
+                      onChange={(e) => {
+                        setEditName(e.target.value);
+                        setNameError(null);
+                      }}
+                      className="h-8 rounded border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-sm text-mist outline-none focus:border-soft-violet/50"
+                      autoFocus
+                    />
+                    <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={isSaving}>
+                      {isSaving ? <Loader2 className="size-3 animate-spin" /> : "Save"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); setNameError(null); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                  {nameError && (
+                    <p className="text-xs text-rose-DEFAULT">{nameError}</p>
+                  )}
                 </div>
               ) : (
                 <p

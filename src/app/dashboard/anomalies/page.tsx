@@ -5,6 +5,7 @@ import { useAnomalies } from "@/hooks/use-anomalies";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { FilterSelect } from "@/components/dashboard/filter-select";
 import { ErrorState } from "@/components/dashboard/error-state";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { AlertTriangle } from "lucide-react";
@@ -100,12 +101,11 @@ export default function AnomaliesPage() {
       )}
 
       {data && data.anomalies.length === 0 && (
-        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
-          <CardContent className="flex flex-col items-center gap-3 py-12">
-            <AlertTriangle className="size-8 text-dusty-lavender/30" />
-            <p className="text-sm text-dusty-lavender/50">No anomalies found</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<AlertTriangle className="size-5 text-dusty-lavender/40" />}
+          title="No anomalies found"
+          description="Anomalies are detected automatically from network activity."
+        />
       )}
 
       {data && data.anomalies.length > 0 && (

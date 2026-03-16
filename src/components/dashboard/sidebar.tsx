@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useWorkspace } from "@/hooks/use-workspace";
 import {
   LayoutDashboard,
   Shield,
@@ -55,10 +56,41 @@ const settingsItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isAuthenticated } = useWorkspace();
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
+  };
+
+  const renderNavItem = (item: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }) => {
+    const active = isActive(item.href);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => setMobileOpen(false)}
+        className={cn(
+          "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+          active
+            ? "bg-soft-violet/15 text-soft-violet shadow-sm"
+            : "text-dusty-lavender/70 hover:bg-deep-iris/15 hover:text-dusty-lavender"
+        )}
+      >
+        <item.icon
+          className={cn(
+            "size-4 shrink-0 transition-colors",
+            active
+              ? "text-soft-violet"
+              : "text-dusty-lavender/40 group-hover:text-dusty-lavender/70"
+          )}
+        />
+        {item.label}
+        {active && (
+          <span className="ml-auto size-1.5 rounded-full bg-soft-violet" />
+        )}
+      </Link>
+    );
   };
 
   const navContent = (
@@ -71,140 +103,43 @@ export function Sidebar() {
           Panoptes
         </h2>
       </div>
-      <nav className="mt-2 space-y-1 px-3">
-        {monitoringItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                active
-                  ? "bg-soft-violet/15 text-soft-violet shadow-sm"
-                  : "text-dusty-lavender/70 hover:bg-deep-iris/15 hover:text-dusty-lavender"
-              )}
-            >
-              <item.icon
-                className={cn(
-                  "size-4 shrink-0 transition-colors",
-                  active
-                    ? "text-soft-violet"
-                    : "text-dusty-lavender/40 group-hover:text-dusty-lavender/70"
-                )}
-              />
-              {item.label}
-              {active && (
-                <span className="ml-auto size-1.5 rounded-full bg-soft-violet" />
-              )}
-            </Link>
-          );
-        })}
+      <nav aria-label="Main navigation" className="mt-2 flex-1 space-y-1 px-3">
+        {monitoringItems.map(renderNavItem)}
 
         <div className="border-t border-slate-DEFAULT/10 my-2" />
         <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
           Reliability
         </p>
-        {reliabilityItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                active
-                  ? "bg-soft-violet/15 text-soft-violet shadow-sm"
-                  : "text-dusty-lavender/70 hover:bg-deep-iris/15 hover:text-dusty-lavender"
-              )}
-            >
-              <item.icon
-                className={cn(
-                  "size-4 shrink-0 transition-colors",
-                  active
-                    ? "text-soft-violet"
-                    : "text-dusty-lavender/40 group-hover:text-dusty-lavender/70"
-                )}
-              />
-              {item.label}
-              {active && (
-                <span className="ml-auto size-1.5 rounded-full bg-soft-violet" />
-              )}
-            </Link>
-          );
-        })}
+        {reliabilityItems.map(renderNavItem)}
 
         <div className="border-t border-slate-DEFAULT/10 my-2" />
         <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
           Intelligence
         </p>
-        {intelligenceItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                active
-                  ? "bg-soft-violet/15 text-soft-violet shadow-sm"
-                  : "text-dusty-lavender/70 hover:bg-deep-iris/15 hover:text-dusty-lavender"
-              )}
-            >
-              <item.icon
-                className={cn(
-                  "size-4 shrink-0 transition-colors",
-                  active
-                    ? "text-soft-violet"
-                    : "text-dusty-lavender/40 group-hover:text-dusty-lavender/70"
-                )}
-              />
-              {item.label}
-              {active && (
-                <span className="ml-auto size-1.5 rounded-full bg-soft-violet" />
-              )}
-            </Link>
-          );
-        })}
+        {intelligenceItems.map(renderNavItem)}
 
         <div className="border-t border-slate-DEFAULT/10 my-2" />
-        {settingsItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                active
-                  ? "bg-soft-violet/15 text-soft-violet shadow-sm"
-                  : "text-dusty-lavender/70 hover:bg-deep-iris/15 hover:text-dusty-lavender"
-              )}
-            >
-              <item.icon
-                className={cn(
-                  "size-4 shrink-0 transition-colors",
-                  active
-                    ? "text-soft-violet"
-                    : "text-dusty-lavender/40 group-hover:text-dusty-lavender/70"
-                )}
-              />
-              {item.label}
-              {active && (
-                <span className="ml-auto size-1.5 rounded-full bg-soft-violet" />
-              )}
-            </Link>
-          );
-        })}
+        <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
+          Settings
+        </p>
+        {settingsItems.map(renderNavItem)}
       </nav>
       <div className="mt-auto border-t border-slate-DEFAULT/10 px-4 py-4">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
-          Chain Intelligence
-        </p>
+        {isAuthenticated ? (
+          <div className="flex items-center gap-2 text-xs text-teal-DEFAULT">
+            <span className="size-1.5 rounded-full bg-teal-DEFAULT" />
+            Connected
+          </div>
+        ) : (
+          <Link
+            href="/dashboard/settings/workspace"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-2 text-xs text-amber-DEFAULT hover:text-amber-light"
+          >
+            <span className="size-1.5 rounded-full bg-amber-DEFAULT" />
+            Connect Workspace
+          </Link>
+        )}
       </div>
     </>
   );
@@ -215,6 +150,8 @@ export function Sidebar() {
       <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-slate-DEFAULT/20 bg-slate-dark/95 px-4 backdrop-blur-sm lg:hidden">
         <button
           onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={mobileOpen}
           className="flex size-9 items-center justify-center rounded-lg text-dusty-lavender hover:bg-deep-iris/20"
         >
           <Menu className="size-5" />
@@ -237,6 +174,7 @@ export function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
+        aria-label="Sidebar"
         className={cn(
           "fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r border-slate-DEFAULT/20 bg-midnight-plum transition-transform duration-300 lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
@@ -244,6 +182,7 @@ export function Sidebar() {
       >
         <button
           onClick={() => setMobileOpen(false)}
+          aria-label="Close menu"
           className="absolute right-3 top-4 flex size-8 items-center justify-center rounded-lg text-dusty-lavender/70 hover:bg-deep-iris/20"
         >
           <X className="size-4" />
@@ -252,7 +191,7 @@ export function Sidebar() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-DEFAULT/20 bg-midnight-plum lg:flex">
+      <aside aria-label="Sidebar" className="hidden w-64 shrink-0 flex-col border-r border-slate-DEFAULT/20 bg-midnight-plum lg:flex">
         {navContent}
       </aside>
     </>

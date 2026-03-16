@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { ErrorState } from "./error-state";
+import { EmptyState } from "./empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
+import { toast } from "sonner";
 import { Key, Plus, X, Loader2, Copy, CheckCircle, Trash2 } from "lucide-react";
 
 const TIER_OPTIONS = ["free", "pro"] as const;
@@ -22,9 +24,19 @@ export function ApiKeyList() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const handleCreate = async () => {
-    if (!token || !formName.trim()) return;
+    if (!token) return;
+    if (!formName.trim()) {
+      setNameError("Name is required");
+      return;
+    }
+    if (formName.trim().length > 100) {
+      setNameError("Name must be at most 100 characters");
+      return;
+    }
+    setNameError(null);
     setCreating(true);
     setCreateError(null);
     try {
@@ -46,8 +58,10 @@ export function ApiKeyList() {
       setFormTier("free");
       setShowForm(false);
       await mutate();
+      toast.success("API key created");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Failed to create API key");
+      toast.error("Failed to create API key");
     } finally {
       setCreating(false);
     }
@@ -55,11 +69,20 @@ export function ApiKeyList() {
 
   const handleDeactivate = async (id: string) => {
     if (!token) return;
-    await fetch(`/api/keys/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    await mutate();
+    try {
+      const res = await fetch(`/api/keys/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        toast.error("Failed to deactivate API key");
+        return;
+      }
+      await mutate();
+      toast.success("API key deactivated");
+    } catch {
+      toast.error("Network error");
+    }
   };
 
   const handleCopyKey = async () => {
@@ -138,15 +161,22 @@ export function ApiKeyList() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs text-dusty-lavender/50">Name</label>
+              <label htmlFor="api-key-name" className="mb-1 block text-xs text-dusty-lavender/50">Name</label>
               <input
+                id="api-key-name"
                 type="text"
                 value={formName}
-                onChange={(e) => setFormName(e.target.value)}
+                onChange={(e) => { setFormName(e.target.value); setNameError(null); }}
                 placeholder="My API Key"
                 maxLength={100}
-                className="h-9 w-full rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:border-soft-violet/50 focus:ring-1 focus:ring-soft-violet/20"
+                className={cn(
+                  "h-9 w-full rounded-lg border bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:ring-1",
+                  nameError
+                    ? "border-rose-DEFAULT/50 focus:border-rose-DEFAULT focus:ring-rose-DEFAULT/20"
+                    : "border-slate-DEFAULT/20 focus:border-soft-violet/50 focus:ring-soft-violet/20"
+                )}
               />
+              {nameError && <p className="mt-1 text-xs text-rose-DEFAULT">{nameError}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs text-dusty-lavender/50">Tier</label>
@@ -172,7 +202,7 @@ export function ApiKeyList() {
             )}
             <Button
               onClick={handleCreate}
-              disabled={creating || !formName.trim()}
+              disabled={creating}
               className="bg-soft-violet text-white hover:bg-soft-violet/80 disabled:opacity-50"
             >
               {creating ? (
@@ -195,12 +225,12 @@ export function ApiKeyList() {
       )}
 
       {data && data.keys.length === 0 && (
-        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
-          <CardContent className="flex flex-col items-center gap-3 py-12">
-            <Key className="size-8 text-dusty-lavender/30" />
-            <p className="text-sm text-dusty-lavender/50">No API keys created</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Key className="size-5 text-dusty-lavender/40" />}
+          title="No API keys created"
+          description="Create an API key to access Panoptes data programmatically."
+          action={{ label: "Create API Key", onClick: () => setShowForm(true) }}
+        />
       )}
 
       {data && data.keys.length > 0 && (
