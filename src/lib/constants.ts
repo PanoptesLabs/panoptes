@@ -262,6 +262,16 @@ export const CONTROL_PLANE_RETENTION = {
   POLICY_EXECUTIONS_DAYS: 30,
 } as const;
 
+export const FORECAST_DEFAULTS = {
+  MAX_LIMIT: 100,
+  DEFAULT_LIMIT: 20,
+  CONFIDENCE_MIN: 0,
+  CONFIDENCE_MAX: 95,
+  RETENTION_DAYS: 7,
+  TIME_HORIZONS: ["1h", "6h", "24h"] as const,
+  METRICS: ["latency", "jail_risk", "downtime", "unbonding", "breach_risk"] as const,
+} as const;
+
 export const LEADERBOARD_DEFAULTS = {
   MAX_LIMIT: 100,
   DEFAULT_LIMIT: 20,

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { RETENTION, OUTBOX_RETENTION, DELIVERY_RETENTION, SLO_RETENTION, INCIDENT_RETENTION, CONTROL_PLANE_RETENTION } from "@/lib/constants";
+import { RETENTION, OUTBOX_RETENTION, DELIVERY_RETENTION, SLO_RETENTION, INCIDENT_RETENTION, CONTROL_PLANE_RETENTION, FORECAST_DEFAULTS } from "@/lib/constants";
 import { IndexerError } from "@/lib/errors";
 
 export async function cleanupOldData(): Promise<{
@@ -16,6 +16,7 @@ export async function cleanupOldData(): Promise<{
   deletedDelegationEvents: number;
   deletedDelegationSnapshots: number;
   deletedPolicyExecutions: number;
+  deletedForecasts: number;
   duration: number;
 }> {
   const start = Date.now();
@@ -46,8 +47,9 @@ export async function cleanupOldData(): Promise<{
     const delegationEventCutoff = new Date(Date.now() - CONTROL_PLANE_RETENTION.DELEGATION_EVENTS_DAYS * 86400_000);
     const delegationSnapshotCutoff = new Date(Date.now() - CONTROL_PLANE_RETENTION.DELEGATION_SNAPSHOTS_DAYS * 86400_000);
     const policyExecutionCutoff = new Date(Date.now() - CONTROL_PLANE_RETENTION.POLICY_EXECUTIONS_DAYS * 86400_000);
+    const forecastCutoff = new Date(Date.now() - FORECAST_DEFAULTS.RETENTION_DAYS * 86400_000);
 
-    const [snapshots, healthChecks, stats, scores, vScores, anomalies, outboxEvents, deliveriesSuccess, deliveriesFailure, sloEvaluations, incidents, delegationEvents, delegationSnapshots, policyExecutions] = await prisma.$transaction([
+    const [snapshots, healthChecks, stats, scores, vScores, anomalies, outboxEvents, deliveriesSuccess, deliveriesFailure, sloEvaluations, incidents, delegationEvents, delegationSnapshots, policyExecutions, forecasts] = await prisma.$transaction([
       prisma.validatorSnapshot.deleteMany({
         where: { timestamp: { lt: snapshotCutoff } },
       }),
@@ -90,6 +92,9 @@ export async function cleanupOldData(): Promise<{
       prisma.policyExecution.deleteMany({
         where: { timestamp: { lt: policyExecutionCutoff } },
       }),
+      prisma.forecast.deleteMany({
+        where: { createdAt: { lt: forecastCutoff } },
+      }),
     ]);
 
     return {
@@ -106,6 +111,7 @@ export async function cleanupOldData(): Promise<{
       deletedDelegationEvents: delegationEvents.count,
       deletedDelegationSnapshots: delegationSnapshots.count,
       deletedPolicyExecutions: policyExecutions.count,
+      deletedForecasts: forecasts.count,
       duration: Date.now() - start,
     };
   } catch (error) {

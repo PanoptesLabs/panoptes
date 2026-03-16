@@ -403,6 +403,27 @@ model DelegationSnapshot {
   @@index([validatorId, timestamp])
 }
 
+model Forecast {
+  id             String   @id @default(cuid())
+  entityType     String
+  entityId       String
+  metric         String
+  prediction     String
+  confidence     Float
+  timeHorizon    String
+  currentValue   Float
+  predictedValue Float
+  threshold      Float?
+  reasoning      String
+  validUntil     DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([metric])
+  @@index([validUntil])
+  @@index([createdAt])
+}
+
 model ApiKey {
   id            String              @id @default(cuid())
   workspaceId   String
