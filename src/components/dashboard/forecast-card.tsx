@@ -1,0 +1,123 @@
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
+import { timeAgo } from "@/lib/time";
+
+interface ForecastItem {
+  id: string;
+  entityType: string;
+  entityId: string;
+  metric: string;
+  prediction: string;
+  confidence: number;
+  timeHorizon: string;
+  currentValue: number;
+  predictedValue: number;
+  threshold: number | null;
+  reasoning: string;
+  validUntil: string;
+  createdAt: string;
+}
+
+interface ForecastCardProps {
+  forecast: ForecastItem;
+}
+
+const predictionConfig = {
+  normal: {
+    label: "Normal",
+    classes: "bg-teal-dark/50 text-teal-light border-teal-DEFAULT/30",
+    icon: CheckCircle,
+    iconColor: "text-teal-DEFAULT",
+  },
+  warning: {
+    label: "Warning",
+    classes: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
+    icon: AlertTriangle,
+    iconColor: "text-amber-DEFAULT",
+  },
+  critical: {
+    label: "Critical",
+    classes: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
+    icon: AlertTriangle,
+    iconColor: "text-rose-DEFAULT",
+  },
+} as const;
+
+const metricLabels: Record<string, string> = {
+  latency: "Latency",
+  jail_risk: "Jail Risk",
+  downtime: "Downtime",
+  unbonding: "Unbonding",
+  breach_risk: "SLO Breach",
+};
+
+export function ForecastCard({ forecast }: ForecastCardProps) {
+  const config =
+    predictionConfig[forecast.prediction as keyof typeof predictionConfig] ??
+    predictionConfig.normal;
+  const Icon = config.icon;
+
+  return (
+    <Card className="border-slate-DEFAULT/20 bg-midnight-plum transition-colors hover:border-soft-violet/20">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Icon className={cn("size-4 shrink-0", config.iconColor)} />
+            <CardTitle className="truncate text-sm font-medium text-mist">
+              {metricLabels[forecast.metric] ?? forecast.metric}
+            </CardTitle>
+          </div>
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0",
+              config.classes,
+            )}
+          >
+            {config.label}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-xs text-dusty-lavender/60">{forecast.reasoning}</p>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+              Confidence
+            </p>
+            <p className="font-mono text-sm font-medium text-mist">
+              {forecast.confidence.toFixed(1)}%
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+              Horizon
+            </p>
+            <p className="font-mono text-sm font-medium text-mist">
+              {forecast.timeHorizon}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+              Entity
+            </p>
+            <p className="font-mono text-xs font-medium text-mist truncate">
+              {forecast.entityType}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-[10px] text-dusty-lavender/40">
+          <span className="flex items-center gap-1">
+            <TrendingUp className="size-3" />
+            Valid until {timeAgo(forecast.validUntil)}
+          </span>
+          <span>Created {timeAgo(forecast.createdAt)}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
