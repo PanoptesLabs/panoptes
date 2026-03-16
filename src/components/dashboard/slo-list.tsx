@@ -7,7 +7,7 @@ import { StatCard } from "./stat-card";
 import { SloCard } from "./slo-card";
 import { FilterSelect } from "./filter-select";
 import { ErrorState } from "./error-state";
-import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "./empty-state";
 import { Target, ShieldCheck, AlertTriangle, Ban } from "lucide-react";
 
 const INDICATOR_OPTIONS = [
@@ -84,12 +84,11 @@ export function SloList() {
 
       {/* Empty state */}
       {data && filteredSlos.length === 0 && (
-        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
-          <CardContent className="flex flex-col items-center gap-3 py-12">
-            <Target className="size-8 text-dusty-lavender/30" />
-            <p className="text-sm text-dusty-lavender/50">No SLOs found</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Target className="size-5 text-dusty-lavender/40" />}
+          title="No SLOs found"
+          description="Service level objectives help you track and maintain reliability targets."
+        />
       )}
 
       {/* SLO grid */}

@@ -1,7 +1,6 @@
 "use client";
 
 import { PageHeader } from "@/components/dashboard/page-header";
-import { WorkspaceGuard } from "@/components/dashboard/workspace-guard";
 import { WorkspaceSettings } from "@/components/dashboard/workspace-settings";
 
 export default function WorkspacePage() {
@@ -15,9 +14,7 @@ export default function WorkspacePage() {
           { label: "Workspace" },
         ]}
       />
-      <WorkspaceGuard>
-        <WorkspaceSettings />
-      </WorkspaceGuard>
+      <WorkspaceSettings />
     </div>
   );
 }

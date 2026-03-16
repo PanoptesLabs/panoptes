@@ -35,7 +35,7 @@ describe("WorkspaceGuard", () => {
       </WorkspaceGuard>,
     );
     expect(screen.getByText("Connect Workspace")).toBeDefined();
-    expect(screen.getByPlaceholderText("Workspace token")).toBeDefined();
+    expect(screen.getByLabelText("Workspace token")).toBeDefined();
     expect(screen.queryByText("Protected Content")).toBeNull();
   });
 
@@ -59,12 +59,13 @@ describe("WorkspaceGuard", () => {
       </WorkspaceGuard>,
     );
 
-    const input = screen.getByPlaceholderText("Workspace token");
+    const input = screen.getByLabelText("Workspace token");
     fireEvent.change(input, { target: { value: "my-token" } });
     fireEvent.click(screen.getByText("Connect"));
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith("/api/slos/summary", {
+      expect(mockFetch).toHaveBeenCalledWith("/api/workspaces/verify", {
+        method: "POST",
         headers: { Authorization: "Bearer my-token" },
       });
     });
@@ -83,7 +84,7 @@ describe("WorkspaceGuard", () => {
       </WorkspaceGuard>,
     );
 
-    const input = screen.getByPlaceholderText("Workspace token");
+    const input = screen.getByLabelText("Workspace token");
     fireEvent.change(input, { target: { value: "bad-token" } });
     fireEvent.click(screen.getByText("Connect"));
 
@@ -123,7 +124,7 @@ describe("WorkspaceGuard", () => {
       </WorkspaceGuard>,
     );
 
-    const input = screen.getByPlaceholderText("Workspace token");
+    const input = screen.getByLabelText("Workspace token");
     fireEvent.change(input, { target: { value: "test-token" } });
     fireEvent.click(screen.getByText("Connect"));
 

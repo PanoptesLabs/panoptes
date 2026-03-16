@@ -5,7 +5,7 @@ import { useForecasts } from "@/hooks/use-forecasts";
 import { ForecastCard } from "./forecast-card";
 import { FilterSelect } from "./filter-select";
 import { ErrorState } from "./error-state";
-import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "./empty-state";
 import { TrendingUp, Loader2 } from "lucide-react";
 
 const METRIC_OPTIONS = [
@@ -60,14 +60,11 @@ export function ForecastList() {
       )}
 
       {data && data.forecasts.length === 0 && (
-        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
-          <CardContent className="flex flex-col items-center gap-3 py-12">
-            <TrendingUp className="size-8 text-dusty-lavender/30" />
-            <p className="text-sm text-dusty-lavender/50">
-              No forecasts available
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<TrendingUp className="size-5 text-dusty-lavender/40" />}
+          title="No forecasts available"
+          description="Forecasts are generated automatically based on network metrics."
+        />
       )}
 
       {data && data.forecasts.length > 0 && (
