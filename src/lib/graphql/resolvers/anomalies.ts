@@ -15,8 +15,8 @@ export const anomalyResolvers = {
         prisma.anomaly.findMany({
           where,
           orderBy: { detectedAt: "desc" },
-          take: Math.min(args.limit ?? 50, 200),
-          skip: args.offset ?? 0,
+          take: Math.min(Math.max(1, args.limit ?? 50), 200),
+          skip: Math.max(0, args.offset ?? 0),
         }),
         prisma.anomaly.count({ where }),
       ]);

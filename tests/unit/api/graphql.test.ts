@@ -8,6 +8,13 @@ vi.mock("@/lib/db", () => {
     delete: vi.fn(),
     count: vi.fn(),
   };
+  const sloModel = {
+    findMany: vi.fn(),
+    create: vi.fn(),
+    findFirst: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  };
   return {
     prisma: {
       validator: {
@@ -17,6 +24,7 @@ vi.mock("@/lib/db", () => {
       },
       endpoint: {
         findMany: vi.fn(),
+        findUnique: vi.fn(),
       },
       networkStats: {
         findFirst: vi.fn(),
@@ -25,12 +33,7 @@ vi.mock("@/lib/db", () => {
         findMany: vi.fn(),
         count: vi.fn(),
       },
-      slo: {
-        findMany: vi.fn(),
-        create: vi.fn(),
-        findFirst: vi.fn(),
-        delete: vi.fn(),
-      },
+      slo: sloModel,
       incident: {
         findMany: vi.fn(),
         count: vi.fn(),
@@ -43,6 +46,7 @@ vi.mock("@/lib/db", () => {
         return fn({
           $queryRaw: vi.fn(),
           webhook: webhookModel,
+          slo: sloModel,
         });
       }),
     },
@@ -364,6 +368,166 @@ describe("createSlo mutation", () => {
       ),
     ).rejects.toThrow("Unauthorized");
   });
+
+  it("rejects invalid indicator", async () => {
+    await expect(
+      sloResolvers.Mutation.createSlo(
+        {},
+        {
+          input: {
+            name: "Test",
+            indicator: "invalid_indicator",
+            entityType: "endpoint",
+            entityId: "ep-1",
+            target: 0.99,
+            windowDays: 7,
+          },
+        },
+        mockWorkspaceCtx,
+      ),
+    ).rejects.toThrow("indicator must be one of");
+  });
+
+  it("rejects target outside 0.9-0.9999 range", async () => {
+    await expect(
+      sloResolvers.Mutation.createSlo(
+        {},
+        {
+          input: {
+            name: "Test",
+            indicator: "uptime",
+            entityType: "endpoint",
+            entityId: "ep-1",
+            target: 0.5,
+            windowDays: 7,
+          },
+        },
+        mockWorkspaceCtx,
+      ),
+    ).rejects.toThrow("target must be between");
+  });
+
+  it("rejects windowDays outside 1-7 range", async () => {
+    await expect(
+      sloResolvers.Mutation.createSlo(
+        {},
+        {
+          input: {
+            name: "Test",
+            indicator: "uptime",
+            entityType: "endpoint",
+            entityId: "ep-1",
+            target: 0.99,
+            windowDays: 30,
+          },
+        },
+        mockWorkspaceCtx,
+      ),
+    ).rejects.toThrow("windowDays must be between");
+  });
+
+  it("rejects incompatible indicator-entityType pair", async () => {
+    await expect(
+      sloResolvers.Mutation.createSlo(
+        {},
+        {
+          input: {
+            name: "Test",
+            indicator: "block_production",
+            entityType: "endpoint",
+            entityId: "ep-1",
+            target: 0.99,
+            windowDays: 7,
+          },
+        },
+        mockWorkspaceCtx,
+      ),
+    ).rejects.toThrow("not compatible with entityType");
+  });
+
+  it("rejects non-existent entity", async () => {
+    vi.mocked(prisma.endpoint.findUnique).mockResolvedValue(null);
+
+    await expect(
+      sloResolvers.Mutation.createSlo(
+        {},
+        {
+          input: {
+            name: "Test",
+            indicator: "uptime",
+            entityType: "endpoint",
+            entityId: "ep-nonexistent",
+            target: 0.99,
+            windowDays: 7,
+          },
+        },
+        mockWorkspaceCtx,
+      ),
+    ).rejects.toThrow("Endpoint not found");
+  });
+
+  it("enforces workspace SLO limit", async () => {
+    vi.mocked(prisma.endpoint.findUnique).mockResolvedValue({ id: "ep-1" } as never);
+    vi.mocked(prisma.slo.count).mockResolvedValue(20);
+
+    await expect(
+      sloResolvers.Mutation.createSlo(
+        {},
+        {
+          input: {
+            name: "Test",
+            indicator: "uptime",
+            entityType: "endpoint",
+            entityId: "ep-1",
+            target: 0.99,
+            windowDays: 7,
+          },
+        },
+        mockWorkspaceCtx,
+      ),
+    ).rejects.toThrow("SLO limit reached");
+  });
+
+  it("creates SLO with valid input", async () => {
+    vi.mocked(prisma.endpoint.findUnique).mockResolvedValue({ id: "ep-1" } as never);
+    vi.mocked(prisma.slo.count).mockResolvedValue(0);
+    vi.mocked(prisma.slo.create).mockResolvedValue({
+      id: "slo-new",
+      workspaceId: "ws-1",
+      name: "Uptime SLO",
+      indicator: "uptime",
+      entityType: "endpoint",
+      entityId: "ep-1",
+      target: 0.99,
+      windowDays: 7,
+      isActive: true,
+      isBreaching: false,
+      currentValue: null,
+      budgetConsumed: null,
+      burnRate: null,
+      lastEvaluatedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    } as never);
+
+    const result = await sloResolvers.Mutation.createSlo(
+      {},
+      {
+        input: {
+          name: "Uptime SLO",
+          indicator: "uptime",
+          entityType: "endpoint",
+          entityId: "ep-1",
+          target: 0.99,
+          windowDays: 7,
+        },
+      },
+      mockWorkspaceCtx,
+    );
+
+    expect(result.id).toBe("slo-new");
+    expect(result.name).toBe("Uptime SLO");
+  });
 });
 
 describe("deleteSlo mutation", () => {
@@ -371,6 +535,27 @@ describe("deleteSlo mutation", () => {
     await expect(
       sloResolvers.Mutation.deleteSlo({}, { id: "slo-1" }, noAuthCtx),
     ).rejects.toThrow("Unauthorized");
+  });
+
+  it("deletes existing SLO", async () => {
+    vi.mocked(prisma.slo.findFirst).mockResolvedValue({
+      id: "slo-1", workspaceId: "ws-1",
+    } as never);
+    vi.mocked(prisma.slo.delete).mockResolvedValue({} as never);
+
+    const result = await sloResolvers.Mutation.deleteSlo(
+      {}, { id: "slo-1" }, mockWorkspaceCtx,
+    );
+    expect(result).toBe(true);
+    expect(prisma.slo.delete).toHaveBeenCalledWith({ where: { id: "slo-1" } });
+  });
+
+  it("throws NOT_FOUND for wrong workspace", async () => {
+    vi.mocked(prisma.slo.findFirst).mockResolvedValue(null);
+
+    await expect(
+      sloResolvers.Mutation.deleteSlo({}, { id: "slo-other" }, mockWorkspaceCtx),
+    ).rejects.toThrow("SLO not found");
   });
 });
 
@@ -478,6 +663,27 @@ describe("deleteWebhook mutation", () => {
     await expect(
       webhookResolvers.Mutation.deleteWebhook({}, { id: "wh-1" }, noAuthCtx),
     ).rejects.toThrow("Unauthorized");
+  });
+
+  it("deletes existing webhook", async () => {
+    vi.mocked(prisma.webhook.findFirst).mockResolvedValue({
+      id: "wh-1", workspaceId: "ws-1",
+    } as never);
+    vi.mocked(prisma.webhook.delete).mockResolvedValue({} as never);
+
+    const result = await webhookResolvers.Mutation.deleteWebhook(
+      {}, { id: "wh-1" }, mockWorkspaceCtx,
+    );
+    expect(result).toBe(true);
+    expect(prisma.webhook.delete).toHaveBeenCalledWith({ where: { id: "wh-1" } });
+  });
+
+  it("throws NOT_FOUND for wrong workspace", async () => {
+    vi.mocked(prisma.webhook.findFirst).mockResolvedValue(null);
+
+    await expect(
+      webhookResolvers.Mutation.deleteWebhook({}, { id: "wh-other" }, mockWorkspaceCtx),
+    ).rejects.toThrow("Webhook not found");
   });
 });
 

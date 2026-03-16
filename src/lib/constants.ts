@@ -214,6 +214,12 @@ export const DELIVERY_RETENTION = {
   FAILURE_DAYS: 30,
 } as const;
 
+export const POLICY_OPERATORS = ["lt", "gt", "eq", "neq", "gte", "lte", "in"] as const;
+export type PolicyOperator = (typeof POLICY_OPERATORS)[number];
+
+export const POLICY_ACTION_TYPES = ["webhook", "routing_exclude", "log", "annotate", "incident_create"] as const;
+export type PolicyActionType = (typeof POLICY_ACTION_TYPES)[number];
+
 export const POLICY_DEFAULTS = {
   MAX_PER_WORKSPACE: 20,
   MIN_COOLDOWN_MINUTES: 1,

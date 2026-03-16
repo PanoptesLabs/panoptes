@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { requireWorkspace } from "@/lib/workspace-auth";
-import { POLICY_DEFAULTS } from "@/lib/constants";
+import { POLICY_DEFAULTS, POLICY_OPERATORS, POLICY_ACTION_TYPES } from "@/lib/constants";
 import type { PolicyCondition, PolicyAction } from "@/types";
 import { ALLOWED_FIELDS } from "@/lib/intelligence/policy-conditions";
 
@@ -31,10 +31,10 @@ function validatePolicyCreate(body: unknown): {
   }
 
   for (const c of b.conditions) {
-    if (!c.field || !c.operator || c.value === undefined) {
+    if (!c || typeof c !== "object" || !c.field || !c.operator || c.value === undefined) {
       return { error: "Each condition must have field, operator, and value" };
     }
-    if (!["lt", "gt", "eq", "neq", "gte", "lte", "in"].includes(c.operator)) {
+    if (!(POLICY_OPERATORS as readonly string[]).includes(c.operator)) {
       return { error: `Invalid operator: ${c.operator}` };
     }
     if (!ALLOWED_FIELDS.has(c.field)) {
@@ -49,9 +49,8 @@ function validatePolicyCreate(body: unknown): {
     return { error: `Maximum ${POLICY_DEFAULTS.MAX_ACTIONS} actions allowed` };
   }
 
-  const validActionTypes = ["webhook", "routing_exclude", "log", "annotate", "incident_create"];
   for (const a of b.actions) {
-    if (!validActionTypes.includes(a.type)) {
+    if (!(POLICY_ACTION_TYPES as readonly string[]).includes(a.type)) {
       return { error: `Invalid action type: ${a.type}` };
     }
   }
@@ -131,6 +130,7 @@ export async function POST(request: NextRequest) {
   let policy;
   try {
     policy = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth.workspace.id} FOR UPDATE`;
       const count = await tx.policy.count({ where: { workspaceId: auth.workspace.id } });
       if (count >= POLICY_DEFAULTS.MAX_PER_WORKSPACE) {
         throw new Error("LIMIT_REACHED");

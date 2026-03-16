@@ -1,5 +1,7 @@
 import { GraphQLError } from "graphql";
 import { prisma } from "@/lib/db";
+import { validateSloCreate } from "@/lib/slo-validation";
+import { SLO_DEFAULTS } from "@/lib/constants";
 import type { GraphQLContext } from "../context";
 
 export const sloResolvers = {
@@ -40,29 +42,64 @@ export const sloResolvers = {
         });
       }
 
-      const { input } = args;
-      if (typeof input.target !== "number" || input.target < 0 || input.target > 1) {
-        throw new GraphQLError("Target must be between 0 and 1", {
-          extensions: { code: "BAD_USER_INPUT" },
-        });
-      }
-      if (typeof input.windowDays !== "number" || input.windowDays < 1 || input.windowDays > 365) {
-        throw new GraphQLError("Window days must be between 1 and 365", {
+      const validated = validateSloCreate(args.input);
+      if ("error" in validated) {
+        throw new GraphQLError(validated.error, {
           extensions: { code: "BAD_USER_INPUT" },
         });
       }
 
-      const slo = await prisma.slo.create({
-        data: {
-          workspaceId: context.workspace.id,
-          name: args.input.name,
-          indicator: args.input.indicator,
-          entityType: args.input.entityType,
-          entityId: args.input.entityId,
-          target: args.input.target,
-          windowDays: args.input.windowDays,
-        },
+      // Entity existence check
+      if (validated.entityType === "endpoint") {
+        const endpoint = await prisma.endpoint.findUnique({
+          where: { id: validated.entityId },
+          select: { id: true },
+        });
+        if (!endpoint) {
+          throw new GraphQLError("Endpoint not found", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+      } else {
+        const validator = await prisma.validator.findUnique({
+          where: { id: validated.entityId },
+          select: { id: true },
+        });
+        if (!validator) {
+          throw new GraphQLError("Validator not found", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+      }
+
+      // Workspace limit check with transaction
+      const slo = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${context.workspace!.id} FOR UPDATE`;
+        const count = await tx.slo.count({
+          where: { workspaceId: context.workspace!.id },
+        });
+        if (count >= SLO_DEFAULTS.MAX_PER_WORKSPACE) {
+          return null;
+        }
+        return tx.slo.create({
+          data: {
+            workspaceId: context.workspace!.id,
+            name: validated.name,
+            indicator: validated.indicator,
+            entityType: validated.entityType,
+            entityId: validated.entityId,
+            target: validated.target,
+            windowDays: validated.windowDays,
+          },
+        });
       });
+
+      if (!slo) {
+        throw new GraphQLError(
+          `Workspace SLO limit reached (max ${SLO_DEFAULTS.MAX_PER_WORKSPACE})`,
+          { extensions: { code: "LIMIT_EXCEEDED" } },
+        );
+      }
 
       return slo;
     },
