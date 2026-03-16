@@ -271,3 +271,10 @@ export const FORECAST_DEFAULTS = {
   TIME_HORIZONS: ["1h", "6h", "24h"] as const,
   METRICS: ["latency", "jail_risk", "downtime", "unbonding", "breach_risk"] as const,
 } as const;
+
+export const LEADERBOARD_DEFAULTS = {
+  MAX_LIMIT: 100,
+  DEFAULT_LIMIT: 20,
+  MAX_COMPARE: 5,
+  TREND_PERIODS: ["7d", "30d", "90d"] as const,
+} as const;

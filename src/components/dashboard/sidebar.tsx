@@ -19,6 +19,7 @@ import {
   Vote,
   ArrowLeftRight,
   TrendingUp,
+  Trophy,
   Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const intelligenceItems = [
   { href: "/dashboard/governance", label: "Governance", icon: Vote },
   { href: "/dashboard/delegations", label: "Delegations", icon: ArrowLeftRight },
   { href: "/dashboard/forecasts", label: "Forecasts", icon: TrendingUp },
+  { href: "/dashboard/validators/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
 const settingsItems = [
