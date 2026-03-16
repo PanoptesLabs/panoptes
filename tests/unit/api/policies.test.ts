@@ -234,6 +234,138 @@ describe("PATCH /api/policies/:id", () => {
     const res = await PATCH(req, { params: Promise.resolve({ id: "p-other" }) });
     expect(res.status).toBe(404);
   });
+
+  it("rejects empty conditions array", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ conditions: [] }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("At least one condition");
+  });
+
+  it("rejects invalid condition operator", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ conditions: [{ field: "anomaly.type", operator: "INVALID", value: "x" }] }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("Invalid operator");
+  });
+
+  it("rejects invalid condition field", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ conditions: [{ field: "invalid.field", operator: "eq", value: "x" }] }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("Invalid condition field");
+  });
+
+  it("rejects condition missing required fields", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ conditions: [{ field: "anomaly.type" }] }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("field, operator, and value");
+  });
+
+  it("rejects empty actions array", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ actions: [] }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("At least one action");
+  });
+
+  it("rejects invalid action type", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ actions: [{ type: "malicious_action" }] }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("Invalid action type");
+  });
+
+  it("rejects invalid cooldown value", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ cooldownMinutes: 99999 }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("Cooldown must be between");
+  });
+
+  it("accepts valid conditions and actions update", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+    vi.mocked(prisma.policy.update).mockResolvedValue({
+      id: "p-1", name: "Test", description: null,
+      isActive: true, dryRun: true, priority: 100,
+      conditions: JSON.stringify([{ field: "endpoint.score", operator: "lt", value: 50 }]),
+      actions: JSON.stringify([{ type: "incident_create" }]),
+      cooldownMinutes: 15, lastTriggeredAt: null,
+      createdAt: new Date(),
+    } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({
+        conditions: [{ field: "endpoint.score", operator: "lt", value: 50 }],
+        actions: [{ type: "incident_create" }],
+      }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.conditions[0].field).toBe("endpoint.score");
+    expect(body.actions[0].type).toBe("incident_create");
+  });
 });
 
 describe("DELETE /api/policies/:id", () => {
