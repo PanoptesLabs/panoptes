@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { requireWorkspace } from "@/lib/workspace-auth";
+import { POLICY_DEFAULTS } from "@/lib/constants";
+import { ALLOWED_FIELDS } from "@/lib/intelligence/policy-conditions";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -77,9 +79,63 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
   if (typeof b.isActive === "boolean") updateData.isActive = b.isActive;
   if (typeof b.dryRun === "boolean") updateData.dryRun = b.dryRun;
   if (typeof b.priority === "number") updateData.priority = b.priority;
-  if (typeof b.cooldownMinutes === "number") updateData.cooldownMinutes = b.cooldownMinutes;
-  if (Array.isArray(b.conditions)) updateData.conditions = JSON.stringify(b.conditions);
-  if (Array.isArray(b.actions)) updateData.actions = JSON.stringify(b.actions);
+  if (typeof b.cooldownMinutes === "number") {
+    if (b.cooldownMinutes < POLICY_DEFAULTS.MIN_COOLDOWN_MINUTES ||
+        b.cooldownMinutes > POLICY_DEFAULTS.MAX_COOLDOWN_MINUTES) {
+      return NextResponse.json(
+        { error: `Cooldown must be between ${POLICY_DEFAULTS.MIN_COOLDOWN_MINUTES} and ${POLICY_DEFAULTS.MAX_COOLDOWN_MINUTES} minutes` },
+        { status: 400, headers: rl.headers },
+      );
+    }
+    updateData.cooldownMinutes = b.cooldownMinutes;
+  }
+
+  if (Array.isArray(b.conditions)) {
+    if (b.conditions.length === 0) {
+      return NextResponse.json({ error: "At least one condition is required" }, { status: 400, headers: rl.headers });
+    }
+    if (b.conditions.length > POLICY_DEFAULTS.MAX_CONDITIONS) {
+      return NextResponse.json(
+        { error: `Maximum ${POLICY_DEFAULTS.MAX_CONDITIONS} conditions allowed` },
+        { status: 400, headers: rl.headers },
+      );
+    }
+    const validOperators = ["lt", "gt", "eq", "neq", "gte", "lte", "in"];
+    for (const c of b.conditions) {
+      if (!c || typeof c !== "object" || !c.field || !c.operator || c.value === undefined) {
+        return NextResponse.json(
+          { error: "Each condition must have field, operator, and value" },
+          { status: 400, headers: rl.headers },
+        );
+      }
+      if (!validOperators.includes(c.operator)) {
+        return NextResponse.json({ error: `Invalid operator: ${c.operator}` }, { status: 400, headers: rl.headers });
+      }
+      if (!ALLOWED_FIELDS.has(c.field)) {
+        return NextResponse.json({ error: `Invalid condition field: ${c.field}` }, { status: 400, headers: rl.headers });
+      }
+    }
+    updateData.conditions = JSON.stringify(b.conditions);
+  }
+
+  if (Array.isArray(b.actions)) {
+    if (b.actions.length === 0) {
+      return NextResponse.json({ error: "At least one action is required" }, { status: 400, headers: rl.headers });
+    }
+    if (b.actions.length > POLICY_DEFAULTS.MAX_ACTIONS) {
+      return NextResponse.json(
+        { error: `Maximum ${POLICY_DEFAULTS.MAX_ACTIONS} actions allowed` },
+        { status: 400, headers: rl.headers },
+      );
+    }
+    const validActionTypes = ["webhook", "routing_exclude", "log", "annotate", "incident_create"];
+    for (const a of b.actions) {
+      if (!a || typeof a !== "object" || !validActionTypes.includes(a.type)) {
+        return NextResponse.json({ error: `Invalid action type: ${a?.type}` }, { status: 400, headers: rl.headers });
+      }
+    }
+    updateData.actions = JSON.stringify(b.actions);
+  }
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400, headers: rl.headers });
