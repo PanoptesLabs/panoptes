@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
 import { generateForecasts } from "@/lib/intelligence";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const authError = validateCronAuth(request);
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     const result = await generateForecasts();
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
-    console.error("[Cron Forecasts]", error);
+    logger.error("Cron Forecasts", error);
     const message =
       process.env.NODE_ENV === "production"
         ? "Internal server error"

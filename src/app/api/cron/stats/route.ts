@@ -3,6 +3,7 @@ import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
 import { aggregateStats, syncGovernance, syncDelegations } from "@/lib/indexer";
 import { computeEndpointScores, computeValidatorScores, detectAnomalies, evaluateSlos, correlateIncidents, evaluatePolicies, detectWhaleMovement } from "@/lib/intelligence";
+import { logger } from "@/lib/logger";
 
 type StepError = { step: string; error: string };
 
@@ -11,7 +12,7 @@ async function runStep<T>(name: string, fn: () => Promise<T>, errors: StepError[
     return await fn();
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`[Cron Stats] ${name} failed:`, msg);
+    logger.error(`Cron Stats: ${name}`, msg);
     errors.push({ step: name, error: msg });
     return null;
   }

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 export function getClientIp(request: NextRequest): string {
-  // Vercel/Cloudflare sets these headers - trust only platform headers
   return (
+    request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     // @ts-expect-error -- request.ip exists at runtime on Vercel/Node

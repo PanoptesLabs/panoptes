@@ -120,7 +120,7 @@ export async function forecastJailRisk(): Promise<ForecastResult[]> {
   const validators = await prisma.validator.findMany({
     where: { jailed: false },
     include: {
-      snapshots: {
+      scores: {
         where: { timestamp: { gte: sevenDaysAgo } },
         orderBy: { timestamp: "asc" },
       },
@@ -128,26 +128,27 @@ export async function forecastJailRisk(): Promise<ForecastResult[]> {
   });
 
   for (const val of validators) {
-    if (val.snapshots.length < 2) continue;
+    if (val.scores.length < 2) continue;
 
-    const startTime = val.snapshots[0].timestamp.getTime();
-    const points = val.snapshots.map((s, i) => ({
+    const startTime = val.scores[0].timestamp.getTime();
+    const points = val.scores.map((s) => ({
       x: (s.timestamp.getTime() - startTime) / 3600000, // hours from start
-      y: i === 0 ? val.missedBlocks : val.missedBlocks,
+      y: s.missedBlockRate,
     }));
 
-    // Use current missedBlocks as base, check if trend is upward
     const { slope, r2 } = linearRegression(points);
     const confidence = Math.min(r2 * 100, FORECAST_DEFAULTS.CONFIDENCE_MAX);
+    const latestRate = val.scores[val.scores.length - 1].missedBlockRate;
+    const predictedRate = latestRate + slope * 24;
 
     let prediction: "warning" | "critical" | "normal" = "normal";
     let threshold: number | null = null;
-    if (slope > 5) {
+    if (predictedRate > 0.8) {
       prediction = "critical";
-      threshold = 1000;
-    } else if (slope > 1) {
+      threshold = 0.8;
+    } else if (predictedRate > 0.5) {
       prediction = "warning";
-      threshold = 500;
+      threshold = 0.5;
     }
 
     const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -159,13 +160,13 @@ export async function forecastJailRisk(): Promise<ForecastResult[]> {
       prediction,
       confidence,
       timeHorizon: "24h",
-      currentValue: val.missedBlocks,
-      predictedValue: val.missedBlocks + slope * 24,
+      currentValue: latestRate,
+      predictedValue: predictedRate,
       threshold,
       reasoning:
         prediction === "normal"
-          ? `Missed blocks trend stable for ${val.moniker}`
-          : `Missed blocks increasing at ${slope.toFixed(1)}/hr for ${val.moniker}`,
+          ? `Missed block rate trend stable for ${val.moniker}`
+          : `Missed block rate projected to reach ${predictedRate.toFixed(2)} within 24h for ${val.moniker}`,
       validUntil,
     });
   }

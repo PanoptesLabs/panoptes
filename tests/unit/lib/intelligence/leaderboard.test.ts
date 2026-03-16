@@ -181,6 +181,36 @@ describe("getLeaderboard", () => {
     expect(result[0].value).toBe(20);
   });
 
+  it("returns reliable leaderboard sorted by composite score DESC", async () => {
+    mockPrisma.validator.findMany.mockResolvedValue([
+      makeValidator("v1", "Alpha", {
+        scores: [makeScore(80, {
+          validatorId: "v1",
+          missedBlockRate: 0.05,
+          jailPenalty: 0.0,
+          stakeStability: 0.95,
+        })],
+      }),
+      makeValidator("v2", "Beta", {
+        scores: [makeScore(70, {
+          validatorId: "v2",
+          missedBlockRate: 0.20,
+          jailPenalty: 0.5,
+          stakeStability: 0.60,
+        })],
+      }),
+    ]);
+
+    const result = await getLeaderboard("reliable", 20);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].validatorId).toBe("v1");
+    // v1: (1-0.05)*0.5 + (1-0)*0.3 + 0.95*0.2 = 0.475 + 0.3 + 0.19 = 0.965
+    expect(result[0].value).toBeCloseTo(0.965);
+    // v2: (1-0.20)*0.5 + (1-0.5)*0.3 + 0.60*0.2 = 0.4 + 0.15 + 0.12 = 0.67
+    expect(result[1].value).toBeCloseTo(0.67);
+  });
+
   it("returns empty array when no data", async () => {
     mockPrisma.validator.findMany.mockResolvedValue([]);
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { REPUBLIC_CHAIN, DELEGATION_DEFAULTS } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 
 interface ChainDelegation {
   delegation: {
@@ -28,7 +29,7 @@ async function fetchValidatorDelegations(validatorAddr: string): Promise<ChainDe
   do {
     pages++;
     if (pages > MAX_PAGES) {
-      console.error("[delegations] Max pagination pages reached, stopping");
+      logger.error("delegations", "Max pagination pages reached, stopping");
       break;
     }
     const url: string = `${REPUBLIC_CHAIN.restUrl}/cosmos/staking/v1beta1/validators/${validatorAddr}/delegations?pagination.limit=${DELEGATION_DEFAULTS.DELEGATION_FETCH_LIMIT}${
@@ -37,7 +38,7 @@ async function fetchValidatorDelegations(validatorAddr: string): Promise<ChainDe
     try {
       const res: Response = await fetch(url, { signal: AbortSignal.timeout(DELEGATION_DEFAULTS.FETCH_TIMEOUT_MS) });
       if (!res.ok) {
-        console.error(`[delegations] Failed to fetch delegations for ${validatorAddr}:`, res.status);
+        logger.error("delegations", `Failed to fetch delegations for ${validatorAddr}: ${res.status}`);
         break;
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,7 +46,7 @@ async function fetchValidatorDelegations(validatorAddr: string): Promise<ChainDe
       all.push(...((data.delegation_responses as ChainDelegation[]) ?? []));
       nextKey = (data.pagination?.next_key as string) ?? null;
     } catch (error) {
-      console.error(`[delegations] Failed to fetch delegations for ${validatorAddr}:`, error);
+      logger.error("delegations", error);
       break;
     }
   } while (nextKey);

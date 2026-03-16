@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import type { PublishEventInput } from "./event-types";
 
 export async function publishEvent(
@@ -17,7 +18,7 @@ export async function publishEvent(
     });
     return event.seq;
   } catch (error) {
-    console.error("[publishEvent] Failed:", error);
+    logger.error("publishEvent", error);
     return null;
   }
 }

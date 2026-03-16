@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
 import { dispatchWebhooks } from "@/lib/webhooks/dispatch";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const authError = validateCronAuth(request);
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     const result = await dispatchWebhooks();
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
-    console.error("[Cron Webhooks]", error);
+    logger.error("Cron Webhooks", error);
     const message =
       process.env.NODE_ENV === "production"
         ? "Internal server error"
