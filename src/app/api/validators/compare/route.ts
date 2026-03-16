@@ -30,5 +30,18 @@ export async function GET(request: NextRequest) {
 
   const results = await compareValidators(ids);
 
-  return jsonResponse({ results }, rl.headers);
+  const foundIds = new Set(results.map((r) => r.validatorId));
+  const missingIds = ids.filter((id) => !foundIds.has(id));
+
+  if (missingIds.length === ids.length) {
+    return jsonResponse({ error: "No validators found" }, rl.headers, 404);
+  }
+
+  return jsonResponse(
+    {
+      results,
+      ...(missingIds.length > 0 && { warning: `Not found: ${missingIds.join(", ")}` }),
+    },
+    rl.headers,
+  );
 }

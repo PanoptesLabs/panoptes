@@ -124,31 +124,34 @@ async function getRisingLeaderboard(limit: number): Promise<LeaderboardEntry[]> 
     },
   });
 
-  const entries: Omit<LeaderboardEntry, "rank">[] = [];
+  const withScores = validators.filter((v) => v.scores.length > 0);
+  const validatorIds = withScores.map((v) => v.id);
 
-  for (const v of validators) {
+  // Bulk query: get oldest score per validator from 24h+ ago
+  const allOldScores = await prisma.validatorScore.findMany({
+    where: {
+      validatorId: { in: validatorIds },
+      timestamp: { lte: twentyFourHoursAgo },
+    },
+    orderBy: { timestamp: "desc" },
+    distinct: ["validatorId"],
+    select: { validatorId: true, score: true },
+  });
+
+  const oldScoreMap = new Map(allOldScores.map((s) => [s.validatorId, s.score]));
+
+  const entries = withScores.map((v) => {
     const latestScore = v.scores[0];
-    if (!latestScore) continue;
+    const oldScore = oldScoreMap.get(v.id);
+    const delta = oldScore !== undefined ? latestScore.score - oldScore : 0;
 
-    const oldScores = await prisma.validatorScore.findMany({
-      where: {
-        validatorId: v.id,
-        timestamp: { lte: twentyFourHoursAgo },
-      },
-      orderBy: { timestamp: "desc" },
-      take: 1,
-    });
-
-    const oldScore = oldScores[0];
-    const delta = oldScore ? latestScore.score - oldScore.score : 0;
-
-    entries.push({
+    return {
       validatorId: v.id,
       moniker: v.moniker,
       value: delta,
       score: latestScore.score,
-    });
-  }
+    };
+  });
 
   entries.sort((a, b) => b.value - a.value);
 
@@ -174,33 +177,41 @@ async function getStakeMagnetLeaderboard(limit: number): Promise<LeaderboardEntr
     },
   });
 
-  const entries: Omit<LeaderboardEntry, "rank">[] = [];
+  const withSnapshots = validators.filter(
+    (v) => v.delegationSnapshots.length > 0 && v.scores.length > 0,
+  );
+  const validatorIds = withSnapshots.map((v) => v.id);
 
-  for (const v of validators) {
+  // Bulk query: get oldest delegation snapshot per validator from 7d+ ago
+  const allOldSnapshots = await prisma.delegationSnapshot.findMany({
+    where: {
+      validatorId: { in: validatorIds },
+      timestamp: { lte: sevenDaysAgo },
+    },
+    orderBy: { timestamp: "desc" },
+    distinct: ["validatorId"],
+    select: { validatorId: true, totalDelegators: true },
+  });
+
+  const oldSnapshotMap = new Map(
+    allOldSnapshots.map((s) => [s.validatorId, s.totalDelegators]),
+  );
+
+  const entries = withSnapshots.map((v) => {
     const latestSnapshot = v.delegationSnapshots[0];
-    if (!latestSnapshot) continue;
+    const oldDelegators = oldSnapshotMap.get(v.id);
+    const delta =
+      oldDelegators !== undefined
+        ? latestSnapshot.totalDelegators - oldDelegators
+        : 0;
 
-    const oldSnapshots = await prisma.delegationSnapshot.findMany({
-      where: {
-        validatorId: v.id,
-        timestamp: { lte: sevenDaysAgo },
-      },
-      orderBy: { timestamp: "desc" },
-      take: 1,
-    });
-
-    const oldSnapshot = oldSnapshots[0];
-    const delta = oldSnapshot
-      ? latestSnapshot.totalDelegators - oldSnapshot.totalDelegators
-      : 0;
-
-    entries.push({
+    return {
       validatorId: v.id,
       moniker: v.moniker,
       value: delta,
-      score: v.scores[0]?.score ?? 0,
-    });
-  }
+      score: v.scores[0].score,
+    };
+  });
 
   entries.sort((a, b) => b.value - a.value);
 

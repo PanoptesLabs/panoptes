@@ -143,10 +143,11 @@ describe("getLeaderboard", () => {
       }),
     ]);
 
-    // v1 old score: 70 (delta +20), v2 old score: 75 (delta +5)
-    mockPrisma.validatorScore.findMany
-      .mockResolvedValueOnce([makeScore(70, { validatorId: "v1", timestamp: yesterday })])
-      .mockResolvedValueOnce([makeScore(75, { validatorId: "v2", timestamp: yesterday })]);
+    // Bulk query: v1 old score 70 (delta +20), v2 old score 75 (delta +5)
+    mockPrisma.validatorScore.findMany.mockResolvedValueOnce([
+      makeScore(70, { validatorId: "v1", timestamp: yesterday }),
+      makeScore(75, { validatorId: "v2", timestamp: yesterday }),
+    ]);
 
     const result = await getLeaderboard("rising", 20);
 
@@ -167,10 +168,11 @@ describe("getLeaderboard", () => {
       }),
     ]);
 
-    // v1 old: 30 (delta +20), v2 old: 90 (delta +10)
-    mockPrisma.delegationSnapshot.findMany
-      .mockResolvedValueOnce([{ totalDelegators: 30, timestamp: weekAgo }])
-      .mockResolvedValueOnce([{ totalDelegators: 90, timestamp: weekAgo }]);
+    // Bulk query: v1 old 30 (delta +20), v2 old 90 (delta +10)
+    mockPrisma.delegationSnapshot.findMany.mockResolvedValueOnce([
+      { validatorId: "v1", totalDelegators: 30, timestamp: weekAgo },
+      { validatorId: "v2", totalDelegators: 90, timestamp: weekAgo },
+    ]);
 
     const result = await getLeaderboard("stake_magnet", 20);
 
