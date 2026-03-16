@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { toast } from "sonner";
 import { Webhook, Plus, X, Loader2, Copy, CheckCircle } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 const EVENT_OPTIONS = [
   "anomaly.created",
@@ -134,7 +136,10 @@ export function WebhookList() {
           <CardContent className="py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-teal-light">Webhook Secret</p>
+                <p className="flex items-center gap-1 text-sm font-medium text-teal-light">
+                  Webhook Secret
+                  <HelpTooltip content={helpContent.webhooks.concepts.secret} side="right" />
+                </p>
                 <p className="mt-1 text-xs text-teal-light/60">
                   Copy this secret now — it won&apos;t be shown again.
                 </p>
@@ -211,7 +216,10 @@ export function WebhookList() {
               {nameError && <p className="mt-1 text-xs text-rose-DEFAULT">{nameError}</p>}
             </div>
             <div>
-              <label htmlFor="webhook-url" className="mb-1 block text-xs text-dusty-lavender/50">URL</label>
+              <label htmlFor="webhook-url" className="mb-1 flex items-center gap-1 text-xs text-dusty-lavender/50">
+                URL
+                <HelpTooltip content={helpContent.webhooks.concepts.httpsRequired} side="right" />
+              </label>
               <input
                 id="webhook-url"
                 type="url"
@@ -229,7 +237,10 @@ export function WebhookList() {
               {urlError && <p className="mt-1 text-xs text-rose-DEFAULT">{urlError}</p>}
             </div>
             <div>
-              <label className="mb-1 block text-xs text-dusty-lavender/50">Events</label>
+              <label className="mb-1 flex items-center gap-1 text-xs text-dusty-lavender/50">
+                Events
+                <HelpTooltip content={helpContent.webhooks.concepts.eventSelection} side="right" />
+              </label>
               <div className="flex flex-wrap gap-2">
                 {EVENT_OPTIONS.map((event) => (
                   <button

@@ -7,6 +7,8 @@ import { FilterSelect } from "./filter-select";
 import { ErrorState } from "./error-state";
 import { EmptyState } from "./empty-state";
 import { TrendingUp, Loader2 } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 const METRIC_OPTIONS = [
   { label: "All Metrics", value: "" },
@@ -39,18 +41,34 @@ export function ForecastList() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <FilterSelect
-          label="Metric"
-          options={METRIC_OPTIONS}
-          value={metric}
-          onChange={setMetric}
-        />
-        <FilterSelect
-          label="Entity Type"
-          options={ENTITY_TYPE_OPTIONS}
-          value={entityType}
-          onChange={setEntityType}
-        />
+        <div className="flex items-center gap-1">
+          <FilterSelect
+            label="Metric"
+            options={METRIC_OPTIONS}
+            value={metric}
+            onChange={setMetric}
+          />
+          {metric && helpContent.forecasts.metrics[metric as keyof typeof helpContent.forecasts.metrics] && (
+            <HelpTooltip
+              content={helpContent.forecasts.metrics[metric as keyof typeof helpContent.forecasts.metrics]}
+              side="right"
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <FilterSelect
+            label="Entity Type"
+            options={ENTITY_TYPE_OPTIONS}
+            value={entityType}
+            onChange={setEntityType}
+          />
+          {entityType && helpContent.anomalies.entityTypes[entityType as keyof typeof helpContent.anomalies.entityTypes] && (
+            <HelpTooltip
+              content={helpContent.anomalies.entityTypes[entityType as keyof typeof helpContent.anomalies.entityTypes]}
+              side="right"
+            />
+          )}
+        </div>
       </div>
 
       {isLoading && !data && (

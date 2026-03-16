@@ -20,6 +20,8 @@ import {
 } from "@/lib/formatters";
 import { formatDate, timeAgo } from "@/lib/time";
 import { ArrowLeft, ShieldAlert, Calendar } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 import { subDays } from "date-fns";
 
 const RANGES = [
@@ -120,8 +122,9 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
         </Card>
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardHeader className="pb-1">
-            <CardTitle className="text-xs text-dusty-lavender/50">
+            <CardTitle className="flex items-center gap-1 text-xs text-dusty-lavender/50">
               Commission
+              <HelpTooltip content={helpContent.validators.fields.commission} side="right" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -132,8 +135,9 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
         </Card>
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardHeader className="pb-1">
-            <CardTitle className="text-xs text-dusty-lavender/50">
+            <CardTitle className="flex items-center gap-1 text-xs text-dusty-lavender/50">
               Jailed / Missed
+              <HelpTooltip content={helpContent.validators.fields.missedBlocks} side="right" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -182,8 +186,9 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
         </Card>
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardHeader className="pb-1">
-            <CardTitle className="text-xs text-dusty-lavender/50">
+            <CardTitle className="flex items-center gap-1 text-xs text-dusty-lavender/50">
               Voting Power
+              <HelpTooltip content={helpContent.validators.fields.votingPower} side="right" />
             </CardTitle>
           </CardHeader>
           <CardContent>

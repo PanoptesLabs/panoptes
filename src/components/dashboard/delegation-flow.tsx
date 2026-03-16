@@ -4,6 +4,8 @@ import { useDelegationFlow } from "@/hooks/use-delegations";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeftRight, TrendingUp, TrendingDown } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 export function DelegationFlow() {
   const { data, error, isLoading } = useDelegationFlow(7);
@@ -44,7 +46,10 @@ export function DelegationFlow() {
             <span>Validator</span>
             <span className="text-right">Delegators</span>
             <span className="text-right">Total Delegated</span>
-            <span className="text-right">Churn Rate</span>
+            <span className="flex items-center justify-end gap-1">
+              Churn Rate
+              <HelpTooltip content={helpContent.delegations.fields.churnRate} side="left" />
+            </span>
           </div>
           {flow.map((v) => (
             <div key={v.validatorId} className="grid grid-cols-4 gap-4 rounded bg-slate-dark/20 px-3 py-2 text-xs">

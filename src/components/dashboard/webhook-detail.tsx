@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { Play, Trash2, Loader2 } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 import type { WebhookDeliveryItem } from "@/types";
 
 interface WebhookDetailProps {
@@ -200,8 +202,9 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
       {/* Delivery log */}
       <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-dusty-lavender/70">
+          <CardTitle className="flex items-center gap-1 text-sm font-medium text-dusty-lavender/70">
             Delivery Log
+            <HelpTooltip content={helpContent.webhooks.concepts.deliveryLog} side="right" />
           </CardTitle>
         </CardHeader>
         <CardContent>

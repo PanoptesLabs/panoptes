@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { AlertTriangle } from "lucide-react";
+import { HelpTooltip } from "@/components/dashboard/help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 const TYPE_OPTIONS = [
   { label: "All Types", value: "" },
@@ -74,18 +76,34 @@ export default function AnomaliesPage() {
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <FilterSelect
-          label="Type"
-          options={TYPE_OPTIONS}
-          value={type}
-          onChange={setType}
-        />
-        <FilterSelect
-          label="Severity"
-          options={SEVERITY_OPTIONS}
-          value={severity}
-          onChange={setSeverity}
-        />
+        <div className="flex items-center gap-1">
+          <FilterSelect
+            label="Type"
+            options={TYPE_OPTIONS}
+            value={type}
+            onChange={setType}
+          />
+          {type && helpContent.anomalies.types[type as keyof typeof helpContent.anomalies.types] && (
+            <HelpTooltip
+              content={helpContent.anomalies.types[type as keyof typeof helpContent.anomalies.types]}
+              side="right"
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <FilterSelect
+            label="Severity"
+            options={SEVERITY_OPTIONS}
+            value={severity}
+            onChange={setSeverity}
+          />
+          {severity && helpContent.anomalies.severities[severity as keyof typeof helpContent.anomalies.severities] && (
+            <HelpTooltip
+              content={helpContent.anomalies.severities[severity as keyof typeof helpContent.anomalies.severities]}
+              side="right"
+            />
+          )}
+        </div>
         <FilterSelect
           label="Status"
           options={RESOLVED_OPTIONS}

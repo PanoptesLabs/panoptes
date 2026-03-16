@@ -9,6 +9,8 @@ import { FilterSelect } from "./filter-select";
 import { ErrorState } from "./error-state";
 import { EmptyState } from "./empty-state";
 import { Target, ShieldCheck, AlertTriangle, Ban } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 const INDICATOR_OPTIONS = [
   { label: "All Indicators", value: "" },
@@ -50,14 +52,24 @@ export function SloList() {
           isLoading={isLoading}
         />
         <StatCard
-          title="Breaching"
+          title={
+            <span className="flex items-center gap-1">
+              Breaching
+              <HelpTooltip content={helpContent.slos.concepts.breaching} side="bottom" />
+            </span>
+          }
           value={data ? String(data.breaching) : "--"}
           subtitle="SLOs below target"
           icon={<AlertTriangle className="size-4" />}
           isLoading={isLoading}
         />
         <StatCard
-          title="Budget Exhausted"
+          title={
+            <span className="flex items-center gap-1">
+              Budget Exhausted
+              <HelpTooltip content={helpContent.slos.concepts.errorBudget} side="bottom" />
+            </span>
+          }
           value={data ? String(data.budgetExhausted) : "--"}
           subtitle="no remaining budget"
           icon={<Ban className="size-4" />}
@@ -73,6 +85,12 @@ export function SloList() {
           value={indicator}
           onChange={setIndicator}
         />
+        {indicator && helpContent.slos.indicators[indicator as keyof typeof helpContent.slos.indicators] && (
+          <HelpTooltip
+            content={helpContent.slos.indicators[indicator as keyof typeof helpContent.slos.indicators]}
+            side="right"
+          />
+        )}
       </div>
 
       {/* Loading */}

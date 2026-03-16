@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { toast } from "sonner";
 import { Key, Plus, X, Loader2, Copy, CheckCircle, Trash2 } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 const TIER_OPTIONS = ["free", "pro"] as const;
 
@@ -179,7 +181,13 @@ export function ApiKeyList() {
               {nameError && <p className="mt-1 text-xs text-rose-DEFAULT">{nameError}</p>}
             </div>
             <div>
-              <label className="mb-1 block text-xs text-dusty-lavender/50">Tier</label>
+              <label className="mb-1 flex items-center gap-1 text-xs text-dusty-lavender/50">
+                Tier
+                <HelpTooltip
+                  content={formTier === "pro" ? helpContent.apiKeys.pro : helpContent.apiKeys.free}
+                  side="right"
+                />
+              </label>
               <div className="flex gap-2">
                 {TIER_OPTIONS.map((tier) => (
                   <button

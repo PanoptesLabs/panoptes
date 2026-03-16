@@ -6,6 +6,8 @@ import { EndpointCard } from "./endpoint-card";
 import { ErrorState } from "./error-state";
 import { formatLatency, formatNumber } from "@/lib/formatters";
 import { Globe, Heart, Timer } from "lucide-react";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 export function EndpointsList() {
   const { data, error, isLoading, mutate } = useEndpoints();
@@ -42,7 +44,12 @@ export function EndpointsList() {
           isLoading={isLoading}
         />
         <StatCard
-          title="Healthy"
+          title={
+            <span className="flex items-center gap-1">
+              Healthy
+              <HelpTooltip content={helpContent.endpoints.fields.healthy} side="bottom" />
+            </span>
+          }
           value={`${healthyCount} / ${endpoints.length}`}
           subtitle={
             healthyCount === endpoints.length
@@ -53,7 +60,12 @@ export function EndpointsList() {
           isLoading={isLoading}
         />
         <StatCard
-          title="Avg Latency"
+          title={
+            <span className="flex items-center gap-1">
+              Avg Latency
+              <HelpTooltip content={helpContent.endpoints.fields.latency} side="bottom" />
+            </span>
+          }
           value={avgLatency > 0 ? formatLatency(avgLatency) : "--"}
           subtitle="across all endpoints"
           icon={<Timer className="size-4" />}

@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
 import { timeAgo } from "@/lib/time";
+import { HelpTooltip } from "./help-tooltip";
+import { helpContent } from "@/lib/help-content";
 
 interface ForecastItem {
   id: string;
@@ -72,11 +74,12 @@ export function ForecastCard({ forecast }: ForecastCardProps) {
           </div>
           <span
             className={cn(
-              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0",
+              "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0",
               config.classes,
             )}
           >
             {config.label}
+            <HelpTooltip content={helpContent.forecasts.concepts.prediction} side="left" />
           </span>
         </div>
       </CardHeader>
@@ -85,16 +88,18 @@ export function ForecastCard({ forecast }: ForecastCardProps) {
 
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/40">
               Confidence
+              <HelpTooltip content={helpContent.forecasts.concepts.confidence} side="top" />
             </p>
             <p className="font-mono text-sm font-medium text-mist">
               {forecast.confidence.toFixed(1)}%
             </p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/40">
               Horizon
+              <HelpTooltip content={helpContent.forecasts.concepts.timeHorizon} side="top" />
             </p>
             <p className="font-mono text-sm font-medium text-mist">
               {forecast.timeHorizon}
