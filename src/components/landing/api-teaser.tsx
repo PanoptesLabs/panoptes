@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import Link from "next/link";
 import { motion, useInView, useReducedMotion } from "motion/react";
 import { Code2, ExternalLink } from "lucide-react";
 import { codeLine } from "@/lib/animations";
@@ -17,6 +16,10 @@ const codeLines = [
   "  rpcUrl: endpoint.url,",
   "});",
 ];
+
+const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL
+  ? `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/dashboard`
+  : "/dashboard";
 
 export function ApiTeaser() {
   const codeRef = useRef<HTMLDivElement>(null);
@@ -64,13 +67,13 @@ export function ApiTeaser() {
         </ScrollReveal>
 
         <ScrollReveal delay={0.3} className="mt-8 text-center">
-          <Link
-            href="/dashboard"
+          <a
+            href={dashboardUrl}
             className="inline-flex items-center gap-2 rounded-lg border border-soft-violet/30 px-6 py-3 text-sm font-medium text-soft-violet transition-all hover:scale-105 hover:border-soft-violet hover:bg-soft-violet/10"
           >
             Explore Dashboard
             <ExternalLink className="size-4" />
-          </Link>
+          </a>
         </ScrollReveal>
       </div>
     </section>

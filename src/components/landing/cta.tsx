@@ -1,6 +1,9 @@
-import Link from "next/link";
 import { Github, MessageCircle } from "lucide-react";
 import { APP_NAME, APP_VERSION } from "@/lib/constants";
+
+const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL
+  ? `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/dashboard`
+  : "/dashboard";
 
 export function CallToAction() {
   return (
@@ -19,12 +22,12 @@ export function CallToAction() {
             validators, score endpoints, and route intelligently.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/dashboard"
+            <a
+              href={dashboardUrl}
               className="rounded-lg bg-soft-violet px-6 py-3 text-sm font-bold text-white transition-all hover:bg-deep-iris hover:scale-105 hover:shadow-lg hover:shadow-soft-violet/20"
             >
               Open Dashboard
-            </Link>
+            </a>
             <a
               href="https://discord.gg/kNERz4xC"
               target="_blank"

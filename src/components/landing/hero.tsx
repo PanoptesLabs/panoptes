@@ -2,13 +2,16 @@
 
 import { useRef } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { ChevronDown, Github } from "lucide-react";
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@/lib/constants";
 import { fadeInUp, floatingParticle } from "@/lib/animations";
 
 const particles = Array.from({ length: 7 }, (_, i) => i);
+
+const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL
+  ? `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/dashboard`
+  : "/dashboard";
 
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -107,12 +110,12 @@ export function Hero() {
           custom={0.4}
           className="flex justify-center gap-4"
         >
-          <Link
-            href="/dashboard"
+          <a
+            href={dashboardUrl}
             className="rounded-lg bg-soft-violet px-6 py-3 text-sm font-medium text-white transition-all hover:bg-deep-iris hover:scale-105 hover:shadow-lg hover:shadow-soft-violet/20"
           >
             View Dashboard
-          </Link>
+          </a>
           <a
             href="https://github.com/eren-karakus0/panoptes"
             target="_blank"
