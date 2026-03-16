@@ -11,7 +11,7 @@ export const governanceResolvers = {
       const proposals = await prisma.governanceProposal.findMany({
         where,
         orderBy: { createdAt: "desc" },
-        take: Math.min(args.limit ?? 20, 100),
+        take: Math.min(Math.max(1, args.limit ?? 20), 100),
         select: {
           id: true,
           title: true,

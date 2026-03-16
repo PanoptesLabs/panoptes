@@ -10,8 +10,8 @@ export const validatorResolvers = {
       const [items, total] = await Promise.all([
         prisma.validator.findMany({
           where,
-          take: Math.min(args.limit ?? 50, 200),
-          skip: args.offset ?? 0,
+          take: Math.min(Math.max(1, args.limit ?? 50), 200),
+          skip: Math.max(0, args.offset ?? 0),
           orderBy: { lastUpdated: "desc" },
         }),
         prisma.validator.count({ where }),

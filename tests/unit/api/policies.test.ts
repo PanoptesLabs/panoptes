@@ -16,6 +16,7 @@ vi.mock("@/lib/db", () => ({
       count: vi.fn(),
     },
     $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn({
+      $queryRaw: vi.fn(),
       policy: {
         count: vi.fn().mockResolvedValue(0),
         create: vi.fn().mockResolvedValue({
@@ -340,6 +341,34 @@ describe("PATCH /api/policies/:id", () => {
     expect(body.error).toContain("Cooldown must be between");
   });
 
+  it("rejects empty name after trim", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ name: "  " }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("at least 2 characters");
+  });
+
+  it("rejects single-char name", async () => {
+    vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
+
+    const { PATCH } = await import("@/app/api/policies/[id]/route");
+    const req = new NextRequest("http://localhost/api/policies/p-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ws_token" },
+      body: JSON.stringify({ name: "A" }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "p-1" }) });
+    expect(res.status).toBe(400);
+  });
+
   it("accepts valid conditions and actions update", async () => {
     vi.mocked(prisma.policy.findFirst).mockResolvedValue({ id: "p-1", workspaceId: "ws-1" } as never);
     vi.mocked(prisma.policy.update).mockResolvedValue({
@@ -394,6 +423,7 @@ describe("POST /api/policies - atomic creation", () => {
     authSuccess();
     // Restore $transaction mock implementation (may have been overridden by previous tests)
     vi.mocked(prisma.$transaction).mockImplementation(((fn: (tx: unknown) => unknown) => fn({
+      $queryRaw: vi.fn(),
       policy: {
         count: vi.fn().mockResolvedValue(0),
         create: vi.fn().mockResolvedValue({

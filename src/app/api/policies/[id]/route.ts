@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { requireWorkspace } from "@/lib/workspace-auth";
-import { POLICY_DEFAULTS } from "@/lib/constants";
+import { POLICY_DEFAULTS, POLICY_OPERATORS, POLICY_ACTION_TYPES } from "@/lib/constants";
 import { ALLOWED_FIELDS } from "@/lib/intelligence/policy-conditions";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -74,7 +74,12 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
   const b = body as Record<string, unknown>;
   const updateData: Record<string, unknown> = {};
 
-  if (typeof b.name === "string") updateData.name = b.name.trim();
+  if (typeof b.name === "string") {
+    if (b.name.trim().length < 2) {
+      return NextResponse.json({ error: "Name must be at least 2 characters" }, { status: 400, headers: rl.headers });
+    }
+    updateData.name = b.name.trim();
+  }
   if (typeof b.description === "string") updateData.description = b.description.trim();
   if (typeof b.isActive === "boolean") updateData.isActive = b.isActive;
   if (typeof b.dryRun === "boolean") updateData.dryRun = b.dryRun;
@@ -100,7 +105,6 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
         { status: 400, headers: rl.headers },
       );
     }
-    const validOperators = ["lt", "gt", "eq", "neq", "gte", "lte", "in"];
     for (const c of b.conditions) {
       if (!c || typeof c !== "object" || !c.field || !c.operator || c.value === undefined) {
         return NextResponse.json(
@@ -108,7 +112,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
           { status: 400, headers: rl.headers },
         );
       }
-      if (!validOperators.includes(c.operator)) {
+      if (!(POLICY_OPERATORS as readonly string[]).includes(c.operator)) {
         return NextResponse.json({ error: `Invalid operator: ${c.operator}` }, { status: 400, headers: rl.headers });
       }
       if (!ALLOWED_FIELDS.has(c.field)) {
@@ -128,9 +132,8 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
         { status: 400, headers: rl.headers },
       );
     }
-    const validActionTypes = ["webhook", "routing_exclude", "log", "annotate", "incident_create"];
     for (const a of b.actions) {
-      if (!a || typeof a !== "object" || !validActionTypes.includes(a.type)) {
+      if (!a || typeof a !== "object" || !(POLICY_ACTION_TYPES as readonly string[]).includes(a.type)) {
         return NextResponse.json({ error: `Invalid action type: ${a?.type}` }, { status: 400, headers: rl.headers });
       }
     }
