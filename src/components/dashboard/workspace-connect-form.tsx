@@ -10,6 +10,8 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronRight,
+  Copy,
+  Check,
 } from "lucide-react";
 
 interface WorkspaceConnectFormProps {
@@ -26,6 +28,18 @@ export function WorkspaceConnectForm({
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const curlCommand = `curl -X POST ${typeof window !== "undefined" ? window.location.origin : ""}/api/workspaces \\
+  -H "Content-Type: application/json" \\
+  -H "X-Admin-Secret: <your-admin-secret>" \\
+  -d '{"name": "My Workspace", "slug": "my-workspace"}'`;
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(curlCommand);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleConnect = async () => {
     const trimmed = input.trim();
@@ -118,17 +132,54 @@ export function WorkspaceConnectForm({
                 How to get a token
               </button>
               {helpOpen && (
-                <div className="mt-3 space-y-2 rounded-lg bg-slate-dark/30 p-3 text-xs text-dusty-lavender/60">
-                  <p>Create a workspace via the API:</p>
-                  <code className="block overflow-x-auto whitespace-pre rounded bg-slate-dark/50 p-2 font-mono text-[10px] text-dusty-lavender/80">
-                    {`curl -X POST /api/workspaces \\
-  -H "X-Admin-Secret: <secret>" \\
-  -d '{"name":"My WS","slug":"my-ws"}'`}
-                  </code>
-                  <p>
-                    The response includes a token with <code className="rounded bg-slate-dark/50 px-1 font-mono">ws_</code> prefix.
-                    Save it securely — it cannot be retrieved later.
+                <div className="mt-3 space-y-3 rounded-lg bg-slate-dark/30 p-3 text-xs text-dusty-lavender/60">
+                  <p className="font-medium text-dusty-lavender/80">
+                    Workspace tokens are created by an administrator via the API.
+                    Follow these steps:
                   </p>
+
+                  <div className="space-y-2">
+                    <p>
+                      <span className="inline-flex size-4 items-center justify-center rounded-full bg-soft-violet/20 text-[10px] font-bold text-soft-violet">1</span>
+                      {" "}Run this command in your terminal:
+                    </p>
+                    <div className="relative">
+                      <pre className="overflow-x-auto whitespace-pre rounded bg-slate-dark/50 p-2.5 pr-10 font-mono text-[10px] leading-relaxed text-dusty-lavender/80">
+                        {curlCommand}
+                      </pre>
+                      <button
+                        onClick={handleCopy}
+                        className="absolute right-1.5 top-1.5 flex size-6 items-center justify-center rounded bg-slate-dark/80 text-dusty-lavender/50 transition-colors hover:text-mist"
+                        aria-label="Copy command"
+                      >
+                        {copied ? (
+                          <Check className="size-3 text-teal-DEFAULT" />
+                        ) : (
+                          <Copy className="size-3" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p>
+                      <span className="inline-flex size-4 items-center justify-center rounded-full bg-soft-violet/20 text-[10px] font-bold text-soft-violet">2</span>
+                      {" "}The response will include your workspace token:
+                    </p>
+                    <pre className="overflow-x-auto whitespace-pre rounded bg-slate-dark/50 p-2.5 font-mono text-[10px] leading-relaxed text-dusty-lavender/80">{`{ "workspace": { ... }, "token": "ws_a1b2c3..." }`}</pre>
+                  </div>
+
+                  <div>
+                    <p>
+                      <span className="inline-flex size-4 items-center justify-center rounded-full bg-soft-violet/20 text-[10px] font-bold text-soft-violet">3</span>
+                      {" "}Paste the <code className="rounded bg-slate-dark/50 px-1 font-mono text-dusty-lavender/80">ws_</code> token above and click Connect.
+                    </p>
+                  </div>
+
+                  <div className="mt-1 flex items-start gap-1.5 rounded border border-amber-DEFAULT/20 bg-amber-DEFAULT/5 p-2 text-[10px] text-amber-DEFAULT/80">
+                    <AlertCircle className="mt-0.5 size-3 shrink-0" />
+                    <span>Save your token securely — it is shown only once and cannot be retrieved later.</span>
+                  </div>
                 </div>
               )}
             </div>
