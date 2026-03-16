@@ -100,6 +100,7 @@ export async function incrementAndCheckQuota(
 
 /**
  * Check both daily and monthly quotas for an API key.
+ * Uses a transaction so both counters are rolled back if either fails.
  */
 export async function checkQuotas(
   apiKeyId: string,
@@ -110,29 +111,53 @@ export async function checkQuotas(
   const dailyPeriod = now.toISOString().slice(0, 10); // "2026-03-15"
   const monthlyPeriod = now.toISOString().slice(0, 7); // "2026-03"
 
-  const dailyOk = await incrementAndCheckQuota(
-    apiKeyId,
-    dailyPeriod,
-    "daily",
-    tierConfig.dailyQuota,
-  );
-  if (!dailyOk) {
-    return { allowed: false, reason: "Daily quota exceeded" };
-  }
-
-  if (tierConfig.monthlyQuota > 0) {
-    const monthlyOk = await incrementAndCheckQuota(
+  return prisma.$transaction(async (tx) => {
+    const dailyOk = await incrementQuotaTx(
+      tx,
       apiKeyId,
-      monthlyPeriod,
-      "monthly",
-      tierConfig.monthlyQuota,
+      dailyPeriod,
+      "daily",
+      tierConfig.dailyQuota,
     );
-    if (!monthlyOk) {
-      return { allowed: false, reason: "Monthly quota exceeded" };
+    if (!dailyOk) {
+      return { allowed: false, reason: "Daily quota exceeded" };
     }
-  }
 
-  return { allowed: true };
+    if (tierConfig.monthlyQuota > 0) {
+      const monthlyOk = await incrementQuotaTx(
+        tx,
+        apiKeyId,
+        monthlyPeriod,
+        "monthly",
+        tierConfig.monthlyQuota,
+      );
+      if (!monthlyOk) {
+        return { allowed: false, reason: "Monthly quota exceeded" };
+      }
+    }
+
+    return { allowed: true };
+  });
+}
+
+async function incrementQuotaTx(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  apiKeyId: string,
+  period: string,
+  periodType: "daily" | "monthly",
+  quota: number,
+): Promise<boolean> {
+  if (quota === 0) return true;
+
+  const result = await tx.$queryRaw<{ count: number }[]>`
+    INSERT INTO "ApiKeyUsageCounter" ("id", "apiKeyId", "period", "periodType", "count", "updatedAt")
+    VALUES (gen_random_uuid(), ${apiKeyId}, ${period}, ${periodType}, 1, NOW())
+    ON CONFLICT ("apiKeyId", "period", "periodType")
+    DO UPDATE SET "count" = "ApiKeyUsageCounter"."count" + 1, "updatedAt" = NOW()
+    WHERE "ApiKeyUsageCounter"."count" < ${quota}
+    RETURNING "count"`;
+
+  return result.length > 0;
 }
 
 /**
