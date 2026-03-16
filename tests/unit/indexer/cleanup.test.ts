@@ -16,6 +16,7 @@ vi.mock("@/lib/db", () => ({
     delegationEvent: { deleteMany: vi.fn() },
     delegationSnapshot: { deleteMany: vi.fn() },
     policyExecution: { deleteMany: vi.fn() },
+    forecast: { deleteMany: vi.fn() },
   },
 }));
 
@@ -46,6 +47,7 @@ describe("cleanupOldData", () => {
       { count: 15 },
       { count: 20 },
       { count: 9 },
+      { count: 11 },
     ]);
 
     const result = await cleanupOldData();
@@ -63,11 +65,13 @@ describe("cleanupOldData", () => {
     expect(result.deletedDelegationEvents).toBe(15);
     expect(result.deletedDelegationSnapshots).toBe(20);
     expect(result.deletedPolicyExecutions).toBe(9);
+    expect(result.deletedForecasts).toBe(11);
     expect(result.duration).toBeGreaterThanOrEqual(0);
   });
 
   it("handles empty tables", async () => {
     mockPrisma.$transaction.mockResolvedValue([
+      { count: 0 },
       { count: 0 },
       { count: 0 },
       { count: 0 },
@@ -96,6 +100,7 @@ describe("cleanupOldData", () => {
     expect(result.deletedDelegationEvents).toBe(0);
     expect(result.deletedDelegationSnapshots).toBe(0);
     expect(result.deletedPolicyExecutions).toBe(0);
+    expect(result.deletedForecasts).toBe(0);
   });
 
   it("throws IndexerError on failure", async () => {

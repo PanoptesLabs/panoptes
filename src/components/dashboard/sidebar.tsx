@@ -18,6 +18,7 @@ import {
   ScrollText,
   Vote,
   ArrowLeftRight,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PrismIcon } from "@/components/icons/prism-icon";
@@ -38,6 +39,7 @@ const reliabilityItems = [
 const intelligenceItems = [
   { href: "/dashboard/governance", label: "Governance", icon: Vote },
   { href: "/dashboard/delegations", label: "Delegations", icon: ArrowLeftRight },
+  { href: "/dashboard/forecasts", label: "Forecasts", icon: TrendingUp },
 ];
 
 const settingsItems = [

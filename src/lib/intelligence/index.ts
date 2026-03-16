@@ -6,3 +6,4 @@ export { evaluateSlos } from "./slo";
 export { correlateIncidents } from "./incident";
 export { evaluatePolicies } from "./policy-engine";
 export { detectWhaleMovement } from "./whale-detection";
+export { generateForecasts, getForecasts } from "./forecasting";
