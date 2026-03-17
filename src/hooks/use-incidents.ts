@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { workspaceSwrConfig } from "./use-api";
+import { workspaceSwrConfig, workspaceMutate } from "./use-api";
 import type { IncidentListResponse, IncidentSummary, IncidentItem } from "@/types";
 
 interface IncidentFilters {
@@ -44,30 +44,14 @@ export function useIncidentDetail(token: string | null, id: string | null) {
 }
 
 // Mutation helpers
-export async function acknowledgeIncident(token: string, id: string) {
-  const res = await fetch(`/api/incidents/${id}/acknowledge`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Failed to acknowledge incident");
-  return res.json();
+export function acknowledgeIncident(token: string, id: string) {
+  return workspaceMutate(token, `/api/incidents/${id}`, "PATCH", { status: "acknowledged" });
 }
 
-export async function resolveIncident(token: string, id: string) {
-  const res = await fetch(`/api/incidents/${id}/resolve`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Failed to resolve incident");
-  return res.json();
+export function resolveIncident(token: string, id: string) {
+  return workspaceMutate(token, `/api/incidents/${id}`, "PATCH", { status: "resolved" });
 }
 
-export async function addIncidentComment(token: string, id: string, message: string) {
-  const res = await fetch(`/api/incidents/${id}/events`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ eventType: "comment", message }),
-  });
-  if (!res.ok) throw new Error("Failed to add comment");
-  return res.json();
+export function addIncidentComment(token: string, id: string, message: string) {
+  return workspaceMutate(token, `/api/incidents/${id}/events`, "POST", { eventType: "comment", message });
 }

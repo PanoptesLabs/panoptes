@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { workspaceSwrConfig } from "./use-api";
+import { workspaceSwrConfig, workspaceMutate } from "./use-api";
 import type { WebhookItem, WebhookDeliveryResponse } from "@/types";
 
 export function useWebhooks(token: string | null) {
@@ -36,32 +36,17 @@ export function useWebhookDeliveries(
 }
 
 // Mutation helpers
-export async function createWebhook(
+export function createWebhook(
   token: string,
   data: { name: string; url: string; events: string[] },
 ) {
-  const res = await fetch("/api/webhooks", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to create webhook");
-  return res.json();
+  return workspaceMutate<WebhookItem>(token, "/api/webhooks", "POST", data);
 }
 
-export async function deleteWebhook(token: string, id: string) {
-  const res = await fetch(`/api/webhooks/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Failed to delete webhook");
+export function deleteWebhook(token: string, id: string) {
+  return workspaceMutate(token, `/api/webhooks/${id}`, "DELETE");
 }
 
-export async function testWebhook(token: string, id: string) {
-  const res = await fetch(`/api/webhooks/${id}/test`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Failed to test webhook");
-  return res.json();
+export function testWebhook(token: string, id: string) {
+  return workspaceMutate<Record<string, unknown>>(token, `/api/webhooks/${id}/test`, "POST");
 }

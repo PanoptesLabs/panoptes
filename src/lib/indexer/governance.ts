@@ -2,9 +2,7 @@ import { prisma } from "@/lib/db";
 import { REPUBLIC_CHAIN, GOVERNANCE_DEFAULTS } from "@/lib/constants";
 import { publishEvent } from "@/lib/events/publish";
 import { CHANNELS } from "@/lib/events/event-types";
-import { logger } from "@/lib/logger";
-
-const MAX_PAGES = 50;
+import { fetchPaginated } from "./paginate";
 
 interface ChainProposal {
   id: string;
@@ -34,66 +32,26 @@ export interface GovernanceSyncResult {
   duration: number;
 }
 
-async function fetchProposals(): Promise<ChainProposal[]> {
-  const all: ChainProposal[] = [];
-  let nextKey: string | null = null;
-  let page = 0;
-  do {
-    if (page >= MAX_PAGES) {
-      logger.warn("governance", `Reached max page limit (${MAX_PAGES}) for proposals, stopping pagination`);
-      break;
-    }
-    const url: string = `${REPUBLIC_CHAIN.restUrl}/cosmos/gov/v1/proposals?pagination.limit=${GOVERNANCE_DEFAULTS.PROPOSAL_FETCH_LIMIT}${
-      nextKey ? `&pagination.key=${encodeURIComponent(nextKey)}` : ""
-    }`;
-    try {
-      const res: Response = await fetch(url, { signal: AbortSignal.timeout(GOVERNANCE_DEFAULTS.FETCH_TIMEOUT_MS) });
-      if (!res.ok) {
-        logger.error("governance", `Failed to fetch proposals: ${res.status} ${res.statusText}`);
-        break;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await res.json();
-      all.push(...((data.proposals as ChainProposal[]) ?? []));
-      nextKey = (data.pagination?.next_key as string) ?? null;
-    } catch (error) {
-      logger.error("governance", error);
-      break;
-    }
-    page++;
-  } while (nextKey);
-  return all;
+function fetchProposals(): Promise<ChainProposal[]> {
+  return fetchPaginated<ChainProposal>(
+    (nextKey) => {
+      const base = `${REPUBLIC_CHAIN.restUrl}/cosmos/gov/v1/proposals?pagination.limit=${GOVERNANCE_DEFAULTS.PROPOSAL_FETCH_LIMIT}`;
+      return nextKey ? `${base}&pagination.key=${encodeURIComponent(nextKey)}` : base;
+    },
+    (data) => ((data.proposals as ChainProposal[]) ?? []),
+    { timeoutMs: GOVERNANCE_DEFAULTS.FETCH_TIMEOUT_MS, label: "governance" },
+  );
 }
 
-async function fetchVotes(proposalId: string): Promise<ChainVote[]> {
-  const all: ChainVote[] = [];
-  let nextKey: string | null = null;
-  let page = 0;
-  do {
-    if (page >= MAX_PAGES) {
-      logger.warn("governance", `Reached max page limit (${MAX_PAGES}) for votes on proposal ${proposalId}, stopping pagination`);
-      break;
-    }
-    const url: string = `${REPUBLIC_CHAIN.restUrl}/cosmos/gov/v1/proposals/${proposalId}/votes?pagination.limit=${GOVERNANCE_DEFAULTS.VOTE_FETCH_LIMIT}${
-      nextKey ? `&pagination.key=${encodeURIComponent(nextKey)}` : ""
-    }`;
-    try {
-      const res: Response = await fetch(url, { signal: AbortSignal.timeout(GOVERNANCE_DEFAULTS.FETCH_TIMEOUT_MS) });
-      if (!res.ok) {
-        logger.error("governance", `Failed to fetch votes for proposal ${proposalId}: ${res.status}`);
-        break;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await res.json();
-      all.push(...((data.votes as ChainVote[]) ?? []));
-      nextKey = (data.pagination?.next_key as string) ?? null;
-    } catch (error) {
-      logger.error("governance", error);
-      break;
-    }
-    page++;
-  } while (nextKey);
-  return all;
+function fetchVotes(proposalId: string): Promise<ChainVote[]> {
+  return fetchPaginated<ChainVote>(
+    (nextKey) => {
+      const base = `${REPUBLIC_CHAIN.restUrl}/cosmos/gov/v1/proposals/${proposalId}/votes?pagination.limit=${GOVERNANCE_DEFAULTS.VOTE_FETCH_LIMIT}`;
+      return nextKey ? `${base}&pagination.key=${encodeURIComponent(nextKey)}` : base;
+    },
+    (data) => ((data.votes as ChainVote[]) ?? []),
+    { timeoutMs: GOVERNANCE_DEFAULTS.FETCH_TIMEOUT_MS, label: "governance" },
+  );
 }
 
 export async function syncGovernance(): Promise<GovernanceSyncResult> {

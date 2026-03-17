@@ -7,9 +7,21 @@ const client = new RepublicClient({
   rest: process.env.REPUBLIC_REST_URL || REPUBLIC_TESTNET.rest,
 });
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 2000): Promise<T> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (i === retries) throw e;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw new Error("unreachable");
+}
+
 describe("Chain Integration", () => {
   it("fetches validators from chain", async () => {
-    const validators = await client.getValidators();
+    const validators = await withRetry(() => client.getValidators());
 
     expect(Array.isArray(validators)).toBe(true);
     expect(validators.length).toBeGreaterThan(0);
@@ -20,13 +32,13 @@ describe("Chain Integration", () => {
     expect(first).toHaveProperty("tokens");
     expect(first).toHaveProperty("commission");
     expect(first).toHaveProperty("jailed");
-  }, 15000);
+  }, 30000);
 
   it("fetches node status from chain", async () => {
-    const status = await client.getStatus();
+    const status = await withRetry(() => client.getStatus());
 
     expect(status).toHaveProperty("syncInfo");
     expect(status.syncInfo).toHaveProperty("latestBlockHeight");
     expect(Number(status.syncInfo.latestBlockHeight)).toBeGreaterThan(0);
-  }, 15000);
+  }, 30000);
 });

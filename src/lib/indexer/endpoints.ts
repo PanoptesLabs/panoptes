@@ -11,8 +11,56 @@ interface HealthCheckResult {
   error: string | null;
 }
 
-async function checkRpcEndpoint(
+interface EndpointCheckConfig {
+  buildRequest: (url: string) => { url: string; init?: RequestInit };
+  parseBlockHeight: (data: unknown) => bigint | null;
+}
+
+const ENDPOINT_CONFIGS: Record<string, EndpointCheckConfig> = {
+  rpc: {
+    buildRequest: (url) => ({
+      url,
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", method: "status", params: [], id: 1 }),
+      },
+    }),
+    parseBlockHeight: (data) => {
+      const height = (data as { result?: { sync_info?: { latest_block_height?: string } } })
+        ?.result?.sync_info?.latest_block_height;
+      return height ? BigInt(height) : null;
+    },
+  },
+  rest: {
+    buildRequest: (url) => ({
+      url: `${url}/cosmos/base/tendermint/v1beta1/blocks/latest`,
+    }),
+    parseBlockHeight: (data) => {
+      const height = (data as { block?: { header?: { height?: string } } })
+        ?.block?.header?.height;
+      return height ? BigInt(height) : null;
+    },
+  },
+  "evm-rpc": {
+    buildRequest: (url) => ({
+      url,
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", method: "eth_blockNumber", params: [], id: 1 }),
+      },
+    }),
+    parseBlockHeight: (data) => {
+      const result = (data as { result?: string })?.result;
+      return result ? BigInt(result) : null;
+    },
+  },
+};
+
+async function checkEndpointHealth(
   url: string,
+  config: EndpointCheckConfig,
 ): Promise<Omit<HealthCheckResult, "endpointId">> {
   const start = Date.now();
   try {
@@ -22,17 +70,8 @@ async function checkRpcEndpoint(
       HEALTH_THRESHOLDS.ENDPOINT_TIMEOUT_MS,
     );
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "status",
-        params: [],
-        id: 1,
-      }),
-      signal: controller.signal,
-    });
+    const req = config.buildRequest(url);
+    const res = await fetch(req.url, { ...req.init, signal: controller.signal });
     clearTimeout(timeout);
 
     const latencyMs = Date.now() - start;
@@ -40,9 +79,7 @@ async function checkRpcEndpoint(
 
     if (res.ok) {
       try {
-        const data = await res.json();
-        const height = data?.result?.sync_info?.latest_block_height;
-        if (height) blockHeight = BigInt(height);
+        blockHeight = config.parseBlockHeight(await res.json());
       } catch {
         // JSON parse failed, still count as reachable
       }
@@ -51,112 +88,7 @@ async function checkRpcEndpoint(
     return {
       latencyMs,
       statusCode: res.status,
-      isHealthy:
-        res.ok && latencyMs < HEALTH_THRESHOLDS.LATENCY_HEALTHY_MS,
-      blockHeight,
-      error: res.ok ? null : `HTTP ${res.status}`,
-    };
-  } catch (error) {
-    return {
-      latencyMs: Date.now() - start,
-      statusCode: 0,
-      isHealthy: false,
-      blockHeight: null,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
-async function checkRestEndpoint(
-  url: string,
-): Promise<Omit<HealthCheckResult, "endpointId">> {
-  const start = Date.now();
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      HEALTH_THRESHOLDS.ENDPOINT_TIMEOUT_MS,
-    );
-
-    const res = await fetch(
-      `${url}/cosmos/base/tendermint/v1beta1/blocks/latest`,
-      { signal: controller.signal },
-    );
-    clearTimeout(timeout);
-
-    const latencyMs = Date.now() - start;
-    let blockHeight: bigint | null = null;
-
-    if (res.ok) {
-      try {
-        const data = await res.json();
-        const height = data?.block?.header?.height;
-        if (height) blockHeight = BigInt(height);
-      } catch {
-        // JSON parse failed
-      }
-    }
-
-    return {
-      latencyMs,
-      statusCode: res.status,
-      isHealthy:
-        res.ok && latencyMs < HEALTH_THRESHOLDS.LATENCY_HEALTHY_MS,
-      blockHeight,
-      error: res.ok ? null : `HTTP ${res.status}`,
-    };
-  } catch (error) {
-    return {
-      latencyMs: Date.now() - start,
-      statusCode: 0,
-      isHealthy: false,
-      blockHeight: null,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
-async function checkEvmRpcEndpoint(
-  url: string,
-): Promise<Omit<HealthCheckResult, "endpointId">> {
-  const start = Date.now();
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      HEALTH_THRESHOLDS.ENDPOINT_TIMEOUT_MS,
-    );
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "eth_blockNumber",
-        params: [],
-        id: 1,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    const latencyMs = Date.now() - start;
-    let blockHeight: bigint | null = null;
-
-    if (res.ok) {
-      try {
-        const data = await res.json();
-        if (data?.result) blockHeight = BigInt(data.result);
-      } catch {
-        // JSON parse failed
-      }
-    }
-
-    return {
-      latencyMs,
-      statusCode: res.status,
-      isHealthy:
-        res.ok && latencyMs < HEALTH_THRESHOLDS.LATENCY_HEALTHY_MS,
+      isHealthy: res.ok && latencyMs < HEALTH_THRESHOLDS.LATENCY_HEALTHY_MS,
       blockHeight,
       error: res.ok ? null : `HTTP ${res.status}`,
     };
@@ -174,16 +106,8 @@ async function checkEvmRpcEndpoint(
 function getChecker(
   type: string,
 ): (url: string) => Promise<Omit<HealthCheckResult, "endpointId">> {
-  switch (type) {
-    case "rpc":
-      return checkRpcEndpoint;
-    case "rest":
-      return checkRestEndpoint;
-    case "evm-rpc":
-      return checkEvmRpcEndpoint;
-    default:
-      return checkRpcEndpoint;
-  }
+  const config = ENDPOINT_CONFIGS[type] ?? ENDPOINT_CONFIGS.rpc;
+  return (url) => checkEndpointHealth(url, config);
 }
 
 export async function checkEndpoints(): Promise<{

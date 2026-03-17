@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { workspaceSwrConfig } from "./use-api";
+import { workspaceSwrConfig, workspaceMutate } from "./use-api";
 import type { PolicyItem, PolicyExecutionItem } from "@/types";
 
 export function usePolicies(token: string | null) {
@@ -35,7 +35,7 @@ export function usePolicyExecutions(
   );
 }
 
-export async function createPolicy(
+export function createPolicy(
   token: string,
   data: {
     name: string;
@@ -47,47 +47,25 @@ export async function createPolicy(
     cooldownMinutes?: number;
   },
 ) {
-  const res = await fetch("/api/policies", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to create policy");
-  return res.json();
+  return workspaceMutate<PolicyItem>(token, "/api/policies", "POST", data);
 }
 
-export async function updatePolicy(
+export function updatePolicy(
   token: string,
   id: string,
   data: Record<string, unknown>,
 ) {
-  const res = await fetch(`/api/policies/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to update policy");
-  return res.json();
+  return workspaceMutate<PolicyItem>(token, `/api/policies/${id}`, "PATCH", data);
 }
 
-export async function deletePolicy(token: string, id: string) {
-  const res = await fetch(`/api/policies/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Failed to delete policy");
+export function deletePolicy(token: string, id: string) {
+  return workspaceMutate(token, `/api/policies/${id}`, "DELETE");
 }
 
-export async function testPolicy(
+export function testPolicy(
   token: string,
   id: string,
   context?: Record<string, unknown>,
 ) {
-  const res = await fetch(`/api/policies/${id}/test`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(context || {}),
-  });
-  if (!res.ok) throw new Error("Failed to test policy");
-  return res.json();
+  return workspaceMutate<Record<string, unknown>>(token, `/api/policies/${id}/test`, "POST", context || {});
 }

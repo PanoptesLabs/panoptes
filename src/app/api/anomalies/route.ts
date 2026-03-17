@@ -2,18 +2,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit, jsonResponse } from "@/lib/api-helpers";
 import { parseIntParam, parseStringParam, parseBoolParam } from "@/lib/validation";
+import { ANOMALY_TYPES, ANOMALY_SEVERITIES } from "@/lib/constants";
 import type { AnomalyItem } from "@/types";
-
-const ANOMALY_TYPES = [
-  "jailing",
-  "large_stake_change",
-  "commission_spike",
-  "endpoint_down",
-  "block_stale",
-  "mass_unbonding",
-];
-
-const ANOMALY_SEVERITIES = ["low", "medium", "high", "critical"];
 
 function parseMetadata(raw: string | null): Record<string, unknown> | null {
   if (!raw) return null;
@@ -57,8 +47,8 @@ export async function GET(request: NextRequest) {
   if ("response" in rl) return rl.response;
 
   const searchParams = request.nextUrl.searchParams;
-  const type = parseStringParam(searchParams.get("type"), ANOMALY_TYPES);
-  const severity = parseStringParam(searchParams.get("severity"), ANOMALY_SEVERITIES);
+  const type = parseStringParam(searchParams.get("type"), [...ANOMALY_TYPES]);
+  const severity = parseStringParam(searchParams.get("severity"), [...ANOMALY_SEVERITIES]);
   const resolved = parseBoolParam(searchParams.get("resolved"));
   const limit = parseIntParam(searchParams.get("limit"), 50, 1, 200);
   const offset = parseIntParam(searchParams.get("offset"), 0, 0, 10000);

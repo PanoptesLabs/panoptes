@@ -12,10 +12,6 @@ export const logger = {
     }
   },
   warn(context: string, message: string): void {
-    if (isProduction) {
-      console.warn(`[${context}]`, message);
-    } else {
-      console.warn(`[${context}]`, message);
-    }
+    console.warn(`[${context}]`, message);
   },
 };
