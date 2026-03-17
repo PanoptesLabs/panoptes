@@ -16,9 +16,17 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const { pathname } = request.nextUrl;
 
-  // Skip in dev / preview
+  // Skip in dev
   if (!landingHost || !dashboardHost || host === "localhost:3000") {
     return NextResponse.next();
+  }
+
+  // *.vercel.app → redirect to panoptes.cc (SEO canonical)
+  if (host.endsWith(".vercel.app")) {
+    const url = request.nextUrl.clone();
+    url.host = pathname.startsWith("/dashboard") ? dashboardHost : landingHost;
+    url.port = "";
+    return NextResponse.redirect(url, 301);
   }
 
   // panoptes.cc + /dashboard → redirect to app.panoptes.cc
