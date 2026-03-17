@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { REPUBLIC_CHAIN, DELEGATION_DEFAULTS } from "@/lib/constants";
-import { logger } from "@/lib/logger";
+import { fetchPaginated } from "./paginate";
 
 interface ChainDelegation {
   delegation: {
@@ -20,37 +20,15 @@ export interface DelegationSyncResult {
   duration: number;
 }
 
-const MAX_PAGES = 50;
-
-async function fetchValidatorDelegations(validatorAddr: string): Promise<ChainDelegation[]> {
-  const all: ChainDelegation[] = [];
-  let nextKey: string | null = null;
-  let pages = 0;
-  do {
-    pages++;
-    if (pages > MAX_PAGES) {
-      logger.error("delegations", "Max pagination pages reached, stopping");
-      break;
-    }
-    const url: string = `${REPUBLIC_CHAIN.restUrl}/cosmos/staking/v1beta1/validators/${validatorAddr}/delegations?pagination.limit=${DELEGATION_DEFAULTS.DELEGATION_FETCH_LIMIT}${
-      nextKey ? `&pagination.key=${encodeURIComponent(nextKey)}` : ""
-    }`;
-    try {
-      const res: Response = await fetch(url, { signal: AbortSignal.timeout(DELEGATION_DEFAULTS.FETCH_TIMEOUT_MS) });
-      if (!res.ok) {
-        logger.error("delegations", `Failed to fetch delegations for ${validatorAddr}: ${res.status}`);
-        break;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await res.json();
-      all.push(...((data.delegation_responses as ChainDelegation[]) ?? []));
-      nextKey = (data.pagination?.next_key as string) ?? null;
-    } catch (error) {
-      logger.error("delegations", error);
-      break;
-    }
-  } while (nextKey);
-  return all;
+function fetchValidatorDelegations(validatorAddr: string): Promise<ChainDelegation[]> {
+  return fetchPaginated<ChainDelegation>(
+    (nextKey) => {
+      const base = `${REPUBLIC_CHAIN.restUrl}/cosmos/staking/v1beta1/validators/${validatorAddr}/delegations?pagination.limit=${DELEGATION_DEFAULTS.DELEGATION_FETCH_LIMIT}`;
+      return nextKey ? `${base}&pagination.key=${encodeURIComponent(nextKey)}` : base;
+    },
+    (data) => ((data.delegation_responses as ChainDelegation[]) ?? []),
+    { timeoutMs: DELEGATION_DEFAULTS.FETCH_TIMEOUT_MS, label: "delegations" },
+  );
 }
 
 export async function syncDelegations(): Promise<DelegationSyncResult> {

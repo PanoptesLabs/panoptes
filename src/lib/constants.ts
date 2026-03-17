@@ -83,6 +83,22 @@ export const SCORING = {
   LATENCY_MAX_MS: 5000,
 } as const;
 
+export const ANOMALY_TYPES = [
+  "jailing",
+  "large_stake_change",
+  "commission_spike",
+  "endpoint_down",
+  "block_stale",
+  "mass_unbonding",
+  "whale_movement",
+] as const;
+
+export type AnomalyType = (typeof ANOMALY_TYPES)[number];
+
+export const ANOMALY_SEVERITIES = ["low", "medium", "high", "critical"] as const;
+
+export type AnomalySeverity = (typeof ANOMALY_SEVERITIES)[number];
+
 export const ANOMALY_THRESHOLDS = {
   LARGE_STAKE_CHANGE_PCT: 10,
   COMMISSION_SPIKE_PCT: 5,

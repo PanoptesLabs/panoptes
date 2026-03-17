@@ -9,13 +9,20 @@ export type ValidatorStatus =
 
 export type PreflightStatus = "pass" | "warn" | "fail";
 
-// Intelligence Types
-export type AnomalyType = "jailing" | "large_stake_change" | "commission_spike" | "endpoint_down" | "block_stale" | "mass_unbonding" | "whale_movement";
-export type AnomalySeverity = "low" | "medium" | "high" | "critical";
+// Intelligence Types — derived from constants.ts (single source of truth)
+import type {
+  AnomalyType as _AnomalyType,
+  AnomalySeverity as _AnomalySeverity,
+  IncidentStatus as _IncidentStatus,
+  IncidentEventType as _IncidentEventType,
+} from "@/lib/constants";
+
+export type AnomalyType = _AnomalyType;
+export type AnomalySeverity = _AnomalySeverity;
 export type AnomalyEntityType = "validator" | "endpoint" | "network";
 
-export type IncidentStatus = "open" | "acknowledged" | "resolved";
-export type IncidentEventType = "created" | "slo_linked" | "anomaly_linked" | "acknowledged" | "resolved" | "comment";
+export type IncidentStatus = _IncidentStatus;
+export type IncidentEventType = _IncidentEventType;
 
 export interface EndpointScoreItem {
   score: number;

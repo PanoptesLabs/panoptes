@@ -40,14 +40,20 @@ export function createWorkspaceFetcher(token: string | null) {
   };
 }
 
+const swrConfigCache = new Map<string | null, SWRConfiguration>();
+
 export function workspaceSwrConfig(token: string | null): SWRConfiguration {
-  return {
+  const cached = swrConfigCache.get(token);
+  if (cached) return cached;
+
+  const config: SWRConfiguration = {
     fetcher: createWorkspaceFetcher(token),
     revalidateOnFocus: false,
     errorRetryCount: 3,
     dedupingInterval: 5000,
     onError: (error: Error & { status?: number }) => {
       if (error.status === 401) {
+        swrConfigCache.delete(token);
         try {
           localStorage.removeItem("panoptes_workspace_token");
           window.dispatchEvent(new StorageEvent("storage", {
@@ -60,4 +66,25 @@ export function workspaceSwrConfig(token: string | null): SWRConfiguration {
       }
     },
   };
+
+  swrConfigCache.set(token, config);
+  return config;
+}
+
+export async function workspaceMutate<T = void>(
+  token: string,
+  url: string,
+  method: "POST" | "PATCH" | "DELETE",
+  body?: unknown,
+): Promise<T> {
+  const headers: HeadersInit = { Authorization: `Bearer ${token}` };
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`${method} ${url} failed`);
+  const text = await res.text();
+  return text ? (JSON.parse(text) as T) : (undefined as T);
 }
