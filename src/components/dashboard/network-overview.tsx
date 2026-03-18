@@ -1,13 +1,29 @@
 "use client";
 
+import { useMemo } from "react";
+import dynamic from "next/dynamic";
 import { useNetworkStats } from "@/hooks/use-stats";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StakingTrendChart } from "@/components/charts/staking-trend-chart";
-import { BlockHeightChart } from "@/components/charts/block-height-chart";
-import { ValidatorCountChart } from "@/components/charts/validator-count-chart";
-import { BondedRatioChart } from "@/components/charts/bonded-ratio-chart";
+
+const StakingTrendChart = dynamic(
+  () => import("@/components/charts/staking-trend-chart").then((m) => m.StakingTrendChart),
+  { ssr: false },
+);
+const BlockHeightChart = dynamic(
+  () => import("@/components/charts/block-height-chart").then((m) => m.BlockHeightChart),
+  { ssr: false },
+);
+const ValidatorCountChart = dynamic(
+  () => import("@/components/charts/validator-count-chart").then((m) => m.ValidatorCountChart),
+  { ssr: false },
+);
+const BondedRatioChart = dynamic(
+  () => import("@/components/charts/bonded-ratio-chart").then((m) => m.BondedRatioChart),
+  { ssr: false },
+);
+
 import {
   formatTokensShort,
   formatBlockHeight,
@@ -29,6 +45,18 @@ import { helpContent } from "@/lib/help-content";
 export function NetworkOverview() {
   const { data, error, isLoading, mutate } = useNetworkStats();
 
+  const current = data?.current;
+  const history = useMemo(() => data?.history ?? [], [data?.history]);
+
+  const stakingSparkline = useMemo(
+    () => history.slice().reverse().map((h) => tokensToNumber(h.totalStaked)),
+    [history],
+  );
+  const blockSparkline = useMemo(
+    () => history.slice().reverse().map((h) => Number(h.blockHeight)),
+    [history],
+  );
+
   if (error && !data) {
     return (
       <ErrorState
@@ -37,18 +65,6 @@ export function NetworkOverview() {
       />
     );
   }
-
-  const current = data?.current;
-  const history = data?.history ?? [];
-
-  const stakingSparkline = history
-    .slice()
-    .reverse()
-    .map((h) => tokensToNumber(h.totalStaked));
-  const blockSparkline = history
-    .slice()
-    .reverse()
-    .map((h) => Number(h.blockHeight));
 
   return (
     <div className="space-y-6">

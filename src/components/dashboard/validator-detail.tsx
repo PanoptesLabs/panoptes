@@ -9,7 +9,12 @@ import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ValidatorHistoryChart } from "@/components/charts/validator-history-chart";
+import dynamic from "next/dynamic";
+
+const ValidatorHistoryChart = dynamic(
+  () => import("@/components/charts/validator-history-chart").then((m) => m.ValidatorHistoryChart),
+  { ssr: false },
+);
 import { getValidatorStatusInfo } from "@/lib/status";
 import {
   formatTokens,

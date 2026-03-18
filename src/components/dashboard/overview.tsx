@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useNetworkStats } from "@/hooks/use-stats";
 import { useEndpoints } from "@/hooks/use-endpoints";
@@ -58,25 +59,25 @@ export function Overview() {
   const { data: incidentSummary } = useIncidentSummary(token);
 
   const current = stats?.current;
-  const history = stats?.history ?? [];
+  const history = useMemo(() => stats?.history ?? [], [stats?.history]);
 
   const healthyEndpoints =
     endpoints?.endpoints.filter((e) => e.latestCheck?.isHealthy).length ?? 0;
   const totalEndpoints = endpoints?.endpoints.length ?? 0;
 
   // Sparkline data from history (reversed for chronological order)
-  const stakingSparkline = history
-    .slice()
-    .reverse()
-    .map((h) => tokensToNumber(h.totalStaked));
-  const blockSparkline = history
-    .slice()
-    .reverse()
-    .map((h) => Number(h.blockHeight));
-  const validatorSparkline = history
-    .slice()
-    .reverse()
-    .map((h) => h.activeValidators);
+  const stakingSparkline = useMemo(
+    () => history.slice().reverse().map((h) => tokensToNumber(h.totalStaked)),
+    [history],
+  );
+  const blockSparkline = useMemo(
+    () => history.slice().reverse().map((h) => Number(h.blockHeight)),
+    [history],
+  );
+  const validatorSparkline = useMemo(
+    () => history.slice().reverse().map((h) => h.activeValidators),
+    [history],
+  );
 
   if (statsError && !stats) {
     return <ErrorState message="Failed to load network stats" onRetry={() => mutateStats()} />;
