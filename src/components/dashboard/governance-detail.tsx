@@ -4,12 +4,13 @@ import { useGovernanceProposal } from "@/hooks/use-governance";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
+import { truncateAddress } from "@/lib/formatters";
 import { Loader2, Vote, CheckCircle, XCircle, MinusCircle, ShieldAlert } from "lucide-react";
 
 export function GovernanceDetail({ proposalId }: { proposalId: string }) {
-  const { data, error, isLoading } = useGovernanceProposal(proposalId);
+  const { data, error, isLoading, mutate } = useGovernanceProposal(proposalId);
 
-  if (error) return <ErrorState message="Failed to load proposal" />;
+  if (error) return <ErrorState message="Failed to load proposal" onRetry={() => mutate()} />;
 
   if (isLoading || !data) {
     return (
@@ -117,8 +118,8 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
 
                 return (
                   <div key={v.id} className="flex items-center justify-between rounded bg-slate-dark/20 px-3 py-2 text-xs">
-                    <span className="font-mono text-dusty-lavender truncate max-w-[200px]">
-                      {v.voter}
+                    <span className="font-mono text-dusty-lavender truncate max-w-[200px]" title={v.voter}>
+                      {truncateAddress(v.voter)}
                     </span>
                     <span className={`font-medium ${optionColor}`}>{optionLabel}</span>
                   </div>

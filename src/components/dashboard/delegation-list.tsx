@@ -4,6 +4,7 @@ import { useDelegationEvents, useWhaleMovements } from "@/hooks/use-delegations"
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
+import { formatAmountShort } from "@/lib/formatters";
 import { Loader2, ArrowLeftRight, ArrowUpRight, ArrowDownRight, AlertTriangle } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
@@ -104,9 +105,7 @@ export function DelegationList() {
                       </div>
                     </div>
                     <span className="font-mono text-xs text-mist shrink-0">
-                      {BigInt(e.amount) > 1_000_000n
-                        ? `${(Number(BigInt(e.amount)) / 1_000_000).toFixed(1)}M`
-                        : e.amount}
+                      {formatAmountShort(e.amount)}
                     </span>
                     <span className="text-[10px] text-dusty-lavender/40 shrink-0">
                       {timeAgo(e.timestamp)}

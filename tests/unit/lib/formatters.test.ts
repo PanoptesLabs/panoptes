@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   formatTokens,
   formatTokensShort,
+  formatAmountShort,
   tokensToNumber,
   formatCommission,
   formatBlockHeight,
@@ -157,6 +158,53 @@ describe("truncateAddress", () => {
 
   it("handles empty", () => {
     expect(truncateAddress("")).toBe("");
+  });
+});
+
+describe("formatAmountShort", () => {
+  it("returns '0' for zero", () => {
+    expect(formatAmountShort("0")).toBe("0");
+  });
+
+  it("returns '0' for empty string", () => {
+    expect(formatAmountShort("")).toBe("0");
+  });
+
+  it("formats millions correctly", () => {
+    // 10M RAI = 10_000_000 * 10^18
+    const val = (BigInt(10_000_000) * BigInt(10 ** 18)).toString();
+    expect(formatAmountShort(val)).toBe("10.0M");
+  });
+
+  it("formats thousands correctly", () => {
+    const val = (BigInt(5000) * BigInt(10 ** 18)).toString();
+    expect(formatAmountShort(val)).toBe("5.0K");
+  });
+
+  it("formats billions correctly", () => {
+    const val = (BigInt(2_000_000_000) * BigInt(10 ** 18)).toString();
+    expect(formatAmountShort(val)).toBe("2.0B");
+  });
+
+  it("handles large values without precision loss", () => {
+    // 999_999_999_999 RAI — exceeds Number.MAX_SAFE_INTEGER in aRAI
+    const val = (BigInt("999999999999") * BigInt(10 ** 18)).toString();
+    expect(formatAmountShort(val)).toBe("1000.0B");
+  });
+
+  it("handles fractional values < 1 RAI", () => {
+    const halfRai = "500000000000000000";
+    expect(formatAmountShort(halfRai)).toBe("0.50");
+  });
+
+  it("handles invalid input gracefully", () => {
+    expect(formatAmountShort("abc")).toBe("0");
+    expect(formatAmountShort("12.5")).toBe("0");
+  });
+
+  it("does not include RAI suffix", () => {
+    const val = (BigInt(100) * BigInt(10 ** 18)).toString();
+    expect(formatAmountShort(val)).not.toContain("RAI");
   });
 });
 
