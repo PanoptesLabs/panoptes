@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock prisma
 vi.mock("@/lib/db", () => ({
@@ -14,29 +14,28 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-// Mock republic client
-vi.mock("@/lib/republic", () => ({
-  getRepublicClient: vi.fn(() => ({
-    getValidators: vi.fn(),
-  })),
+// Mock logger (used by fetchPaginated)
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 import { syncValidators } from "@/lib/indexer/validators";
 import { prisma } from "@/lib/db";
-import { getRepublicClient } from "@/lib/republic";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockPrisma = prisma as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockGetClient = getRepublicClient as any;
 
-function makeValidator(overrides = {}) {
+function makeChainValidator(overrides: Record<string, unknown> = {}) {
   return {
-    operatorAddress: "raivaloper1abc",
-    moniker: "TestValidator",
+    operator_address: "raivaloper1abc",
+    description: { moniker: "TestValidator" },
     status: "BOND_STATUS_BONDED",
     tokens: "1000000",
-    commission: "0.050000000000000000",
+    commission: { commission_rates: { rate: "0.050000000000000000" } },
     jailed: false,
     ...overrides,
   };
@@ -61,9 +60,22 @@ function makeDbValidator(overrides = {}) {
   };
 }
 
+function mockFetchResponse(validators: unknown[], nextKey: string | null = null) {
+  return {
+    ok: true,
+    json: async () => ({
+      validators,
+      pagination: { next_key: nextKey },
+    }),
+  };
+}
+
 describe("syncValidators", () => {
+  let originalFetch: typeof globalThis.fetch;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    originalFetch = globalThis.fetch;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockPrisma.$transaction.mockImplementation(async (fn: any) => {
@@ -77,11 +89,13 @@ describe("syncValidators", () => {
     });
   });
 
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
   it("syncs new validators and creates snapshots", async () => {
-    const val = makeValidator();
-    mockGetClient.mockReturnValue({
-      getValidators: vi.fn().mockResolvedValue([val]),
-    });
+    const val = makeChainValidator();
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(mockFetchResponse([val]));
     mockPrisma.validator.findMany.mockResolvedValue([]);
 
     const result = await syncValidators();
@@ -93,10 +107,8 @@ describe("syncValidators", () => {
   });
 
   it("skips snapshot when data is unchanged", async () => {
-    const val = makeValidator();
-    mockGetClient.mockReturnValue({
-      getValidators: vi.fn().mockResolvedValue([val]),
-    });
+    const val = makeChainValidator();
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(mockFetchResponse([val]));
     mockPrisma.validator.findMany.mockResolvedValue([makeDbValidator()]);
 
     const result = await syncValidators();
@@ -107,10 +119,8 @@ describe("syncValidators", () => {
   });
 
   it("creates snapshot when tokens change", async () => {
-    const val = makeValidator({ tokens: "2000000" });
-    mockGetClient.mockReturnValue({
-      getValidators: vi.fn().mockResolvedValue([val]),
-    });
+    const val = makeChainValidator({ tokens: "2000000" });
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(mockFetchResponse([val]));
     mockPrisma.validator.findMany.mockResolvedValue([makeDbValidator()]);
 
     const result = await syncValidators();
@@ -119,10 +129,8 @@ describe("syncValidators", () => {
   });
 
   it("forces daily snapshot when option is set", async () => {
-    const val = makeValidator();
-    mockGetClient.mockReturnValue({
-      getValidators: vi.fn().mockResolvedValue([val]),
-    });
+    const val = makeChainValidator();
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(mockFetchResponse([val]));
     mockPrisma.validator.findMany.mockResolvedValue([makeDbValidator()]);
 
     const result = await syncValidators({ forceDailySnapshot: true });
@@ -131,10 +139,8 @@ describe("syncValidators", () => {
   });
 
   it("tracks jail count when validator becomes jailed", async () => {
-    const val = makeValidator({ jailed: true });
-    mockGetClient.mockReturnValue({
-      getValidators: vi.fn().mockResolvedValue([val]),
-    });
+    const val = makeChainValidator({ jailed: true });
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(mockFetchResponse([val]));
     mockPrisma.validator.findMany.mockResolvedValue([
       makeDbValidator({ jailed: false, jailCount: 0 }),
     ]);
@@ -161,31 +167,36 @@ describe("syncValidators", () => {
     expect(upsertData.update.jailCount).toBe(1);
   });
 
-  it("handles empty validator list", async () => {
-    mockGetClient.mockReturnValue({
-      getValidators: vi.fn().mockResolvedValue([]),
-    });
+  it("throws when validator fetch returns 0 results", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(mockFetchResponse([]));
     mockPrisma.validator.findMany.mockResolvedValue([]);
 
-    const result = await syncValidators();
-
-    expect(result.synced).toBe(0);
-    expect(result.snapshotsCreated).toBe(0);
+    await expect(syncValidators()).rejects.toThrow("Validator fetch returned 0 results");
   });
 
-  it("throws IndexerError on SDK failure", async () => {
-    mockGetClient.mockReturnValue({
-      getValidators: vi.fn().mockRejectedValue(new Error("RPC timeout")),
-    });
+  it("throws on network failure", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error("Network error"));
+    mockPrisma.validator.findMany.mockResolvedValue([]);
 
     await expect(syncValidators()).rejects.toThrow("Failed to sync validators");
   });
 
-  it("parses commission string to float", async () => {
-    const val = makeValidator({ commission: "0.100000000000000000" });
-    mockGetClient.mockReturnValue({
-      getValidators: vi.fn().mockResolvedValue([val]),
+  it("throws on HTTP error (0 results after graceful degradation)", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
     });
+    mockPrisma.validator.findMany.mockResolvedValue([]);
+
+    await expect(syncValidators()).rejects.toThrow("Validator fetch returned 0 results");
+  });
+
+  it("parses commission string to float", async () => {
+    const val = makeChainValidator({
+      commission: { commission_rates: { rate: "0.100000000000000000" } },
+    });
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(mockFetchResponse([val]));
     mockPrisma.validator.findMany.mockResolvedValue([]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -208,5 +219,30 @@ describe("syncValidators", () => {
     await syncValidators();
 
     expect(upsertData.create.commission).toBe(0.1);
+  });
+
+  it("paginates across multiple pages to fetch all validators", async () => {
+    const page1 = Array.from({ length: 200 }, (_, i) =>
+      makeChainValidator({ operator_address: `raivaloper1page1_${i}` }),
+    );
+    const page2 = Array.from({ length: 200 }, (_, i) =>
+      makeChainValidator({ operator_address: `raivaloper1page2_${i}` }),
+    );
+    const page3 = Array.from({ length: 60 }, (_, i) =>
+      makeChainValidator({ operator_address: `raivaloper1page3_${i}` }),
+    );
+
+    const mockFn = vi.fn()
+      .mockResolvedValueOnce(mockFetchResponse(page1, "page2key"))
+      .mockResolvedValueOnce(mockFetchResponse(page2, "page3key"))
+      .mockResolvedValueOnce(mockFetchResponse(page3, null));
+    globalThis.fetch = mockFn;
+
+    mockPrisma.validator.findMany.mockResolvedValue([]);
+
+    const result = await syncValidators();
+
+    expect(result.synced).toBe(460);
+    expect(mockFn).toHaveBeenCalledTimes(3);
   });
 });

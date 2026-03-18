@@ -1,7 +1,15 @@
 /* eslint-disable no-console */
 import "dotenv/config";
 import { prisma } from "./db.js";
-import { RepublicClient, REPUBLIC_TESTNET } from "republic-sdk";
+
+interface ChainValidator {
+  operator_address: string;
+  description?: { moniker?: string };
+  status: string;
+  tokens: string;
+  commission?: { commission_rates?: { rate?: string } };
+  jailed?: boolean;
+}
 
 interface SyncResult {
   synced: number;
@@ -12,19 +20,65 @@ interface SyncResult {
 
 const BATCH_SIZE = 25;
 const TX_TIMEOUT_MS = 15_000;
+const VALIDATOR_FETCH_LIMIT = 200;
+const FETCH_TIMEOUT_MS = 15_000;
+const MAX_PAGES = 50;
+
+async function fetchAllValidators(): Promise<ChainValidator[]> {
+  const restUrl = process.env.REPUBLIC_REST_URL || "https://rest.republicai.io";
+  const all: ChainValidator[] = [];
+  let nextKey: string | null = null;
+  let prevKey: string | null = null;
+  let page = 0;
+
+  do {
+    if (page >= MAX_PAGES) {
+      console.warn(`[sync-validators] Reached max page limit (${MAX_PAGES}), stopping pagination`);
+      break;
+    }
+
+    const base = `${restUrl}/cosmos/staking/v1beta1/validators?pagination.limit=${VALIDATOR_FETCH_LIMIT}`;
+    const url = nextKey ? `${base}&pagination.key=${encodeURIComponent(nextKey)}` : base;
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    if (!res.ok) {
+      throw new Error(`Validator fetch failed: ${res.status} ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as Record<string, unknown>;
+    const validators = (data.validators as ChainValidator[]) ?? [];
+    all.push(...validators);
+
+    const pagination = data.pagination as { next_key?: string } | undefined;
+    nextKey = pagination?.next_key ?? null;
+
+    // Guard against stuck cursor (same key returned twice)
+    if (nextKey && nextKey === prevKey) {
+      console.warn(`[sync-validators] Pagination cursor stuck at "${nextKey}", stopping`);
+      break;
+    }
+    prevKey = nextKey;
+    page++;
+  } while (nextKey);
+
+  return all;
+}
 
 async function syncValidators(
   forceDailySnapshot = false,
 ): Promise<SyncResult> {
   const start = Date.now();
 
-  const client = new RepublicClient({
-    ...REPUBLIC_TESTNET,
-    rpc: process.env.REPUBLIC_RPC_URL || REPUBLIC_TESTNET.rpc,
-    rest: process.env.REPUBLIC_REST_URL || REPUBLIC_TESTNET.rest,
-  });
+  const chainValidators = await fetchAllValidators();
+  const validators = chainValidators.map((v) => ({
+    operatorAddress: v.operator_address,
+    moniker: v.description?.moniker || "",
+    status: v.status,
+    tokens: v.tokens || "0",
+    commission: v.commission?.commission_rates?.rate || "0",
+    jailed: v.jailed || false,
+  }));
 
-  const validators = await client.getValidators();
   const existing = await prisma.validator.findMany();
   const existingMap = new Map(existing.map((v) => [v.id, v]));
 
