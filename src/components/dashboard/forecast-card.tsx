@@ -118,7 +118,9 @@ export function ForecastCard({ forecast }: ForecastCardProps) {
         <div className="flex items-center justify-between text-[10px] text-dusty-lavender/40">
           <span className="flex items-center gap-1">
             <TrendingUp className="size-3" />
-            Valid until {timeAgo(forecast.validUntil)}
+            {new Date(forecast.validUntil) > new Date()
+              ? `Expires ${timeAgo(forecast.validUntil)}`
+              : `Expired ${timeAgo(forecast.validUntil)}`}
           </span>
           <span>Created {timeAgo(forecast.createdAt)}</span>
         </div>

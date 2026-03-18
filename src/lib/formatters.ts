@@ -49,6 +49,28 @@ export function tokensToNumber(araiString: string): number {
   return Number(whole) + Number(frac) / Number(ARAI_DIVISOR);
 }
 
+/**
+ * Format aRAI amount (string) to a short human-readable string WITHOUT "RAI" suffix.
+ * Uses BigInt division before Number conversion to prevent precision loss.
+ */
+export function formatAmountShort(araiString: string): string {
+  const big = safeBigInt(araiString);
+  if (big === null || big === 0n) return "0";
+  const whole = big / ARAI_DIVISOR;
+  const num = Number(whole);
+  if (!Number.isFinite(num)) return ">999T";
+  if (num >= 1_000_000_000) return `${(num / 1_000_000_000).toFixed(1)}B`;
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+  if (num === 0) {
+    const frac = big % ARAI_DIVISOR;
+    if (frac === 0n) return "0";
+    const fracStr = frac.toString().padStart(18, "0").slice(0, 2);
+    return `0.${fracStr}`;
+  }
+  return num.toLocaleString("en-US");
+}
+
 export function formatCommission(rate: number): string {
   return `${(rate * 100).toFixed(1)}%`;
 }

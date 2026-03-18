@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeftRight, TrendingUp, TrendingDown } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { formatAmountShort, truncateAddress } from "@/lib/formatters";
 
 export function DelegationFlow() {
   const { data, error, isLoading } = useDelegationFlow(7);
@@ -53,12 +54,10 @@ export function DelegationFlow() {
           </div>
           {flow.map((v) => (
             <div key={v.validatorId} className="grid grid-cols-4 gap-4 rounded bg-slate-dark/20 px-3 py-2 text-xs">
-              <span className="font-mono text-dusty-lavender truncate">{v.validatorId}</span>
+              <span className="font-mono text-dusty-lavender truncate" title={v.validatorId}>{truncateAddress(v.validatorId, 8, 6)}</span>
               <span className="text-right text-mist">{v.latestDelegators}</span>
               <span className="text-right font-mono text-mist">
-                {BigInt(v.latestDelegated) > 1_000_000n
-                  ? `${(Number(BigInt(v.latestDelegated)) / 1_000_000).toFixed(1)}M`
-                  : v.latestDelegated}
+                {formatAmountShort(v.latestDelegated)}
               </span>
               <span className="flex items-center justify-end gap-1">
                 {v.avgChurnRate > 5 ? (
