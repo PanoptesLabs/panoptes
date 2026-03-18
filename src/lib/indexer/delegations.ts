@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { REPUBLIC_CHAIN, DELEGATION_DEFAULTS } from "@/lib/constants";
 import { fetchPaginated } from "./paginate";
+import { logger } from "@/lib/logger";
+
+const DELEGATION_CONCURRENCY = 20;
 
 interface ChainDelegation {
   delegation: {
@@ -31,6 +34,124 @@ function fetchValidatorDelegations(validatorAddr: string): Promise<ChainDelegati
   );
 }
 
+async function processValidatorDelegations(val: { id: string; moniker: string }): Promise<{ events: number; snapshot: number }> {
+  let events = 0;
+
+  const delegations = await fetchValidatorDelegations(val.id);
+
+  // Get previous snapshot for comparison
+  const prevSnapshot = await prisma.delegationSnapshot.findFirst({
+    where: { validatorId: val.id },
+    orderBy: { timestamp: "desc" },
+  });
+
+  const prevDelegators = new Map<string, string>();
+  if (prevSnapshot?.topDelegators) {
+    try {
+      const parsed = JSON.parse(prevSnapshot.topDelegators) as Array<{ address: string; amount: string }>;
+      for (const d of parsed) {
+        prevDelegators.set(d.address, d.amount);
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  // Build current state
+  const currentDelegators = new Map<string, string>();
+  let totalDelegated = 0n;
+
+  for (const d of delegations) {
+    const addr = d.delegation.delegator_address;
+    const amount = d.balance.amount;
+    currentDelegators.set(addr, amount);
+    totalDelegated += BigInt(amount);
+  }
+
+  // Detect delegation events by comparing with prev snapshot (if exists)
+  if (prevSnapshot) {
+    // New delegations
+    for (const [addr, amount] of currentDelegators) {
+      const prevAmount = prevDelegators.get(addr);
+      if (!prevAmount) {
+        await prisma.delegationEvent.create({
+          data: {
+            type: "delegate",
+            delegator: addr,
+            validatorTo: val.id,
+            amount,
+          },
+        });
+        events++;
+      } else if (BigInt(amount) > BigInt(prevAmount)) {
+        await prisma.delegationEvent.create({
+          data: {
+            type: "delegate",
+            delegator: addr,
+            validatorTo: val.id,
+            amount: (BigInt(amount) - BigInt(prevAmount)).toString(),
+          },
+        });
+        events++;
+      }
+    }
+
+    // Undelegations
+    for (const [addr, amount] of prevDelegators) {
+      const currentAmount = currentDelegators.get(addr);
+      if (!currentAmount) {
+        await prisma.delegationEvent.create({
+          data: {
+            type: "undelegate",
+            delegator: addr,
+            validatorTo: val.id,
+            amount,
+          },
+        });
+        events++;
+      } else if (BigInt(currentAmount) < BigInt(amount)) {
+        await prisma.delegationEvent.create({
+          data: {
+            type: "undelegate",
+            delegator: addr,
+            validatorTo: val.id,
+            amount: (BigInt(amount) - BigInt(currentAmount)).toString(),
+          },
+        });
+        events++;
+      }
+    }
+  }
+
+  // Build top delegators
+  const sorted = [...currentDelegators.entries()]
+    .sort((a, b) => {
+      const diff = BigInt(b[1]) - BigInt(a[1]);
+      return diff > 0n ? 1 : diff < 0n ? -1 : 0;
+    })
+    .slice(0, DELEGATION_DEFAULTS.SNAPSHOT_TOP_DELEGATORS)
+    .map(([address, amount]) => ({ address, amount }));
+
+  // Calculate churn rate
+  const prevTotal = prevSnapshot ? BigInt(prevSnapshot.totalDelegated) : 0n;
+  const churnRate = prevTotal > 0n
+    ? Math.abs(Number(((totalDelegated - prevTotal) * 10000n) / prevTotal)) / 100
+    : 0;
+
+  // Create snapshot
+  await prisma.delegationSnapshot.create({
+    data: {
+      validatorId: val.id,
+      totalDelegators: currentDelegators.size,
+      totalDelegated: totalDelegated.toString(),
+      topDelegators: JSON.stringify(sorted),
+      churnRate,
+    },
+  });
+
+  return { events, snapshot: 1 };
+}
+
 export async function syncDelegations(): Promise<DelegationSyncResult> {
   const start = Date.now();
   let eventsSynced = 0;
@@ -40,119 +161,17 @@ export async function syncDelegations(): Promise<DelegationSyncResult> {
     select: { id: true, moniker: true },
   });
 
-  for (const val of validators) {
-    const delegations = await fetchValidatorDelegations(val.id);
-
-    // Get previous snapshot for comparison
-    const prevSnapshot = await prisma.delegationSnapshot.findFirst({
-      where: { validatorId: val.id },
-      orderBy: { timestamp: "desc" },
-    });
-
-    const prevDelegators = new Map<string, string>();
-    if (prevSnapshot?.topDelegators) {
-      try {
-        const parsed = JSON.parse(prevSnapshot.topDelegators) as Array<{ address: string; amount: string }>;
-        for (const d of parsed) {
-          prevDelegators.set(d.address, d.amount);
-        }
-      } catch {
-        // ignore parse errors
+  for (let i = 0; i < validators.length; i += DELEGATION_CONCURRENCY) {
+    const batch = validators.slice(i, i + DELEGATION_CONCURRENCY);
+    const results = await Promise.allSettled(batch.map((v) => processValidatorDelegations(v)));
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        eventsSynced += r.value.events;
+        snapshotsTaken += r.value.snapshot;
+      } else {
+        logger.error("[delegations] Validator sync failed", r.reason);
       }
     }
-
-    // Build current state
-    const currentDelegators = new Map<string, string>();
-    let totalDelegated = 0n;
-
-    for (const d of delegations) {
-      const addr = d.delegation.delegator_address;
-      const amount = d.balance.amount;
-      currentDelegators.set(addr, amount);
-      totalDelegated += BigInt(amount);
-    }
-
-    // Detect delegation events by comparing with prev snapshot (if exists)
-    if (prevSnapshot) {
-      // New delegations
-      for (const [addr, amount] of currentDelegators) {
-        const prevAmount = prevDelegators.get(addr);
-        if (!prevAmount) {
-          await prisma.delegationEvent.create({
-            data: {
-              type: "delegate",
-              delegator: addr,
-              validatorTo: val.id,
-              amount,
-            },
-          });
-          eventsSynced++;
-        } else if (BigInt(amount) > BigInt(prevAmount)) {
-          await prisma.delegationEvent.create({
-            data: {
-              type: "delegate",
-              delegator: addr,
-              validatorTo: val.id,
-              amount: (BigInt(amount) - BigInt(prevAmount)).toString(),
-            },
-          });
-          eventsSynced++;
-        }
-      }
-
-      // Undelegations
-      for (const [addr, amount] of prevDelegators) {
-        const currentAmount = currentDelegators.get(addr);
-        if (!currentAmount) {
-          await prisma.delegationEvent.create({
-            data: {
-              type: "undelegate",
-              delegator: addr,
-              validatorTo: val.id,
-              amount,
-            },
-          });
-          eventsSynced++;
-        } else if (BigInt(currentAmount) < BigInt(amount)) {
-          await prisma.delegationEvent.create({
-            data: {
-              type: "undelegate",
-              delegator: addr,
-              validatorTo: val.id,
-              amount: (BigInt(amount) - BigInt(currentAmount)).toString(),
-            },
-          });
-          eventsSynced++;
-        }
-      }
-    }
-
-    // Build top delegators
-    const sorted = [...currentDelegators.entries()]
-      .sort((a, b) => {
-        const diff = BigInt(b[1]) - BigInt(a[1]);
-        return diff > 0n ? 1 : diff < 0n ? -1 : 0;
-      })
-      .slice(0, DELEGATION_DEFAULTS.SNAPSHOT_TOP_DELEGATORS)
-      .map(([address, amount]) => ({ address, amount }));
-
-    // Calculate churn rate
-    const prevTotal = prevSnapshot ? BigInt(prevSnapshot.totalDelegated) : 0n;
-    const churnRate = prevTotal > 0n
-      ? Math.abs(Number(((totalDelegated - prevTotal) * 10000n) / prevTotal)) / 100
-      : 0;
-
-    // Create snapshot
-    await prisma.delegationSnapshot.create({
-      data: {
-        validatorId: val.id,
-        totalDelegators: currentDelegators.size,
-        totalDelegated: totalDelegated.toString(),
-        topDelegators: JSON.stringify(sorted),
-        churnRate,
-      },
-    });
-    snapshotsTaken++;
   }
 
   return { eventsSynced, snapshotsTaken, duration: Date.now() - start };

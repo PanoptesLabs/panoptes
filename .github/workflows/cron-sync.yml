@@ -1,34 +1,34 @@
-name: "Cron: Network Stats"
+name: "Cron: Chain Sync"
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "5,20,35,50 * * * *"
   workflow_dispatch:
 
 concurrency:
-  group: cron-stats
+  group: cron-sync
   cancel-in-progress: false
 
 jobs:
-  stats:
+  sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     if: ${{ vars.CRONS_ENABLED == 'true' }}
     steps:
-      - name: Trigger stats aggregation
+      - name: Trigger chain sync
         run: |
           HTTP_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" \
-            -X POST "${{ secrets.APP_URL }}/api/cron/stats" \
+            -X POST "${{ secrets.APP_URL }}/api/cron/sync" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json")
           echo "HTTP Status: $HTTP_CODE"
           cat /tmp/response.json || true
           if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-            echo "::error::Cron stats failed with HTTP $HTTP_CODE"
+            echo "::error::Cron sync failed with HTTP $HTTP_CODE"
             exit 1
           fi
           SUCCESS=$(jq -r '.success // empty' /tmp/response.json 2>/dev/null)
           if [ "$SUCCESS" = "false" ]; then
-            echo "::warning::Cron stats partial failure — check response for details"
+            echo "::warning::Cron sync partial failure — check response for details"
             exit 1
           fi

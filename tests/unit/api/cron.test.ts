@@ -33,7 +33,7 @@ vi.mock("@/lib/intelligence", () => ({
 
 import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
-import { checkEndpoints, aggregateStats, cleanupOldData } from "@/lib/indexer";
+import { checkEndpoints, aggregateStats, cleanupOldData, syncGovernance, syncDelegations } from "@/lib/indexer";
 import { dispatchWebhooks } from "@/lib/webhooks/dispatch";
 
 function makeCronRequest(): NextRequest {
@@ -144,6 +144,64 @@ describe("Cron Routes", () => {
       expect(body.errors[0].step).toBe("aggregateStats");
       expect(body.slos.evaluated).toBe(2);
       expect(body.incidents.created).toBe(1);
+    });
+  });
+
+  describe("POST /api/cron/sync", () => {
+    it("returns success with governance and delegations", async () => {
+      vi.mocked(syncGovernance).mockResolvedValue({
+        proposalsSynced: 3,
+        votesSynced: 10,
+        duration: 500,
+      } as never);
+      vi.mocked(syncDelegations).mockResolvedValue({
+        eventsSynced: 5,
+        snapshotsTaken: 100,
+        duration: 2000,
+      });
+
+      const { POST } = await import("@/app/api/cron/sync/route");
+      const res = await POST(makeCronRequest());
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(body.governance.proposalsSynced).toBe(3);
+      expect(body.governance.votesSynced).toBe(10);
+      expect(body.delegations.eventsSynced).toBe(5);
+      expect(body.delegations.snapshotsTaken).toBe(100);
+    });
+
+    it("returns 207 partial when one step fails", async () => {
+      vi.mocked(syncGovernance).mockRejectedValue(new Error("REST timeout"));
+      vi.mocked(syncDelegations).mockResolvedValue({
+        eventsSynced: 0,
+        snapshotsTaken: 50,
+        duration: 1000,
+      });
+
+      const { POST } = await import("@/app/api/cron/sync/route");
+      const res = await POST(makeCronRequest());
+      const body = await res.json();
+
+      expect(res.status).toBe(207);
+      expect(body.success).toBe(false);
+      expect(body.partial).toBe(true);
+      expect(body.errors).toHaveLength(1);
+      expect(body.errors[0].step).toBe("syncGovernance");
+      expect(body.delegations.snapshotsTaken).toBe(50);
+    });
+
+    it("returns 401 when auth fails", async () => {
+      const { NextResponse } = await import("next/server");
+      vi.mocked(validateCronAuth).mockReturnValue(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      );
+
+      const { POST } = await import("@/app/api/cron/sync/route");
+      const res = await POST(makeCronRequest());
+
+      expect(res.status).toBe(401);
     });
   });
 

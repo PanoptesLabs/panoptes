@@ -131,6 +131,33 @@ export async function computeValidatorScores(): Promise<{ scored: number; durati
     },
   });
 
+  // Batch governance queries: 2 queries instead of 2×N
+  let totalProposals = 0;
+  let voteMap = new Map<string, number>();
+  try {
+    totalProposals = await prisma.governanceProposal.count({
+      where: {
+        status: {
+          in: [
+            "PROPOSAL_STATUS_PASSED",
+            "PROPOSAL_STATUS_REJECTED",
+            "PROPOSAL_STATUS_FAILED",
+            "PROPOSAL_STATUS_VOTING_PERIOD",
+          ],
+        },
+      },
+    });
+    if (totalProposals > 0) {
+      const voteCounts = await prisma.governanceVote.groupBy({
+        by: ["voter"],
+        _count: { id: true },
+      });
+      voteMap = new Map(voteCounts.map((v) => [v.voter, v._count.id]));
+    }
+  } catch {
+    // Non-fatal: if governance tables don't exist or have issues, skip
+  }
+
   let scored = 0;
 
   for (const val of validators) {
@@ -174,27 +201,9 @@ export async function computeValidatorScores(): Promise<{ scored: number; durati
 
     // Governance score: participation in governance proposals
     let governanceScore = 0;
-    try {
-      const totalProposals = await prisma.governanceProposal.count({
-        where: {
-          status: {
-            in: [
-              "PROPOSAL_STATUS_PASSED",
-              "PROPOSAL_STATUS_REJECTED",
-              "PROPOSAL_STATUS_FAILED",
-              "PROPOSAL_STATUS_VOTING_PERIOD",
-            ],
-          },
-        },
-      });
-      if (totalProposals > 0) {
-        const votesCount = await prisma.governanceVote.count({
-          where: { voter: val.id },
-        });
-        governanceScore = computeGovernanceWeight(votesCount / totalProposals);
-      }
-    } catch {
-      // Non-fatal: if governance tables don't exist or have issues, skip
+    if (totalProposals > 0) {
+      const votesCount = voteMap.get(val.id) ?? 0;
+      governanceScore = computeGovernanceWeight(votesCount / totalProposals);
     }
 
     // Composite score

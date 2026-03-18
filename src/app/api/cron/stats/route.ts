@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
-import { aggregateStats, syncGovernance, syncDelegations } from "@/lib/indexer";
+import { aggregateStats } from "@/lib/indexer";
 import { computeEndpointScores, computeValidatorScores, detectAnomalies, evaluateSlos, correlateIncidents, evaluatePolicies, detectWhaleMovement } from "@/lib/intelligence";
 import { logger } from "@/lib/logger";
 
@@ -27,31 +27,31 @@ export async function POST(request: NextRequest) {
 
   const errors: StepError[] = [];
 
-  // Each step runs independently — one failure doesn't block others
+  // Step 1: aggregateStats (serial — later steps depend on fresh data)
   const stats = await runStep("aggregateStats", aggregateStats, errors);
 
-  const [endpointScores, validatorScores, anomalies] = await Promise.all([
+  // Step 2: scoring + anomalies + whale (independent, parallel)
+  const [endpointScores, validatorScores, anomalies, whaleResults] = await Promise.all([
     runStep("computeEndpointScores", computeEndpointScores, errors),
     runStep("computeValidatorScores", computeValidatorScores, errors),
     runStep("detectAnomalies", detectAnomalies, errors),
+    runStep("detectWhaleMovement", detectWhaleMovement, errors),
   ]);
 
-  const [governanceResults, delegationResults] = await Promise.all([
-    runStep("syncGovernance", syncGovernance, errors),
-    runStep("syncDelegations", syncDelegations, errors),
+  // Step 3: SLOs + policies (independent, parallel)
+  const [sloResults, policyResults] = await Promise.all([
+    runStep("evaluateSlos", evaluateSlos, errors),
+    runStep("evaluatePolicies", evaluatePolicies, errors),
   ]);
 
-  const whaleResults = await runStep("detectWhaleMovement", detectWhaleMovement, errors);
-
-  const sloResults = await runStep("evaluateSlos", evaluateSlos, errors);
-  const policyResults = await runStep("evaluatePolicies", evaluatePolicies, errors);
+  // Step 4: incidents (serial — needs SLO + anomaly data)
   const incidentResults = await runStep("correlateIncidents", correlateIncidents, errors);
 
   const status = errors.length === 0 ? 200 : 207;
 
   return NextResponse.json({
     success: errors.length === 0,
-    partial: errors.length > 0 && errors.length < 10,
+    partial: errors.length > 0 && errors.length < 8,
     ...(stats ?? {}),
     scoring: {
       endpoints: endpointScores?.scored ?? 0,
@@ -61,20 +61,14 @@ export async function POST(request: NextRequest) {
       detected: anomalies?.detected ?? 0,
       resolved: anomalies?.resolved ?? 0,
     },
+    whale: {
+      detected: whaleResults?.detected ?? 0,
+    },
     slos: {
       evaluated: sloResults?.evaluated ?? 0,
       breached: sloResults?.breached ?? 0,
       recovered: sloResults?.recovered ?? 0,
       exhausted: sloResults?.exhausted ?? 0,
-    },
-    governance: {
-      proposalsSynced: governanceResults?.proposalsSynced ?? 0,
-      votesSynced: governanceResults?.votesSynced ?? 0,
-    },
-    delegations: {
-      eventsSynced: delegationResults?.eventsSynced ?? 0,
-      snapshotsTaken: delegationResults?.snapshotsTaken ?? 0,
-      whalesDetected: whaleResults?.detected ?? 0,
     },
     policies: {
       evaluated: policyResults?.evaluated ?? 0,
