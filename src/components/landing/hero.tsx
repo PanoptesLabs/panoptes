@@ -117,7 +117,7 @@ export function Hero() {
             View Dashboard
           </a>
           <a
-            href="https://github.com/eren-karakus0/panoptes"
+            href="https://github.com/PanoptesLabs/panoptes"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-lg border border-dusty-lavender/30 px-6 py-3 text-sm font-medium text-dusty-lavender transition-all hover:border-soft-violet hover:text-soft-violet hover:scale-105 hover:shadow-lg hover:shadow-soft-violet/20"
