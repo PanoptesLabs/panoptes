@@ -7,6 +7,7 @@ import { FilterSelect } from "./filter-select";
 import { ErrorState } from "./error-state";
 import { EmptyState } from "./empty-state";
 import { TrendingUp, Loader2 } from "lucide-react";
+import { Pagination } from "./pagination";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 
@@ -28,10 +29,14 @@ const ENTITY_TYPE_OPTIONS = [
 export function ForecastList() {
   const [metric, setMetric] = useState("");
   const [entityType, setEntityType] = useState("");
+  const [offset, setOffset] = useState(0);
+  const limit = 12;
 
   const { data, error, isLoading, mutate } = useForecasts({
     metric: metric || undefined,
     entityType: entityType || undefined,
+    limit,
+    offset,
   });
 
   if (error && !data) {
@@ -46,7 +51,7 @@ export function ForecastList() {
             label="Metric"
             options={METRIC_OPTIONS}
             value={metric}
-            onChange={setMetric}
+            onChange={(v) => { setMetric(v); setOffset(0); }}
           />
           {metric && helpContent.forecasts.metrics[metric as keyof typeof helpContent.forecasts.metrics] && (
             <HelpTooltip
@@ -60,7 +65,7 @@ export function ForecastList() {
             label="Entity Type"
             options={ENTITY_TYPE_OPTIONS}
             value={entityType}
-            onChange={setEntityType}
+            onChange={(v) => { setEntityType(v); setOffset(0); }}
           />
           {entityType && helpContent.anomalies.entityTypes[entityType as keyof typeof helpContent.anomalies.entityTypes] && (
             <HelpTooltip
@@ -107,10 +112,8 @@ export function ForecastList() {
         </div>
       )}
 
-      {data && data.total > data.forecasts.length && (
-        <p className="text-center text-xs text-dusty-lavender/40">
-          Showing {data.forecasts.length} of {data.total} forecasts
-        </p>
+      {data && data.total > limit && (
+        <Pagination total={data.total} limit={limit} offset={offset} onPageChange={setOffset} />
       )}
     </div>
   );

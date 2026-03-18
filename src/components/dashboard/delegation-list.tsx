@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useDelegationEvents, useWhaleMovements } from "@/hooks/use-delegations";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { formatAmountShort } from "@/lib/formatters";
 import { Loader2, ArrowLeftRight, ArrowUpRight, ArrowDownRight, AlertTriangle } from "lucide-react";
+import { Pagination } from "./pagination";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 
@@ -16,7 +18,9 @@ const TYPE_CONFIG = {
 };
 
 export function DelegationList() {
-  const { data: eventsData, error: eventsError, isLoading: eventsLoading } = useDelegationEvents({ limit: 30 });
+  const [offset, setOffset] = useState(0);
+  const limit = 20;
+  const { data: eventsData, error: eventsError, isLoading: eventsLoading } = useDelegationEvents({ limit, offset });
   const { data: whalesData, error: whalesError, isLoading: whalesLoading } = useWhaleMovements();
 
   if (eventsError || whalesError) return <ErrorState message="Failed to load delegation data" />;
@@ -113,6 +117,11 @@ export function DelegationList() {
                   </div>
                 );
               })}
+            </div>
+          )}
+          {(eventsData?.total ?? 0) > limit && (
+            <div className="mt-3">
+              <Pagination total={eventsData?.total ?? 0} limit={limit} offset={offset} onPageChange={setOffset} />
             </div>
           )}
         </CardContent>

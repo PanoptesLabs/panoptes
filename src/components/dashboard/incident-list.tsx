@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { Siren, AlertTriangle, CheckCircle, Eye, ShieldAlert } from "lucide-react";
+import { Pagination } from "./pagination";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 
@@ -61,12 +62,16 @@ export function IncidentList() {
   const [status, setStatus] = useState("");
   const [severity, setSeverity] = useState("");
   const [entityType, setEntityType] = useState("");
+  const [offset, setOffset] = useState(0);
+  const limit = 20;
 
   const { data: summary, isLoading: summaryLoading } = useIncidentSummary(token);
   const { data, error, isLoading, mutate } = useIncidents(token, {
     status: status || undefined,
     severity: severity || undefined,
     entityType: entityType || undefined,
+    limit,
+    offset,
   });
 
   if (error && !data) {
@@ -106,7 +111,7 @@ export function IncidentList() {
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-1">
-          <FilterSelect label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+          <FilterSelect label="Status" options={STATUS_OPTIONS} value={status} onChange={(v) => { setStatus(v); setOffset(0); }} />
           {status && helpContent.incidents.statuses[status as keyof typeof helpContent.incidents.statuses] && (
             <HelpTooltip
               content={helpContent.incidents.statuses[status as keyof typeof helpContent.incidents.statuses]}
@@ -115,13 +120,13 @@ export function IncidentList() {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <FilterSelect label="Severity" options={SEVERITY_OPTIONS} value={severity} onChange={setSeverity} />
+          <FilterSelect label="Severity" options={SEVERITY_OPTIONS} value={severity} onChange={(v) => { setSeverity(v); setOffset(0); }} />
           {severity && (
             <HelpTooltip content={helpContent.incidents.concepts.severity} side="right" />
           )}
         </div>
         <div className="flex items-center gap-1">
-          <FilterSelect label="Entity" options={ENTITY_OPTIONS} value={entityType} onChange={setEntityType} />
+          <FilterSelect label="Entity" options={ENTITY_OPTIONS} value={entityType} onChange={(v) => { setEntityType(v); setOffset(0); }} />
           {entityType && helpContent.anomalies.entityTypes[entityType as keyof typeof helpContent.anomalies.entityTypes] && (
             <HelpTooltip
               content={helpContent.anomalies.entityTypes[entityType as keyof typeof helpContent.anomalies.entityTypes]}
@@ -196,10 +201,8 @@ export function IncidentList() {
             </Link>
           ))}
 
-          {data.total > data.incidents.length && (
-            <p className="text-center text-xs text-dusty-lavender/40">
-              Showing {data.incidents.length} of {data.total} incidents
-            </p>
+          {data.total > limit && (
+            <Pagination total={data.total} limit={limit} offset={offset} onPageChange={setOffset} />
           )}
         </div>
       )}

@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useGovernanceProposals } from "@/hooks/use-governance";
 import { ErrorState } from "./error-state";
+import { Pagination } from "./pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { Loader2, Vote, CheckCircle, XCircle, Clock, Ban } from "lucide-react";
@@ -16,7 +18,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 };
 
 export function GovernanceList() {
-  const { data, error, isLoading } = useGovernanceProposals({ limit: 50 });
+  const [offset, setOffset] = useState(0);
+  const limit = 20;
+  const { data, error, isLoading } = useGovernanceProposals({ limit, offset });
 
   if (error) return <ErrorState message="Failed to load governance data" />;
 
@@ -43,7 +47,9 @@ export function GovernanceList() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-dusty-lavender/50">{data?.total ?? 0} proposals</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-dusty-lavender/50">{data?.total ?? 0} proposals</p>
+      </div>
       {proposals.map((p) => {
         const config = STATUS_CONFIG[p.status] || { label: p.status, color: "text-dusty-lavender/50", icon: Clock };
         const StatusIcon = config.icon;
@@ -74,6 +80,9 @@ export function GovernanceList() {
           </Link>
         );
       })}
+      {(data?.total ?? 0) > limit && (
+        <Pagination total={data?.total ?? 0} limit={limit} offset={offset} onPageChange={setOffset} />
+      )}
     </div>
   );
 }
