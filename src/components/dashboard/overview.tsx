@@ -122,11 +122,17 @@ export function Overview() {
         <StatCard
           title="Endpoints"
           value={
-            !endpointsLoading
+            !endpointsLoading && endpoints
               ? `${healthyEndpoints} / ${totalEndpoints}`
               : "--"
           }
-          subtitle={healthyEndpoints === totalEndpoints ? "all healthy" : `${totalEndpoints - healthyEndpoints} unhealthy`}
+          subtitle={
+            !endpointsLoading && endpoints && totalEndpoints > 0
+              ? healthyEndpoints === totalEndpoints
+                ? "all healthy"
+                : `${totalEndpoints - healthyEndpoints} unhealthy`
+              : undefined
+          }
           icon={<Globe className="size-4" />}
           isLoading={endpointsLoading}
         />

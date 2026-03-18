@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { useWebhookDetail, useWebhookDeliveries, testWebhook, deleteWebhook } from "@/hooks/use-webhooks";
@@ -81,6 +81,17 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [testSuccess, setTestSuccess] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteCountdown, setDeleteCountdown] = useState(5);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearCountdown = useCallback(() => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => clearCountdown(), [clearCountdown]);
 
   if (isLoading) {
     return (
@@ -114,7 +125,18 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
     if (!token) return;
     if (!confirmDelete) {
       setConfirmDelete(true);
-      setTimeout(() => setConfirmDelete(false), 5000);
+      setDeleteCountdown(5);
+      clearCountdown();
+      countdownRef.current = setInterval(() => {
+        setDeleteCountdown((prev) => {
+          if (prev <= 1) {
+            clearCountdown();
+            setConfirmDelete(false);
+            return 5;
+          }
+          return prev - 1;
+        });
+      }, 1000);
       return;
     }
     setActionLoading("delete");
@@ -182,7 +204,7 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
                 disabled={actionLoading !== null}
               >
                 {actionLoading === "delete" ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
-                {confirmDelete ? "Confirm Delete" : "Delete"}
+                {confirmDelete ? `Confirm Delete (${deleteCountdown}s)` : "Delete"}
               </Button>
             </div>
           </div>

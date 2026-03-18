@@ -217,14 +217,19 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardContent className="py-4">
             <div className="flex gap-3">
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleComment()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleComment();
+                  }
+                }}
                 placeholder="Add a comment..."
                 maxLength={1000}
-                className="h-9 flex-1 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:border-soft-violet/50 focus:ring-1 focus:ring-soft-violet/20"
+                className="flex-1 resize-none rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-3 py-2 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:border-soft-violet/50 focus:ring-1 focus:ring-soft-violet/20"
               />
               <Button
                 variant="outline"
