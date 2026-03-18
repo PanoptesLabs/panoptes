@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { ErrorState } from "./error-state";
 import { ScoreBadge } from "./score-badge";
@@ -55,6 +55,28 @@ function formatValue(category: string, value: number): string {
 export function LeaderboardTable() {
   const [category, setCategory] = useState("overall");
   const { data, error, isLoading, mutate } = useLeaderboard(category);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleTabKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+      let next = -1;
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        next = (index + 1) % CATEGORIES.length;
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        next = (index - 1 + CATEGORIES.length) % CATEGORIES.length;
+      } else if (e.key === "Home") {
+        next = 0;
+      } else if (e.key === "End") {
+        next = CATEGORIES.length - 1;
+      }
+      if (next >= 0) {
+        e.preventDefault();
+        setCategory(CATEGORIES[next].key);
+        tabRefs.current[next]?.focus();
+      }
+    },
+    [],
+  );
 
   if (error && !data) {
     return <ErrorState message="Failed to load leaderboard" onRetry={() => mutate()} />;
@@ -64,14 +86,19 @@ export function LeaderboardTable() {
     <div className="space-y-6">
       {/* Category tabs */}
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Leaderboard categories">
-        {CATEGORIES.map((cat) => {
+        {CATEGORIES.map((cat, index) => {
           const active = category === cat.key;
           return (
             <button
               key={cat.key}
+              ref={(el) => { tabRefs.current[index] = el; }}
               role="tab"
+              id={`leaderboard-tab-${cat.key}`}
               aria-selected={active}
+              aria-controls="leaderboard-tabpanel"
+              tabIndex={active ? 0 : -1}
               onClick={() => setCategory(cat.key)}
+              onKeyDown={(e) => handleTabKeyDown(e, index)}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all",
                 active
@@ -91,7 +118,12 @@ export function LeaderboardTable() {
       </div>
 
       {/* Table */}
-      <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
+      <Card
+        id="leaderboard-tabpanel"
+        role="tabpanel"
+        aria-labelledby={`leaderboard-tab-${category}`}
+        className="border-slate-DEFAULT/20 bg-midnight-plum"
+      >
         <CardContent className="p-0">
           <Table>
             <TableHeader>
