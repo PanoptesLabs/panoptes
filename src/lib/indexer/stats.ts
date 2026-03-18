@@ -3,9 +3,53 @@ import { getRepublicClient } from "@/lib/republic";
 import { IndexerError } from "@/lib/errors";
 import { publishEvent } from "@/lib/events/publish";
 import { CHANNELS } from "@/lib/events/event-types";
+import { REPUBLIC_CHAIN } from "@/lib/constants";
+import { logger } from "@/lib/logger";
+
+type BlockHeightSource = "rpc" | "rest" | "cache";
+
+async function fetchBlockHeight(): Promise<{ blockHeight: bigint; source: BlockHeightSource }> {
+  // 1) RPC — primary source
+  try {
+    const client = getRepublicClient();
+    const status = await client.getStatus();
+    const height = BigInt(status.syncInfo?.latestBlockHeight ?? "0");
+    if (height > 0n) return { blockHeight: height, source: "rpc" };
+  } catch {
+    logger.warn("aggregateStats", "RPC unreachable, trying REST fallback");
+  }
+
+  // 2) REST — secondary source
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(
+      `${REPUBLIC_CHAIN.restUrl}/cosmos/base/tendermint/v1beta1/blocks/latest`,
+      { signal: controller.signal },
+    );
+    clearTimeout(timeout);
+    if (res.ok) {
+      const data = await res.json();
+      const height = BigInt(data?.block?.header?.height ?? "0");
+      if (height > 0n) return { blockHeight: height, source: "rest" };
+    }
+  } catch {
+    logger.warn("aggregateStats", "REST unreachable, using cached blockHeight");
+  }
+
+  // 3) DB cache — last known value
+  const last = await prisma.networkStats.findFirst({
+    orderBy: { timestamp: "desc" },
+    select: { blockHeight: true },
+  });
+  if (last) return { blockHeight: last.blockHeight, source: "cache" };
+
+  return { blockHeight: 0n, source: "cache" };
+}
 
 export async function aggregateStats(): Promise<{
   blockHeight: string;
+  blockHeightSource: BlockHeightSource;
   totalValidators: number;
   activeValidators: number;
   totalStaked: string;
@@ -14,12 +58,7 @@ export async function aggregateStats(): Promise<{
   const start = Date.now();
 
   try {
-    const client = getRepublicClient();
-    const status = await client.getStatus();
-
-    const blockHeight = BigInt(
-      status.syncInfo?.latestBlockHeight ?? "0",
-    );
+    const { blockHeight, source } = await fetchBlockHeight();
 
     const [totalValidators, activeValidators] = await Promise.all([
       prisma.validator.count(),
@@ -48,19 +87,21 @@ export async function aggregateStats(): Promise<{
         ? Number((bondedStaked * 10000n) / allTokens) / 10000
         : null;
 
-    // Avg block time from last 2 stats
+    // Avg block time from last 2 stats — skip when using cached height (stale value)
     let avgBlockTime: number | null = null;
-    const lastTwo = await prisma.networkStats.findMany({
-      orderBy: { timestamp: "desc" },
-      take: 2,
-      select: { blockHeight: true, timestamp: true },
-    });
-    if (lastTwo.length === 2) {
-      const heightDiff = Number(blockHeight - lastTwo[1].blockHeight);
-      const timeDiffMs =
-        lastTwo[0].timestamp.getTime() - lastTwo[1].timestamp.getTime();
-      if (heightDiff > 0 && timeDiffMs > 0) {
-        avgBlockTime = timeDiffMs / 1000 / heightDiff;
+    if (source !== "cache") {
+      const lastTwo = await prisma.networkStats.findMany({
+        orderBy: { timestamp: "desc" },
+        take: 2,
+        select: { blockHeight: true, timestamp: true },
+      });
+      if (lastTwo.length === 2) {
+        const heightDiff = Number(blockHeight - lastTwo[1].blockHeight);
+        const timeDiffMs =
+          lastTwo[0].timestamp.getTime() - lastTwo[1].timestamp.getTime();
+        if (heightDiff > 0 && timeDiffMs > 0) {
+          avgBlockTime = timeDiffMs / 1000 / heightDiff;
+        }
       }
     }
 
@@ -90,6 +131,7 @@ export async function aggregateStats(): Promise<{
 
     return {
       blockHeight: blockHeight.toString(),
+      blockHeightSource: source,
       totalValidators,
       activeValidators,
       totalStaked,
