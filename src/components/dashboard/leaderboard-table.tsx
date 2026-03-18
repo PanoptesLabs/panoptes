@@ -63,12 +63,14 @@ export function LeaderboardTable() {
   return (
     <div className="space-y-6">
       {/* Category tabs */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Leaderboard categories">
         {CATEGORIES.map((cat) => {
           const active = category === cat.key;
           return (
             <button
               key={cat.key}
+              role="tab"
+              aria-selected={active}
               onClick={() => setCategory(cat.key)}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all",

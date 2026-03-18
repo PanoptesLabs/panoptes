@@ -28,7 +28,8 @@ export function FilterSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 rounded-lg border border-slate-DEFAULT/20 bg-midnight-plum px-2.5 text-sm text-mist outline-none focus:border-soft-violet/50 focus:ring-1 focus:ring-soft-violet/20"
+        aria-label={label}
+        className="h-11 sm:h-8 rounded-lg border border-slate-DEFAULT/20 bg-midnight-plum px-2.5 text-sm text-mist outline-none focus:border-soft-violet/50 focus:ring-1 focus:ring-soft-violet/20"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
