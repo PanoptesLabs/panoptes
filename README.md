@@ -82,7 +82,7 @@ All endpoints include rate limiting (60 req/min), security headers, and CORS.
 ### Setup
 
 ```bash
-git clone https://github.com/eren-karakus0/panoptes.git
+git clone https://github.com/PanoptesLabs/panoptes.git
 cd panoptes
 npm install
 cp .env.example .env.local

@@ -54,7 +54,7 @@ export function CallToAction() {
             {/* Center — links */}
             <div className="flex items-center gap-4">
               <a
-                href="https://github.com/eren-karakus0/panoptes"
+                href="https://github.com/PanoptesLabs/panoptes"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-mist/50 transition-colors hover:text-soft-violet"

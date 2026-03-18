@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     "smart routing",
     "anomaly detection",
   ],
-  authors: [{ name: "eren-karakus0" }],
+  authors: [{ name: "PanoptesLabs" }],
   robots: { index: true, follow: true },
   icons: {
     icon: "/favicon.svg",
@@ -77,7 +77,7 @@ const jsonLd = {
     "Chain intelligence platform for Republic AI ecosystem. Validator monitoring, endpoint health tracking, smart routing, and anomaly detection.",
   applicationCategory: "Blockchain Tool",
   operatingSystem: "Web",
-  author: { "@type": "Person", name: "eren-karakus0" },
+  author: { "@type": "Person", name: "PanoptesLabs" },
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 };
 
