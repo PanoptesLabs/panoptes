@@ -21,6 +21,7 @@ import {
   Check,
   AlertTriangle,
   LogOut,
+  Pencil,
 } from "lucide-react";
 
 interface WorkspaceMeResponse {
@@ -203,13 +204,15 @@ export function WorkspaceSettings() {
                 </div>
               ) : (
                 <p
-                  className="mt-1 cursor-pointer text-sm text-mist hover:text-soft-violet"
+                  className="group mt-1 flex cursor-pointer items-center gap-1.5 text-sm text-mist hover:text-soft-violet"
+                  title="Click to edit"
                   onClick={() => {
                     setEditName(workspace.name);
                     setIsEditing(true);
                   }}
                 >
                   {workspace.name}
+                  <Pencil className="size-3 text-dusty-lavender/30 opacity-0 transition-opacity group-hover:opacity-100" />
                 </p>
               )}
             </div>

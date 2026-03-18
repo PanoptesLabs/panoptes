@@ -75,6 +75,7 @@ export function ValidatorCompare({ availableValidators = [] }: ValidatorCompareP
                 {name}
                 <button
                   onClick={() => removeValidator(id)}
+                  aria-label={`Remove ${name}`}
                   className="ml-0.5 text-dusty-lavender/50 hover:text-mist"
                 >
                   <X className="size-3" />
@@ -89,8 +90,15 @@ export function ValidatorCompare({ availableValidators = [] }: ValidatorCompareP
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddFromInput()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAddFromInput();
+                    if (e.key === "Escape") setInputValue("");
+                  }}
                   placeholder="Add validator ID..."
+                  role="combobox"
+                  aria-expanded={!!(inputValue && filteredValidators.length > 0)}
+                  aria-autocomplete="list"
+                  aria-controls="validator-dropdown"
                   className="h-7 w-48 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist placeholder:text-dusty-lavender/30 outline-none focus:border-soft-violet/50"
                 />
                 <Button
@@ -106,10 +114,12 @@ export function ValidatorCompare({ availableValidators = [] }: ValidatorCompareP
                 </Button>
               </div>
               {inputValue && filteredValidators.length > 0 && (
-                <div className="absolute top-8 z-10 max-h-32 w-48 overflow-y-auto rounded-lg border border-slate-DEFAULT/20 bg-midnight-plum shadow-lg">
+                <div id="validator-dropdown" role="listbox" aria-label="Validator suggestions" className="absolute top-8 z-10 max-h-32 w-48 overflow-y-auto rounded-lg border border-slate-DEFAULT/20 bg-midnight-plum shadow-lg">
                   {filteredValidators.slice(0, 5).map((v) => (
                     <button
                       key={v.id}
+                      role="option"
+                      aria-selected={false}
                       onClick={() => addValidator(v.id)}
                       className="block w-full px-2 py-1.5 text-left text-xs text-mist hover:bg-deep-iris/20"
                     >
