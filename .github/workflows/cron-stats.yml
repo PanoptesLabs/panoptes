@@ -12,7 +12,7 @@ concurrency:
 jobs:
   stats:
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 5
     if: ${{ vars.CRONS_ENABLED == 'true' }}
     steps:
       - name: Trigger stats aggregation
