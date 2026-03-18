@@ -126,10 +126,15 @@ describe("aggregateStats", () => {
       getStatus: vi.fn().mockRejectedValue(new Error("Connection failed")),
     });
 
+    // Stub fetch so REST fallback doesn't make real network calls
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
+
     // DB queries also fail to trigger IndexerError
     mockPrisma.validator.count.mockReset().mockRejectedValue(new Error("DB down"));
 
     await expect(aggregateStats()).rejects.toThrow("Failed to aggregate stats");
+
+    vi.unstubAllGlobals();
   });
 
   describe("block height fallback", () => {
