@@ -30,13 +30,17 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const handleToggleActive = async () => {
     if (!token || !data) return;
     setIsToggling(true);
+    setActionError(null);
     try {
       await updatePolicy(token, policyId, { isActive: !data.isActive });
       mutate();
+    } catch {
+      setActionError("Failed to toggle policy status.");
     } finally {
       setIsToggling(false);
     }
@@ -45,9 +49,12 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
   const handleToggleDryRun = async () => {
     if (!token || !data) return;
     setIsDryRunToggling(true);
+    setActionError(null);
     try {
       await updatePolicy(token, policyId, { dryRun: !data.dryRun });
       mutate();
+    } catch {
+      setActionError("Failed to toggle dry run mode.");
     } finally {
       setIsDryRunToggling(false);
     }
@@ -56,9 +63,12 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
   const handleDelete = async () => {
     if (!token) return;
     setIsDeleting(true);
+    setActionError(null);
     try {
       await deletePolicy(token, policyId);
       router.push("/dashboard/settings/policies");
+    } catch {
+      setActionError("Failed to delete policy.");
     } finally {
       setIsDeleting(false);
     }
@@ -68,9 +78,12 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
     if (!token) return;
     setIsTesting(true);
     setTestResult(null);
+    setActionError(null);
     try {
       const result = await testPolicy(token, policyId);
       setTestResult(result);
+    } catch {
+      setActionError("Failed to test policy.");
     } finally {
       setIsTesting(false);
     }
@@ -199,6 +212,13 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Action Error */}
+      {actionError && (
+        <div className="flex items-center gap-2 rounded-lg border border-rose-DEFAULT/30 bg-rose-dark/10 px-4 py-2.5 text-xs text-rose-light">
+          {actionError}
+        </div>
+      )}
 
       {/* Test Result */}
       {testResult && (

@@ -48,10 +48,12 @@ export function PolicyList() {
   const [formValue, setFormValue] = useState("");
   const [formActionType, setFormActionType] = useState("log");
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const handleCreate = async () => {
     if (!token || !formName.trim() || !formValue.trim()) return;
     setIsCreating(true);
+    setCreateError(null);
     try {
       let parsedValue: unknown = formValue;
       if (formValue === "true") parsedValue = true;
@@ -70,6 +72,8 @@ export function PolicyList() {
       setFormName("");
       setFormDescription("");
       setFormValue("");
+    } catch {
+      setCreateError("Failed to create policy.");
     } finally {
       setIsCreating(false);
     }
@@ -189,6 +193,9 @@ export function PolicyList() {
               </Button>
               <HelpTooltip content={helpContent.policies.concepts.dryRun} side="right" />
             </div>
+            {createError && (
+              <p className="text-xs text-rose-DEFAULT">{createError}</p>
+            )}
           </CardContent>
         </Card>
       )}

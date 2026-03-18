@@ -16,12 +16,14 @@ export async function GET(request: NextRequest) {
   const limit = parseIntParam(searchParams.get("limit"), 50, 1, 200);
   const offset = parseIntParam(searchParams.get("offset"), 0, 0, 10000);
   const status = parseStringParam(searchParams.get("status"), [...INCIDENT_STATUSES]);
+  const severity = parseStringParam(searchParams.get("severity"), ["critical", "high", "medium", "low"]);
   const entityType = parseStringParam(searchParams.get("entityType"), ["endpoint", "validator"]);
 
   const where: Record<string, unknown> = {
     workspaceId: auth.workspace.id,
   };
   if (status) where.status = status;
+  if (severity) where.severity = severity;
   if (entityType) where.entityType = entityType;
 
   const [incidents, total] = await Promise.all([

@@ -42,6 +42,13 @@ export function useEventStream({
 }: UseEventStreamOptions) {
   const { mutate } = useSWRConfig();
   const esRef = useRef<EventSource | null>(null);
+  const onEventRef = useRef(onEvent);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onEventRef.current = onEvent;
+    onErrorRef.current = onError;
+  });
 
   useEffect(() => {
     if (!enabled) return;
@@ -52,7 +59,7 @@ export function useEventStream({
     const eventTypes = Object.keys(revalidateMap);
 
     const handler = (type: string) => (event: MessageEvent) => {
-      onEvent?.(type, event.data);
+      onEventRef.current?.(type, event.data);
       const keys = revalidateMap[type];
       if (keys) {
         keys.forEach((key) => mutate(key));
@@ -66,7 +73,7 @@ export function useEventStream({
     });
 
     es.onerror = (event) => {
-      onError?.(event);
+      onErrorRef.current?.(event);
     };
 
     return () => {
@@ -76,5 +83,5 @@ export function useEventStream({
       es.close();
       esRef.current = null;
     };
-  }, [url, enabled, revalidateMap, onEvent, onError, mutate]);
+  }, [url, enabled, revalidateMap, mutate]);
 }
