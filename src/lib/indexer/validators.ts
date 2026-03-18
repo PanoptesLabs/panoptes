@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
-import { getRepublicClient } from "@/lib/republic";
 import { IndexerError } from "@/lib/errors";
+import { REPUBLIC_CHAIN, VALIDATOR_DEFAULTS } from "@/lib/constants";
+import { fetchPaginated } from "./paginate";
 
 interface SyncOptions {
   forceDailySnapshot?: boolean;
@@ -13,8 +14,28 @@ interface SyncResult {
   duration: number;
 }
 
+interface ChainValidator {
+  operator_address: string;
+  description?: { moniker?: string };
+  status: string;
+  tokens: string;
+  commission?: { commission_rates?: { rate?: string } };
+  jailed?: boolean;
+}
+
 const BATCH_SIZE = 25;
 const TX_TIMEOUT_MS = 15_000;
+
+function fetchAllValidators(): Promise<ChainValidator[]> {
+  return fetchPaginated<ChainValidator>(
+    (nextKey) => {
+      const base = `${REPUBLIC_CHAIN.restUrl}/cosmos/staking/v1beta1/validators?pagination.limit=${VALIDATOR_DEFAULTS.VALIDATOR_FETCH_LIMIT}`;
+      return nextKey ? `${base}&pagination.key=${encodeURIComponent(nextKey)}` : base;
+    },
+    (data) => ((data.validators as ChainValidator[]) ?? []),
+    { timeoutMs: VALIDATOR_DEFAULTS.FETCH_TIMEOUT_MS, label: "validators" },
+  );
+}
 
 export async function syncValidators(
   options: SyncOptions = {},
@@ -23,8 +44,22 @@ export async function syncValidators(
   const { forceDailySnapshot = false } = options;
 
   try {
-    const client = getRepublicClient();
-    const validators = await client.getValidators();
+    const chainValidators = await fetchAllValidators();
+
+    if (chainValidators.length === 0) {
+      throw new Error(
+        "Validator fetch returned 0 results — possible chain/network error",
+      );
+    }
+
+    const validators = chainValidators.map((v) => ({
+      operatorAddress: v.operator_address,
+      moniker: v.description?.moniker || "",
+      status: v.status,
+      tokens: v.tokens || "0",
+      commission: v.commission?.commission_rates?.rate || "0",
+      jailed: v.jailed || false,
+    }));
 
     const existing = await prisma.validator.findMany();
     const existingMap = new Map(existing.map((v) => [v.id, v]));
