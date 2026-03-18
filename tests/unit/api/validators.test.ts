@@ -135,4 +135,57 @@ describe("GET /api/validators", () => {
       }),
     );
   });
+
+  it("searches by moniker case-insensitively", async () => {
+    const { GET } = await import("@/app/api/validators/route");
+    const req = new NextRequest(
+      "http://localhost/api/validators?search=knkchn",
+    );
+    await GET(req);
+
+    expect(prisma.validator.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [
+            { moniker: { contains: "knkchn", mode: "insensitive" } },
+            { id: { contains: "knkchn", mode: "insensitive" } },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("combines search with status filter", async () => {
+    const { GET } = await import("@/app/api/validators/route");
+    const req = new NextRequest(
+      "http://localhost/api/validators?search=test&status=BOND_STATUS_BONDED",
+    );
+    await GET(req);
+
+    expect(prisma.validator.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: "BOND_STATUS_BONDED",
+          OR: [
+            { moniker: { contains: "test", mode: "insensitive" } },
+            { id: { contains: "test", mode: "insensitive" } },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("ignores empty search parameter", async () => {
+    const { GET } = await import("@/app/api/validators/route");
+    const req = new NextRequest(
+      "http://localhost/api/validators?search=",
+    );
+    await GET(req);
+
+    expect(prisma.validator.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.not.objectContaining({ OR: expect.anything() }),
+      }),
+    );
+  });
 });

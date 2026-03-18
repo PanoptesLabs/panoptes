@@ -39,6 +39,7 @@ export function ValidatorsList() {
     order,
     limit,
     offset,
+    search: search || undefined,
   });
 
   const handleSearch = useCallback((q: string) => {
@@ -56,11 +57,6 @@ export function ValidatorsList() {
     setStatus(val);
     setOffset(0);
   };
-
-  // Client-side moniker search filter
-  const filtered = data?.validators.filter((v: ValidatorListItem) =>
-    search ? v.moniker.toLowerCase().includes(search.toLowerCase()) : true
-  ) as ValidatorListItem[] | undefined;
 
   const columns: Column<ValidatorListItem>[] = [
     {
@@ -180,10 +176,10 @@ export function ValidatorsList() {
       {/* Table */}
       <DataTable
         columns={columns}
-        data={filtered ?? []}
-        total={search ? (filtered?.length ?? 0) : (data?.total ?? 0)}
-        limit={search ? (filtered?.length ?? 0) : limit}
-        offset={search ? 0 : offset}
+        data={data?.validators ?? []}
+        total={data?.total ?? 0}
+        limit={limit}
+        offset={offset}
         sort={sort}
         order={order}
         onSortChange={handleSortChange}

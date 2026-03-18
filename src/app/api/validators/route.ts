@@ -32,9 +32,17 @@ export async function GET(request: NextRequest) {
   );
   const offset = parseIntParam(params.get("offset"), 0, 0, 100000);
 
+  const search = params.get("search")?.trim() || undefined;
+
   const where: Prisma.ValidatorWhereInput = {};
   if (status) where.status = status;
   if (jailed !== undefined) where.jailed = jailed;
+  if (search) {
+    where.OR = [
+      { moniker: { contains: search, mode: "insensitive" } },
+      { id: { contains: search, mode: "insensitive" } },
+    ];
+  }
 
   const [validators, total] = await Promise.all([
     prisma.validator.findMany({

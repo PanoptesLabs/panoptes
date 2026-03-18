@@ -14,6 +14,7 @@ interface UseValidatorsParams {
   order?: "asc" | "desc";
   limit?: number;
   offset?: number;
+  search?: string;
 }
 
 export function useValidators(params?: UseValidatorsParams) {
@@ -25,6 +26,7 @@ export function useValidators(params?: UseValidatorsParams) {
   if (params?.order) searchParams.set("order", params.order);
   if (params?.limit) searchParams.set("limit", String(params.limit));
   if (params?.offset) searchParams.set("offset", String(params.offset));
+  if (params?.search) searchParams.set("search", params.search);
 
   const qs = searchParams.toString();
   const url = `/api/validators${qs ? `?${qs}` : ""}`;

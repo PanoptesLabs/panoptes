@@ -47,6 +47,24 @@ describe("useValidators", () => {
     expect(url).toContain("limit=10");
     expect(url).toContain("offset=20");
   });
+
+  it("includes search param in URL", () => {
+    useValidators({ search: "knkchn" });
+
+    const call = vi.mocked(useSWR).mock.calls.at(-1);
+    const url = call?.[0] as string;
+
+    expect(url).toContain("search=knkchn");
+  });
+
+  it("omits search param when empty", () => {
+    useValidators({ search: "" });
+
+    const call = vi.mocked(useSWR).mock.calls.at(-1);
+    const url = call?.[0] as string;
+
+    expect(url).not.toContain("search");
+  });
 });
 
 describe("useValidatorDetail", () => {
