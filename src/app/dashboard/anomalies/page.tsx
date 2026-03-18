@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { AlertTriangle } from "lucide-react";
+import { Pagination } from "@/components/dashboard/pagination";
 import { HelpTooltip } from "@/components/dashboard/help-tooltip";
 import { helpContent } from "@/lib/help-content";
 
@@ -47,11 +48,15 @@ export default function AnomaliesPage() {
   const [type, setType] = useState("");
   const [severity, setSeverity] = useState("");
   const [resolved, setResolved] = useState("");
+  const [offset, setOffset] = useState(0);
+  const limit = 20;
 
   const { data, error, isLoading, mutate } = useAnomalies({
     type: type || undefined,
     severity: severity || undefined,
     resolved: resolved === "" ? undefined : resolved === "true",
+    limit,
+    offset,
   });
 
   if (error && !data) {
@@ -81,7 +86,7 @@ export default function AnomaliesPage() {
             label="Type"
             options={TYPE_OPTIONS}
             value={type}
-            onChange={setType}
+            onChange={(v) => { setType(v); setOffset(0); }}
           />
           {type && helpContent.anomalies.types[type as keyof typeof helpContent.anomalies.types] && (
             <HelpTooltip
@@ -95,7 +100,7 @@ export default function AnomaliesPage() {
             label="Severity"
             options={SEVERITY_OPTIONS}
             value={severity}
-            onChange={setSeverity}
+            onChange={(v) => { setSeverity(v); setOffset(0); }}
           />
           {severity && helpContent.anomalies.severities[severity as keyof typeof helpContent.anomalies.severities] && (
             <HelpTooltip
@@ -108,7 +113,7 @@ export default function AnomaliesPage() {
           label="Status"
           options={RESOLVED_OPTIONS}
           value={resolved}
-          onChange={setResolved}
+          onChange={(v) => { setResolved(v); setOffset(0); }}
         />
       </div>
 
@@ -187,10 +192,8 @@ export default function AnomaliesPage() {
             </Card>
           ))}
 
-          {data.total > data.anomalies.length && (
-            <p className="text-center text-xs text-dusty-lavender/40">
-              Showing {data.anomalies.length} of {data.total} anomalies
-            </p>
+          {data.total > limit && (
+            <Pagination total={data.total} limit={limit} offset={offset} onPageChange={setOffset} />
           )}
         </div>
       )}

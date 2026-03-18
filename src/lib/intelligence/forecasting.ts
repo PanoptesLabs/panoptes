@@ -426,6 +426,7 @@ export async function getForecasts(filters?: {
   entityId?: string;
   metric?: string;
   limit?: number;
+  offset?: number;
 }): Promise<{
   forecasts: Array<{
     id: string;
@@ -455,12 +456,14 @@ export async function getForecasts(filters?: {
     filters?.limit ?? FORECAST_DEFAULTS.DEFAULT_LIMIT,
     FORECAST_DEFAULTS.MAX_LIMIT,
   );
+  const offset = Math.max(0, filters?.offset ?? 0);
 
   const [forecasts, total] = await Promise.all([
     prisma.forecast.findMany({
       where,
       orderBy: { createdAt: "desc" },
       take: limit,
+      skip: offset,
     }),
     prisma.forecast.count({ where }),
   ]);

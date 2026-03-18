@@ -20,8 +20,9 @@ export async function GET(request: NextRequest) {
     1,
     FORECAST_DEFAULTS.MAX_LIMIT,
   );
+  const offset = parseIntParam(searchParams.get("offset"), 0, 0, 10000);
 
-  const result = await getForecasts({ entityType, entityId, metric, limit });
+  const result = await getForecasts({ entityType, entityId, metric, limit, offset });
 
   return jsonResponse(
     {
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
       })),
       total: result.total,
       limit,
+      offset,
     },
     rl.headers,
   );
