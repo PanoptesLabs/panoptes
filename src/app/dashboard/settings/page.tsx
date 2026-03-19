@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useWorkspace } from "@/hooks/use-workspace";
+import { useAuthContext } from "@/components/dashboard/auth-provider";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -16,9 +16,10 @@ const settingsCards = [
     href: "/dashboard/settings/workspace",
     icon: Building,
     title: "Workspace",
-    description: "Manage workspace details, view resources, and rotate API token",
+    description: "View workspace details and resource overview",
     color: "text-soft-violet",
     bg: "bg-soft-violet/15",
+    requiresAuth: true,
   },
   {
     href: "/dashboard/settings/webhooks",
@@ -50,7 +51,7 @@ const settingsCards = [
 ];
 
 export default function SettingsPage() {
-  const { isAuthenticated } = useWorkspace();
+  const { isAuthenticated } = useAuthContext();
 
   return (
     <div>
@@ -75,7 +76,7 @@ export default function SettingsPage() {
                       </h3>
                       {locked && (
                         <span className="rounded bg-amber-DEFAULT/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-DEFAULT">
-                          Token required
+                          Login required
                         </span>
                       )}
                     </div>

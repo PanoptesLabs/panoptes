@@ -3,25 +3,20 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { useWorkspace } from "@/hooks/use-workspace";
-import { workspaceSwrConfig } from "@/hooks/use-api";
+import { useAuthContext } from "@/components/dashboard/auth-provider";
+import { sessionSwrConfig } from "@/hooks/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "./error-state";
-import { WorkspaceConnectForm } from "./workspace-connect-form";
 import { timeAgo } from "@/lib/time";
 import {
   Building,
   Target,
   Webhook,
   Siren,
-  RefreshCw,
   Loader2,
-  Copy,
-  Check,
-  AlertTriangle,
-  LogOut,
   Pencil,
+  Wallet,
 } from "lucide-react";
 
 interface WorkspaceMeResponse {
@@ -40,17 +35,12 @@ interface WorkspaceMeResponse {
 }
 
 export function WorkspaceSettings() {
-  const { token, setToken, clearToken } = useWorkspace();
+  const { isAuthenticated, role, setShowConnectModal } = useAuthContext();
+  const isAdmin = role === "admin";
   const { data, error, isLoading, mutate } = useSWR<WorkspaceMeResponse>(
-    token ? "/api/workspaces/me" : null,
-    workspaceSwrConfig(token),
+    isAuthenticated && isAdmin ? "/api/workspaces/me" : null,
+    sessionSwrConfig,
   );
-
-  const [isRotating, setIsRotating] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [newToken, setNewToken] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [rotateError, setRotateError] = useState<string | null>(null);
 
   // Editable name
   const [isEditing, setIsEditing] = useState(false);
@@ -58,49 +48,54 @@ export function WorkspaceSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
 
-  if (!token) {
+  if (!isAuthenticated) {
     return (
-      <WorkspaceConnectForm
-        subtitle="Enter your workspace token to manage settings"
-        showHelp
-      />
+      <div className="flex items-center justify-center py-16">
+        <Card className="w-full max-w-md border-slate-DEFAULT/20 bg-midnight-plum">
+          <CardContent className="flex flex-col items-center gap-4 py-8">
+            <div className="flex size-12 items-center justify-center rounded-full bg-soft-violet/15">
+              <Wallet className="size-6 text-soft-violet" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-mist">Connect Wallet</h3>
+              <p className="mt-1 text-sm text-dusty-lavender/50">
+                Connect your wallet to manage workspace settings
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowConnectModal(true)}
+              className="bg-soft-violet text-white hover:bg-soft-violet/80"
+            >
+              <Wallet className="size-4" />
+              Connect Wallet
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
-  const handleRotateToken = async () => {
-    if (!token) return;
-    setIsRotating(true);
-    setRotateError(null);
-
-    try {
-      const res = await fetch("/api/workspaces/me/rotate-token", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        setRotateError("Failed to rotate token");
-        return;
-      }
-      const body = await res.json();
-      setNewToken(body.token);
-      setToken(body.token);
-      setShowConfirm(false);
-      toast.success("Token rotated");
-    } catch {
-      setRotateError("Network error");
-    } finally {
-      setIsRotating(false);
-    }
-  };
-
-  const handleCopy = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Card className="w-full max-w-md border-slate-DEFAULT/20 bg-midnight-plum">
+          <CardContent className="flex flex-col items-center gap-4 py-8">
+            <div className="flex size-12 items-center justify-center rounded-full bg-amber-DEFAULT/15">
+              <Building className="size-6 text-amber-DEFAULT" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-mist">Admin Access Required</h3>
+              <p className="mt-1 text-sm text-dusty-lavender/50">
+                Workspace settings are only accessible to admin users
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleSaveName = async () => {
-    if (!token) return;
     const trimmed = editName.trim();
     if (!trimmed) {
       setNameError("Name is required");
@@ -115,10 +110,8 @@ export function WorkspaceSettings() {
     try {
       const res = await fetch("/api/workspaces/me", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ name: trimmed }),
       });
       if (res.ok) {
@@ -148,25 +141,9 @@ export function WorkspaceSettings() {
   }
 
   const { workspace, resources } = data;
-  const maskedToken = token
-    ? `${token.slice(0, 6)}${"*".repeat(12)}...${token.slice(-4)}`
-    : "***";
 
   return (
     <div className="space-y-6">
-      {/* Disconnect */}
-      <div className="flex items-center justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearToken}
-          className="text-dusty-lavender/50 hover:text-rose-DEFAULT"
-        >
-          <LogOut className="size-3.5" />
-          Disconnect
-        </Button>
-      </div>
-
       {/* Workspace Info */}
       <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
         <CardHeader>
@@ -268,97 +245,6 @@ export function WorkspaceSettings() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Token Management */}
-      <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-mist">
-            <RefreshCw className="size-4 text-soft-violet" />
-            API Token
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Current token masked */}
-          <div>
-            <p className="text-xs font-medium text-dusty-lavender/50">Current Token</p>
-            <div className="mt-1 flex items-center gap-2">
-              <code className="rounded bg-slate-dark/50 px-2 py-1 font-mono text-xs text-dusty-lavender">
-                {maskedToken}
-              </code>
-            </div>
-          </div>
-
-          {/* New token display (after rotation) */}
-          {newToken && (
-            <div className="rounded-lg border border-teal-DEFAULT/30 bg-teal-DEFAULT/5 p-3">
-              <p className="mb-2 flex items-center gap-2 text-xs font-medium text-teal-DEFAULT">
-                <Check className="size-3" />
-                New token generated — copy it now, it won&apos;t be shown again
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 overflow-hidden text-ellipsis rounded bg-slate-dark/50 px-2 py-1 font-mono text-xs text-mist">
-                  {newToken}
-                </code>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleCopy(newToken)}
-                  className="shrink-0"
-                >
-                  {copied ? <Check className="size-3.5 text-teal-DEFAULT" /> : <Copy className="size-3.5" />}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {rotateError && (
-            <p className="text-xs text-rose-DEFAULT">{rotateError}</p>
-          )}
-
-          {/* Rotate button with confirmation */}
-          {showConfirm ? (
-            <div className="flex items-center gap-3 rounded-lg border border-amber-DEFAULT/30 bg-amber-DEFAULT/5 p-3">
-              <AlertTriangle className="size-4 shrink-0 text-amber-DEFAULT" />
-              <div className="flex-1">
-                <p className="text-xs text-amber-DEFAULT">
-                  This will invalidate the current token immediately. All connected clients will lose access.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowConfirm(false)}
-                  disabled={isRotating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleRotateToken}
-                  disabled={isRotating}
-                  className="bg-amber-DEFAULT text-white hover:bg-amber-DEFAULT/80"
-                >
-                  {isRotating ? <Loader2 className="size-3 animate-spin" /> : "Confirm Rotate"}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowConfirm(true);
-                setNewToken(null);
-              }}
-              className="border-slate-DEFAULT/20 text-dusty-lavender hover:border-amber-DEFAULT/40 hover:text-amber-DEFAULT"
-            >
-              <RefreshCw className="size-3.5" />
-              Rotate Token
-            </Button>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

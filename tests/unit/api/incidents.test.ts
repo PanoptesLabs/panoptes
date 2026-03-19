@@ -38,13 +38,7 @@ vi.mock("@/lib/auth", () => ({
   rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
 }));
 
-// Keep workspace-auth mock for routes that may still import it
-vi.mock("@/lib/workspace-auth", () => ({
-  requireWorkspace: vi.fn(),
-}));
-
 import { resolveAuth, requireRole } from "@/lib/auth";
-import { requireWorkspace } from "@/lib/workspace-auth";
 
 const mockWorkspace = { id: "ws-1", name: "Test", slug: "test" };
 
@@ -79,8 +73,6 @@ function authSuccess() {
     role: "admin",
   });
   vi.mocked(requireRole).mockReturnValue(null);
-  // Keep old mock for summary route which may still use requireWorkspace
-  vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace });
 }
 
 function authFail() {
@@ -91,12 +83,6 @@ function authFail() {
       { status: 401 },
     ),
   );
-  vi.mocked(requireWorkspace).mockResolvedValue({
-    error: NextResponse.json(
-      { error: "Unauthorized — valid workspace token required" },
-      { status: 401 },
-    ),
-  });
 }
 
 describe("GET /api/incidents", () => {

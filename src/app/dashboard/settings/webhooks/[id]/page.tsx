@@ -2,7 +2,6 @@
 
 import { use } from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { WorkspaceGuard } from "@/components/dashboard/workspace-guard";
 import { WebhookDetail } from "@/components/dashboard/webhook-detail";
 
 export default function WebhookDetailPage({
@@ -16,9 +15,7 @@ export default function WebhookDetailPage({
       <PageHeader
         title="Webhook Detail"
       />
-      <WorkspaceGuard>
-        <WebhookDetail webhookId={id} />
-      </WorkspaceGuard>
+      <WebhookDetail webhookId={id} />
     </div>
   );
 }

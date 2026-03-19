@@ -8,7 +8,7 @@ export default function WorkspacePage() {
     <div>
       <PageHeader
         title="Workspace"
-        description="Manage workspace settings and API token"
+        description="View workspace details and manage settings"
       />
       <WorkspaceSettings />
     </div>

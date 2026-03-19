@@ -3,7 +3,6 @@ import "dotenv/config";
 import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../src/generated/prisma/client.js";
-import { hashToken } from "../src/lib/workspace-auth.js";
 import { AUTH_DEFAULTS } from "../src/lib/constants.js";
 import ws from "ws";
 
@@ -54,31 +53,16 @@ async function main() {
     console.log(`  + ${ep.url} (${ep.type})`);
   }
 
-  // Seed default workspace
-  const adminToken = process.env.PANOPTES_ADMIN_TOKEN;
-  if (adminToken) {
-    const tokenHash = hashToken(adminToken);
-    await prisma.workspace.upsert({
-      where: { slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG },
-      create: {
-        name: "Republic Community",
-        slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG,
-        adminTokenHash: tokenHash,
-      },
-      update: {
-        adminTokenHash: tokenHash,
-      },
-    });
-    console.log(`  + Default workspace (slug: ${AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG})`);
-  } else if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "PANOPTES_ADMIN_TOKEN is required in production. Generate with: openssl rand -hex 32",
-    );
-  } else {
-    console.warn(
-      "  ⚠ PANOPTES_ADMIN_TOKEN not set, skipping workspace seed (non-production)",
-    );
-  }
+  // Seed default workspace (token-free — auth is via wallet session)
+  await prisma.workspace.upsert({
+    where: { slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG },
+    create: {
+      name: "Republic Community",
+      slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG,
+    },
+    update: {},
+  });
+  console.log(`  + Default workspace (slug: ${AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG})`);
 
   console.log("[seed] Done.");
   await prisma.$disconnect();

@@ -1,7 +1,6 @@
 "use client";
 
 import { PageHeader } from "@/components/dashboard/page-header";
-import { WorkspaceGuard } from "@/components/dashboard/workspace-guard";
 import { PolicyList } from "@/components/dashboard/policy-list";
 
 export default function PoliciesPage() {
@@ -11,9 +10,7 @@ export default function PoliciesPage() {
         title="Policies"
         description="Declarative rules for automated responses"
       />
-      <WorkspaceGuard>
-        <PolicyList />
-      </WorkspaceGuard>
+      <PolicyList />
     </div>
   );
 }

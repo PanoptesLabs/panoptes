@@ -1,16 +1,13 @@
 import { NextRequest } from "next/server";
-import {
-  authenticateWorkspace,
-  type WorkspaceContext,
-} from "@/lib/workspace-auth";
+import { resolveAuth } from "@/lib/auth";
 
 export interface GraphQLContext {
-  workspace: WorkspaceContext | null;
+  workspace: { id: string; name: string; slug: string } | null;
 }
 
 export async function createContext(
   request: NextRequest,
 ): Promise<GraphQLContext> {
-  const workspace = await authenticateWorkspace(request);
-  return { workspace };
+  const auth = await resolveAuth(request);
+  return { workspace: auth?.workspace ?? null };
 }

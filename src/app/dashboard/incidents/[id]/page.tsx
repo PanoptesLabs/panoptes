@@ -2,7 +2,6 @@
 
 import { use } from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { WorkspaceGuard } from "@/components/dashboard/workspace-guard";
 import { IncidentDetail } from "@/components/dashboard/incident-detail";
 
 export default function IncidentDetailPage({
@@ -16,9 +15,7 @@ export default function IncidentDetailPage({
       <PageHeader
         title="Incident Detail"
       />
-      <WorkspaceGuard>
-        <IncidentDetail incidentId={id} />
-      </WorkspaceGuard>
+      <IncidentDetail incidentId={id} />
     </div>
   );
 }

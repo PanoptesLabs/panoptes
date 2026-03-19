@@ -26,58 +26,31 @@ export const pollingSwrConfig: SWRConfiguration = {
   refreshInterval: 30_000,
 };
 
-export function createWorkspaceFetcher(token: string | null) {
-  return async (url: string) => {
-    const headers: HeadersInit = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    const res = await fetch(url, { headers, credentials: "include" });
-    if (!res.ok) {
-      const error = new Error("API request failed");
-      (error as Error & { status: number }).status = res.status;
-      throw error;
-    }
-    return res.json();
-  };
-}
+const sessionFetcher = async (url: string) => {
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) {
+    const error = new Error("API request failed");
+    (error as Error & { status: number }).status = res.status;
+    throw error;
+  }
+  return res.json();
+};
 
-const swrConfigCache = new Map<string | null, SWRConfiguration>();
+export { sessionFetcher };
 
-export function workspaceSwrConfig(token: string | null): SWRConfiguration {
-  const cached = swrConfigCache.get(token);
-  if (cached) return cached;
+export const sessionSwrConfig: SWRConfiguration = {
+  fetcher: sessionFetcher,
+  revalidateOnFocus: false,
+  errorRetryCount: 3,
+  dedupingInterval: 5000,
+};
 
-  const config: SWRConfiguration = {
-    fetcher: createWorkspaceFetcher(token),
-    revalidateOnFocus: false,
-    errorRetryCount: 3,
-    dedupingInterval: 5000,
-    onError: (error: Error & { status?: number }) => {
-      if (error.status === 401) {
-        swrConfigCache.delete(token);
-        try {
-          localStorage.removeItem("panoptes_workspace_token");
-          window.dispatchEvent(new StorageEvent("storage", {
-            key: "panoptes_workspace_token",
-            newValue: null,
-          }));
-        } catch {
-          // localStorage unavailable
-        }
-      }
-    },
-  };
-
-  swrConfigCache.set(token, config);
-  return config;
-}
-
-export async function workspaceMutate<T = void>(
-  token: string,
+export async function sessionMutate<T = void>(
   url: string,
   method: "POST" | "PATCH" | "DELETE",
   body?: unknown,
 ): Promise<T> {
-  const headers: HeadersInit = { Authorization: `Bearer ${token}` };
+  const headers: HeadersInit = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const res = await fetch(url, {
     method,

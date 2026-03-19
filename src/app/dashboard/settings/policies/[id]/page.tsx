@@ -2,7 +2,6 @@
 
 import { use } from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { WorkspaceGuard } from "@/components/dashboard/workspace-guard";
 import { PolicyDetail } from "@/components/dashboard/policy-detail";
 
 export default function PolicyDetailPage({
@@ -18,9 +17,7 @@ export default function PolicyDetailPage({
         title="Policy Detail"
         description="View and manage policy configuration"
       />
-      <WorkspaceGuard>
-        <PolicyDetail policyId={id} />
-      </WorkspaceGuard>
+      <PolicyDetail policyId={id} />
     </div>
   );
 }
