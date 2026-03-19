@@ -37,16 +37,17 @@ function evictOldest() {
   if (oldestKey) store.delete(oldestKey);
 }
 
-export function checkRateLimit(ip: string): {
+export function checkRateLimit(ip: string, maxOverride?: number): {
   allowed: boolean;
   remaining: number;
   resetAt: number;
 } {
   ensureCleanup();
   const now = Date.now();
-  const maxRequests = ip === "unknown"
-    ? Math.floor(RATE_LIMIT.MAX_REQUESTS / 2)
-    : RATE_LIMIT.MAX_REQUESTS;
+  const maxRequests = maxOverride
+    ?? (ip === "unknown"
+      ? Math.floor(RATE_LIMIT.MAX_REQUESTS / 2)
+      : RATE_LIMIT.MAX_REQUESTS);
   const entry = store.get(ip);
 
   if (!entry || entry.resetAt < now) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { validateSloCreate } from "@/lib/slo-validation";
 import { SLO_DEFAULTS } from "@/lib/constants";
 
@@ -9,11 +9,12 @@ export async function GET(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const slos = await prisma.slo.findMany({
-    where: { workspaceId: auth.workspace.id },
+    where: { workspaceId: auth!.workspace.id },
     orderBy: { createdAt: "desc" },
   });
 
@@ -24,8 +25,9 @@ export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   let body: unknown;
   try {
@@ -71,16 +73,16 @@ export async function POST(request: NextRequest) {
   }
 
   const slo = await prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth.workspace.id} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth!.workspace.id} FOR UPDATE`;
     const count = await tx.slo.count({
-      where: { workspaceId: auth.workspace.id },
+      where: { workspaceId: auth!.workspace.id },
     });
     if (count >= SLO_DEFAULTS.MAX_PER_WORKSPACE) {
       return null;
     }
     return tx.slo.create({
       data: {
-        workspaceId: auth.workspace.id,
+        workspaceId: auth!.workspace.id,
         name: validated.name,
         indicator: validated.indicator,
         entityType: validated.entityType,

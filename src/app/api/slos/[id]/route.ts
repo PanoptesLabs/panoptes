@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { validateSloUpdate } from "@/lib/slo-validation";
 
 interface RouteContext {
@@ -12,13 +12,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const { id } = await context.params;
 
   const slo = await prisma.slo.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
   if (!slo) {
     return NextResponse.json(
@@ -34,8 +35,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await context.params;
 
@@ -58,7 +60,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   const existing = await prisma.slo.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
   if (!existing) {
     return NextResponse.json(
@@ -79,13 +81,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const delError = requireRole(auth, "editor", rl.headers);
+  if (delError) return delError;
 
   const { id } = await context.params;
 
   const existing = await prisma.slo.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
   if (!existing) {
     return NextResponse.json(

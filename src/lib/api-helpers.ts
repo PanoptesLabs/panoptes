@@ -14,9 +14,10 @@ export function getClientIp(request: NextRequest): string {
 
 export function withRateLimit(
   request: NextRequest,
+  maxOverride?: number,
 ): { response: NextResponse } | { headers: Record<string, string> } {
   const ip = getClientIp(request);
-  const limit = checkRateLimit(ip);
+  const limit = checkRateLimit(ip, maxOverride);
   const headers = rateLimitHeaders(limit);
 
   if (!limit.allowed) {
