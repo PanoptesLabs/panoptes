@@ -21,20 +21,6 @@ function deriveCosmosAddress(pubkeyBytes: Uint8Array): string {
   return toBech32("rai", ripemd160(sha256(pubkeyBytes)));
 }
 
-/**
- * Check if pubkey derives to the expected address (Ethermint or Cosmos).
- */
-function matchesAddress(pubkeyBytes: Uint8Array, expectedAddress: string): boolean {
-  try {
-    if (deriveEthermintAddress(pubkeyBytes) === expectedAddress) return true;
-  } catch { /* decompression failed */ }
-
-  try {
-    if (deriveCosmosAddress(pubkeyBytes) === expectedAddress) return true;
-  } catch { /* derivation failed */ }
-
-  return false;
-}
 
 /**
  * Decompress a 33-byte compressed secp256k1 public key to 65-byte uncompressed form.
