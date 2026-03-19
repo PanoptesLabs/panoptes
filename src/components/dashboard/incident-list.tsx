@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { useIncidents, useIncidentSummary } from "@/hooks/use-incidents";
 import { StatCard } from "./stat-card";
 import { FilterSelect } from "./filter-select";
@@ -58,15 +57,14 @@ const severityIcons: Record<string, string> = {
 };
 
 export function IncidentList() {
-  const { token } = useWorkspace();
   const [status, setStatus] = useState("");
   const [severity, setSeverity] = useState("");
   const [entityType, setEntityType] = useState("");
   const [offset, setOffset] = useState(0);
   const limit = 20;
 
-  const { data: summary, isLoading: summaryLoading } = useIncidentSummary(token);
-  const { data, error, isLoading, mutate } = useIncidents(token, {
+  const { data: summary, isLoading: summaryLoading } = useIncidentSummary();
+  const { data, error, isLoading, mutate } = useIncidents({
     status: status || undefined,
     severity: severity || undefined,
     entityType: entityType || undefined,

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { useWebhooks, createWebhook } from "@/hooks/use-webhooks";
 import { ErrorState } from "./error-state";
 import { EmptyState } from "./empty-state";
@@ -28,8 +27,7 @@ const EVENT_OPTIONS = [
 ];
 
 export function WebhookList() {
-  const { token } = useWorkspace();
-  const { data, error, isLoading, mutate } = useWebhooks(token);
+  const { data, error, isLoading, mutate } = useWebhooks();
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formUrl, setFormUrl] = useState("");
@@ -92,11 +90,11 @@ export function WebhookList() {
   };
 
   const handleCreate = async () => {
-    if (!token || !validateForm()) return;
+    if (!validateForm()) return;
     setCreating(true);
     setCreateError(null);
     try {
-      const result = await createWebhook(token, {
+      const result = await createWebhook({
         name: formName.trim(),
         url: formUrl.trim(),
         events: formEvents,

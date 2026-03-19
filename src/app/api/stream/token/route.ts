@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit } from "@/lib/api-helpers";
-import { authenticateWorkspace, extractApiKey } from "@/lib/workspace-auth";
+import { resolveAuth } from "@/lib/auth";
+import { extractApiKey } from "@/lib/workspace-auth";
 import { authenticateApiKey } from "@/lib/api-key";
 import { createStreamToken } from "@/lib/stream-token";
 import { STREAM_DEFAULTS } from "@/lib/constants";
@@ -9,8 +10,9 @@ export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  // Try Bearer token first, then fall back to x-api-key header
-  let workspace = await authenticateWorkspace(request);
+  // Try session auth first, then fall back to x-api-key header
+  const auth = await resolveAuth(request);
+  let workspace = auth?.workspace ?? null;
 
   if (!workspace) {
     const rawKey = extractApiKey(request);
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
 
   if (!workspace) {
     return NextResponse.json(
-      { error: "Unauthorized — valid workspace token or API key required" },
+      { error: "Unauthorized — valid session or API key required" },
       { status: 401, headers: rl.headers },
     );
   }

@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { useNetworkStats } from "@/hooks/use-stats";
 import { useEndpoints } from "@/hooks/use-endpoints";
 import { useAnomalies } from "@/hooks/use-anomalies";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { useSloSummary } from "@/hooks/use-slos";
 import { useIncidentSummary } from "@/hooks/use-incidents";
 import { StatCard } from "./stat-card";
@@ -51,9 +50,8 @@ export function Overview() {
     isLoading: endpointsLoading,
   } = useEndpoints();
   const { data: anomalyData } = useAnomalies({ resolved: false });
-  const { token } = useWorkspace();
-  const { data: sloSummary } = useSloSummary(token);
-  const { data: incidentSummary } = useIncidentSummary(token);
+  const { data: sloSummary } = useSloSummary();
+  const { data: incidentSummary } = useIncidentSummary();
 
   const current = stats?.current;
   const history = useMemo(() => stats?.history ?? [], [stats?.history]);
@@ -136,7 +134,7 @@ export function Overview() {
       </div>
 
       {/* Reliability widgets (workspace-scoped) */}
-      {token && (sloSummary || incidentSummary) && (
+      {(sloSummary || incidentSummary) && (
         <div className="grid gap-4 sm:grid-cols-2">
           {sloSummary && (
             <StatCard

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { AUTH_DEFAULTS, ROLE_HIERARCHY, ROLES } from "@/lib/constants";
 import type { Role } from "@/lib/constants";
-import { hashToken, extractBearerToken } from "@/lib/workspace-auth";
+import { hashToken } from "@/lib/workspace-auth";
 
 export interface AuthContext {
   user: { id: string; address: string } | null;
@@ -12,30 +12,11 @@ export interface AuthContext {
 
 /**
  * Unified auth resolver. Tries (in order):
- * 1. Authorization: Bearer ws_... → workspace admin token → role "admin"
- * 2. Cookie `panoptes_session` → session lookup → user + WorkspaceMember role
- * 3. No credentials → public workspace lookup → role "anonymous"
+ * 1. Cookie `panoptes_session` → session lookup → user + WorkspaceMember role
+ * 2. No credentials → public workspace lookup → role "anonymous"
  */
 export async function resolveAuth(request: NextRequest): Promise<AuthContext | null> {
-  // 1. Bearer workspace token auth (explicit API access — always takes priority)
-  const bearerToken = extractBearerToken(request);
-  if (bearerToken?.startsWith("ws_")) {
-    const tokenHash = hashToken(bearerToken);
-    const workspace = await prisma.workspace.findFirst({
-      where: { adminTokenHash: tokenHash, isActive: true },
-      select: { id: true, name: true, slug: true },
-    });
-
-    if (workspace) {
-      return {
-        user: null,
-        workspace,
-        role: ROLES.ADMIN,
-      };
-    }
-  }
-
-  // 2. Cookie session auth
+  // 1. Cookie session auth
   const sessionToken = request.cookies.get(AUTH_DEFAULTS.COOKIE_NAME)?.value;
   if (sessionToken) {
     const tokenHash = hashToken(sessionToken);

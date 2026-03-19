@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { ErrorState } from "./error-state";
 import { EmptyState } from "./empty-state";
@@ -18,7 +17,6 @@ import { AuthGate } from "./auth-gate";
 const TIER_OPTIONS = ["free", "pro"] as const;
 
 export function ApiKeyList() {
-  const { token } = useWorkspace();
   const { data, error, isLoading, mutate } = useApiKeys();
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
@@ -30,7 +28,6 @@ export function ApiKeyList() {
   const [nameError, setNameError] = useState<string | null>(null);
 
   const handleCreate = async () => {
-    if (!token) return;
     if (!formName.trim()) {
       setNameError("Name is required");
       return;
@@ -45,10 +42,8 @@ export function ApiKeyList() {
     try {
       const res = await fetch("/api/keys", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ name: formName.trim(), tier: formTier }),
       });
       if (!res.ok) {
@@ -71,11 +66,10 @@ export function ApiKeyList() {
   };
 
   const handleDeactivate = async (id: string) => {
-    if (!token) return;
     try {
       const res = await fetch(`/api/keys/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
       });
       if (!res.ok) {
         toast.error("Failed to deactivate API key");

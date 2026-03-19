@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { useSloSummary } from "@/hooks/use-slos";
 import { StatCard } from "./stat-card";
 import { SloCard } from "./slo-card";
@@ -21,8 +20,7 @@ const INDICATOR_OPTIONS = [
 ];
 
 export function SloList() {
-  const { token } = useWorkspace();
-  const { data, error, isLoading, mutate } = useSloSummary(token);
+  const { data, error, isLoading, mutate } = useSloSummary();
   const [indicator, setIndicator] = useState("");
 
   if (error && !data) {

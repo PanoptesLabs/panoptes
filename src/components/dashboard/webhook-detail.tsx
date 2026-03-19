@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { useWebhookDetail, useWebhookDeliveries, testWebhook, deleteWebhook } from "@/hooks/use-webhooks";
 import { ErrorState } from "./error-state";
 import { DataTable, type Column } from "./data-table";
@@ -71,10 +70,9 @@ const deliveryColumns: Column<WebhookDeliveryItem>[] = [
 
 export function WebhookDetail({ webhookId }: WebhookDetailProps) {
   const router = useRouter();
-  const { token } = useWorkspace();
-  const { data: webhook, error, isLoading, mutate } = useWebhookDetail(token, webhookId);
+  const { data: webhook, error, isLoading, mutate } = useWebhookDetail(webhookId);
   const [deliveryOffset, setDeliveryOffset] = useState(0);
-  const { data: deliveryData, isLoading: deliveriesLoading } = useWebhookDeliveries(token, webhookId, {
+  const { data: deliveryData, isLoading: deliveriesLoading } = useWebhookDeliveries(webhookId, {
     limit: 20,
     offset: deliveryOffset,
   });
@@ -107,12 +105,11 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
   }
 
   const handleTest = async () => {
-    if (!token) return;
     setActionLoading("test");
     setActionError(null);
     setTestSuccess(false);
     try {
-      await testWebhook(token, webhookId);
+      await testWebhook(webhookId);
       setTestSuccess(true);
       setTimeout(() => setTestSuccess(false), 3000);
     } catch {
@@ -123,7 +120,6 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
   };
 
   const handleDelete = async () => {
-    if (!token) return;
     if (!confirmDelete) {
       setConfirmDelete(true);
       setDeleteCountdown(5);
@@ -143,7 +139,7 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
     setActionLoading("delete");
     setActionError(null);
     try {
-      await deleteWebhook(token, webhookId);
+      await deleteWebhook(webhookId);
       router.push("/dashboard/settings/webhooks");
     } catch {
       setActionError("Failed to delete webhook. Please try again.");

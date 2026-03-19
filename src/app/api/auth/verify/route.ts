@@ -69,9 +69,7 @@ export async function POST(request: NextRequest) {
   if (!result.valid) {
     console.error("[auth/verify] Signature verification failed", result.debug);
     return NextResponse.json(
-      {
-        error: `Signature failed: address=${result.debug.addressMatch}, eip191=${result.debug.eip191Result}, adr036=${result.debug.adr036Result}, pk=${result.debug.pubkeyLength}B, sig=${result.debug.sigLength}B, eth=${result.debug.ethermintAddress?.slice(0, 16)}, cos=${result.debug.cosmosAddress?.slice(0, 16)}`,
-      },
+      { error: "Invalid signature" },
       { status: 401, headers: rl.headers },
     );
   }
@@ -101,6 +99,13 @@ export async function POST(request: NextRequest) {
     where: { slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG, isActive: true },
   });
 
+  // Check if address is an admin
+  const adminAddresses = (process.env.PANOPTES_ADMIN_ADDRESSES ?? "")
+    .split(",")
+    .map((a) => a.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = adminAddresses.includes(address.toLowerCase());
+
   let role = ROLES.VIEWER;
   if (publicWorkspace) {
     const member = await prisma.workspaceMember.upsert({
@@ -110,11 +115,11 @@ export async function POST(request: NextRequest) {
           userId: session.userId,
         },
       },
-      update: {},
+      update: isAdmin ? { role: ROLES.ADMIN } : {},
       create: {
         workspaceId: publicWorkspace.id,
         userId: session.userId,
-        role: ROLES.VIEWER,
+        role: isAdmin ? ROLES.ADMIN : ROLES.VIEWER,
       },
     });
     role = member.role as typeof role;

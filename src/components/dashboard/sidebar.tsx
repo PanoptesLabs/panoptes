@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { useAuthContext } from "@/components/dashboard/auth-provider";
 import {
   LayoutDashboard,
@@ -58,7 +57,6 @@ const settingsItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isAuthenticated: hasWorkspaceToken } = useWorkspace();
   const { isAuthenticated: hasWalletAuth, logout, setShowConnectModal } = useAuthContext();
 
   useEffect(() => {
@@ -137,10 +135,10 @@ export function Sidebar() {
         {settingsItems.map(renderNavItem)}
       </nav>
       <div className="mt-auto border-t border-slate-DEFAULT/10 px-4 py-4 space-y-2">
-        {hasWorkspaceToken && (
+        {hasWalletAuth && (
           <div className="flex items-center gap-2 text-xs text-teal-DEFAULT">
             <span className="size-1.5 rounded-full bg-teal-DEFAULT" />
-            Workspace Connected
+            Wallet Connected
           </div>
         )}
       </div>

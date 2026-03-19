@@ -1,25 +1,24 @@
 "use client";
 
 import useSWR from "swr";
-import { workspaceSwrConfig, workspaceMutate } from "./use-api";
+import { sessionSwrConfig, sessionMutate } from "./use-api";
 import type { WebhookItem, WebhookDeliveryResponse } from "@/types";
 
-export function useWebhooks(token: string | null) {
+export function useWebhooks() {
   return useSWR<{ webhooks: WebhookItem[] }>(
-    token ? "/api/webhooks" : null,
-    workspaceSwrConfig(token),
+    "/api/webhooks",
+    sessionSwrConfig,
   );
 }
 
-export function useWebhookDetail(token: string | null, id: string | null) {
+export function useWebhookDetail(id: string | null) {
   return useSWR<WebhookItem>(
-    token && id ? `/api/webhooks/${id}` : null,
-    workspaceSwrConfig(token),
+    id ? `/api/webhooks/${id}` : null,
+    sessionSwrConfig,
   );
 }
 
 export function useWebhookDeliveries(
-  token: string | null,
   id: string | null,
   opts?: { limit?: number; offset?: number },
 ) {
@@ -30,23 +29,22 @@ export function useWebhookDeliveries(
   const url = `/api/webhooks/${id}/deliveries${query ? `?${query}` : ""}`;
 
   return useSWR<WebhookDeliveryResponse>(
-    token && id ? url : null,
-    workspaceSwrConfig(token),
+    id ? url : null,
+    sessionSwrConfig,
   );
 }
 
 // Mutation helpers
 export function createWebhook(
-  token: string,
   data: { name: string; url: string; events: string[] },
 ) {
-  return workspaceMutate<WebhookItem>(token, "/api/webhooks", "POST", data);
+  return sessionMutate<WebhookItem>("/api/webhooks", "POST", data);
 }
 
-export function deleteWebhook(token: string, id: string) {
-  return workspaceMutate(token, `/api/webhooks/${id}`, "DELETE");
+export function deleteWebhook(id: string) {
+  return sessionMutate(`/api/webhooks/${id}`, "DELETE");
 }
 
-export function testWebhook(token: string, id: string) {
-  return workspaceMutate<Record<string, unknown>>(token, `/api/webhooks/${id}/test`, "POST");
+export function testWebhook(id: string) {
+  return sessionMutate<Record<string, unknown>>(`/api/webhooks/${id}/test`, "POST");
 }

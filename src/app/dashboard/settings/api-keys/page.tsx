@@ -1,7 +1,6 @@
 "use client";
 
 import { PageHeader } from "@/components/dashboard/page-header";
-import { WorkspaceGuard } from "@/components/dashboard/workspace-guard";
 import { ApiKeyList } from "@/components/dashboard/api-key-list";
 
 export default function ApiKeysPage() {
@@ -11,9 +10,7 @@ export default function ApiKeysPage() {
         title="API Keys"
         description="Manage API keys for external access"
       />
-      <WorkspaceGuard>
-        <ApiKeyList />
-      </WorkspaceGuard>
+      <ApiKeyList />
     </div>
   );
 }

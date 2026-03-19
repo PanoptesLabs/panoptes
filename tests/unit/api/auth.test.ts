@@ -208,7 +208,7 @@ describe("POST /api/auth/verify", () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toContain("Signature failed");
+    expect(body.error).toBe("Invalid signature");
   });
 
   it("creates session and sets cookie on valid signature", async () => {

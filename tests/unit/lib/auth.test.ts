@@ -15,11 +15,6 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/workspace-auth", () => ({
   hashToken: vi.fn((t: string) => `hashed_${t}`),
-  extractBearerToken: vi.fn((req: NextRequest) => {
-    const header = req.headers.get("authorization");
-    if (!header?.startsWith("Bearer ")) return null;
-    return header.slice(7).trim() || null;
-  }),
 }));
 
 import { resolveAuth, hasRole, requireRole, redactForRole, rateLimitForRole } from "@/lib/auth";
@@ -87,7 +82,7 @@ describe("resolveAuth", () => {
     expect(auth!.role).toBe("viewer");
   });
 
-  it("resolves Bearer ws_ token to admin role", async () => {
+  it("ignores Bearer ws_ token (removed auth path) and falls back to anonymous", async () => {
     mockFindFirstSession.mockResolvedValue(null);
     mockFindFirstWorkspace.mockResolvedValue(publicWorkspace);
 
@@ -98,7 +93,7 @@ describe("resolveAuth", () => {
 
     expect(auth!.user).toBeNull();
     expect(auth!.workspace).toEqual(publicWorkspace);
-    expect(auth!.role).toBe("admin");
+    expect(auth!.role).toBe("anonymous");
   });
 
   it("resolves anonymous with public workspace", async () => {
@@ -134,8 +129,8 @@ describe("resolveAuth", () => {
     expect(auth!.role).toBe("anonymous");
   });
 
-  it("Bearer ws_ token takes priority over cookie session", async () => {
-    // Both cookie and Bearer present — Bearer should win
+  it("cookie session takes priority when Bearer ws_ token is also present", async () => {
+    // Bearer ws_ path removed — cookie session should resolve normally
     mockFindFirstSession.mockResolvedValue(mockSession);
     mockFindFirstWorkspace.mockResolvedValue(publicWorkspace);
 
@@ -147,9 +142,9 @@ describe("resolveAuth", () => {
     });
     const auth = await resolveAuth(req);
 
-    // Bearer ws_ yields admin, cookie would yield member — admin wins
-    expect(auth!.role).toBe("admin");
-    expect(auth!.user).toBeNull(); // Bearer ws_ is workspace-level, no user
+    // Cookie session resolves to member role (Bearer ws_ ignored)
+    expect(auth!.role).toBe("member");
+    expect(auth!.user).toEqual({ id: "user-1", address: "rai1abc123" });
   });
 
   it("ignores non-ws_ Bearer tokens for workspace auth", async () => {

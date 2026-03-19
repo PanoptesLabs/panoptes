@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { usePolicies, createPolicy } from "@/hooks/use-policies";
 import { ErrorState } from "./error-state";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,8 +38,7 @@ const ACTION_TYPE_OPTIONS = [
 ];
 
 export function PolicyList() {
-  const { token } = useWorkspace();
-  const { data, error, isLoading, mutate } = usePolicies(token);
+  const { data, error, isLoading, mutate } = usePolicies();
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
@@ -52,7 +50,7 @@ export function PolicyList() {
   const [createError, setCreateError] = useState<string | null>(null);
 
   const handleCreate = async () => {
-    if (!token || !formName.trim() || !formValue.trim()) return;
+    if (!formName.trim() || !formValue.trim()) return;
     setIsCreating(true);
     setCreateError(null);
     try {
@@ -61,7 +59,7 @@ export function PolicyList() {
       else if (formValue === "false") parsedValue = false;
       else if (!isNaN(Number(formValue))) parsedValue = Number(formValue);
 
-      await createPolicy(token, {
+      await createPolicy({
         name: formName.trim(),
         description: formDescription.trim() || undefined,
         conditions: [{ field: formField, operator: formOperator, value: parsedValue }],

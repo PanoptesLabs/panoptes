@@ -1,38 +1,37 @@
 "use client";
 
 import useSWR from "swr";
-import { workspaceSwrConfig, workspaceMutate } from "./use-api";
+import { sessionSwrConfig, sessionMutate } from "./use-api";
 import type { SloSummary, SloItem } from "@/types";
 
-export function useSloSummary(token: string | null) {
+export function useSloSummary() {
   return useSWR<SloSummary>(
-    token ? "/api/slos/summary" : null,
-    workspaceSwrConfig(token),
+    "/api/slos/summary",
+    sessionSwrConfig,
   );
 }
 
-export function useSloDetail(token: string | null, id: string | null) {
+export function useSloDetail(id: string | null) {
   return useSWR<SloItem>(
-    token && id ? `/api/slos/${id}` : null,
-    workspaceSwrConfig(token),
+    id ? `/api/slos/${id}` : null,
+    sessionSwrConfig,
   );
 }
 
-export function useSloEvaluations(token: string | null, id: string | null) {
+export function useSloEvaluations(id: string | null) {
   return useSWR(
-    token && id ? `/api/slos/${id}/evaluations` : null,
-    workspaceSwrConfig(token),
+    id ? `/api/slos/${id}/evaluations` : null,
+    sessionSwrConfig,
   );
 }
 
 // Mutation helpers
 export function createSlo(
-  token: string,
   data: { name: string; indicator: string; entityType: string; entityId: string; target: number; windowDays: number },
 ) {
-  return workspaceMutate(token, "/api/slos", "POST", data);
+  return sessionMutate("/api/slos", "POST", data);
 }
 
-export function deleteSlo(token: string, id: string) {
-  return workspaceMutate(token, `/api/slos/${id}`, "DELETE");
+export function deleteSlo(id: string) {
+  return sessionMutate(`/api/slos/${id}`, "DELETE");
 }

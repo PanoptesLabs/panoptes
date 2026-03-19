@@ -30,10 +30,6 @@ vi.mock("@/lib/api-helpers", () => ({
   withRateLimit: vi.fn(() => ({ headers: { "X-RateLimit-Limit": "60" } })),
 }));
 
-vi.mock("@/lib/workspace-auth", () => ({
-  requireWorkspace: vi.fn(),
-}));
-
 vi.mock("@/lib/auth", () => ({
   resolveAuth: vi.fn(),
   requireRole: vi.fn(),
@@ -58,7 +54,6 @@ vi.mock("@/lib/intelligence", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { requireWorkspace } from "@/lib/workspace-auth";
 import { resolveAuth, requireRole } from "@/lib/auth";
 
 const mockWorkspace = { id: "ws-1", name: "Test", slug: "test" };
@@ -89,7 +84,6 @@ function authSuccess() {
     role: "admin",
   });
   vi.mocked(requireRole).mockReturnValue(null);
-  vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace });
 }
 
 function authFail() {
@@ -100,12 +94,6 @@ function authFail() {
       { status: 401 },
     ),
   );
-  vi.mocked(requireWorkspace).mockResolvedValue({
-    error: NextResponse.json(
-      { error: "Unauthorized — valid workspace token required" },
-      { status: 401 },
-    ),
-  });
 }
 
 describe("GET /api/slos", () => {

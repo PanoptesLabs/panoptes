@@ -23,9 +23,13 @@ vi.mock("@/lib/rate-limit", () => ({
   })),
 }));
 
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(),
+  requireRole: vi.fn(),
+  hasRole: vi.fn(),
+}));
+
 vi.mock("@/lib/workspace-auth", () => ({
-  requireWorkspace: vi.fn(),
-  authenticateWorkspace: vi.fn(),
   extractApiKey: vi.fn(),
 }));
 
@@ -39,10 +43,8 @@ vi.mock("@/lib/stream-token", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import {
-  authenticateWorkspace,
-  extractApiKey,
-} from "@/lib/workspace-auth";
+import { resolveAuth } from "@/lib/auth";
+import { extractApiKey } from "@/lib/workspace-auth";
 import { authenticateApiKey } from "@/lib/api-key";
 import { verifyStreamToken } from "@/lib/stream-token";
 
@@ -56,13 +58,16 @@ describe("POST /api/stream/token", () => {
     vi.mocked(extractApiKey).mockReturnValue(null);
   });
 
-  it("returns token when authenticated via Bearer", async () => {
-    vi.mocked(authenticateWorkspace).mockResolvedValue(mockWorkspace);
+  it("returns token when authenticated via session", async () => {
+    vi.mocked(resolveAuth).mockResolvedValue({
+      user: { id: "u-1", address: "rai1..." },
+      workspace: mockWorkspace,
+      role: "admin",
+    });
 
     const { POST } = await import("@/app/api/stream/token/route");
     const req = new NextRequest("http://localhost/api/stream/token", {
       method: "POST",
-      headers: { Authorization: "Bearer ws_token" },
     });
     const res = await POST(req);
     const body = await res.json();
@@ -73,7 +78,7 @@ describe("POST /api/stream/token", () => {
   });
 
   it("returns token when authenticated via x-api-key", async () => {
-    vi.mocked(authenticateWorkspace).mockResolvedValue(null);
+    vi.mocked(resolveAuth).mockResolvedValue(null);
     vi.mocked(extractApiKey).mockReturnValue("pk_api_key_123");
     vi.mocked(authenticateApiKey).mockResolvedValue({
       id: "key-1",
@@ -98,7 +103,7 @@ describe("POST /api/stream/token", () => {
   });
 
   it("returns 401 without any auth", async () => {
-    vi.mocked(authenticateWorkspace).mockResolvedValue(null);
+    vi.mocked(resolveAuth).mockResolvedValue(null);
     vi.mocked(extractApiKey).mockReturnValue(null);
 
     const { POST } = await import("@/app/api/stream/token/route");
@@ -112,7 +117,7 @@ describe("POST /api/stream/token", () => {
   });
 
   it("returns 401 when x-api-key is invalid", async () => {
-    vi.mocked(authenticateWorkspace).mockResolvedValue(null);
+    vi.mocked(resolveAuth).mockResolvedValue(null);
     vi.mocked(extractApiKey).mockReturnValue("pk_bad_key");
     vi.mocked(authenticateApiKey).mockResolvedValue(null);
 

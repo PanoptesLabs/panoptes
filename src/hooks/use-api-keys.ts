@@ -1,8 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { useWorkspace } from "./use-workspace";
-import { workspaceSwrConfig } from "./use-api";
+import { sessionSwrConfig } from "./use-api";
 
 interface ApiKeyItem {
   id: string;
@@ -33,17 +32,15 @@ interface ApiKeyUsageResponse {
 }
 
 export function useApiKeys() {
-  const { token } = useWorkspace();
   return useSWR<ApiKeysResponse>(
-    token ? "/api/keys" : null,
-    workspaceSwrConfig(token),
+    "/api/keys",
+    sessionSwrConfig,
   );
 }
 
 export function useApiKeyUsage(keyId: string | null) {
-  const { token } = useWorkspace();
   return useSWR<ApiKeyUsageResponse>(
-    token && keyId ? `/api/keys/${keyId}/usage` : null,
-    workspaceSwrConfig(token),
+    keyId ? `/api/keys/${keyId}/usage` : null,
+    sessionSwrConfig,
   );
 }

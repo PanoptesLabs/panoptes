@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
-import { WORKSPACE_DEFAULTS } from "@/lib/constants";
+import { resolveAuth, requireRole } from "@/lib/auth";
+import { ROLES, WORKSPACE_DEFAULTS } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const denied = requireRole(auth, ROLES.ADMIN, rl.headers);
+  if (denied) return denied;
 
   const workspace = await prisma.workspace.findUnique({
-    where: { id: auth.workspace.id },
+    where: { id: auth!.workspace.id },
     select: {
       id: true,
       name: true,
@@ -27,9 +28,9 @@ export async function GET(request: NextRequest) {
   }
 
   const [sloCount, webhookCount, incidentCount] = await Promise.all([
-    prisma.slo.count({ where: { workspaceId: auth.workspace.id } }),
-    prisma.webhook.count({ where: { workspaceId: auth.workspace.id } }),
-    prisma.incident.count({ where: { workspaceId: auth.workspace.id } }),
+    prisma.slo.count({ where: { workspaceId: auth!.workspace.id } }),
+    prisma.webhook.count({ where: { workspaceId: auth!.workspace.id } }),
+    prisma.incident.count({ where: { workspaceId: auth!.workspace.id } }),
   ]);
 
   return NextResponse.json({
@@ -46,8 +47,9 @@ export async function PATCH(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const denied = requireRole(auth, ROLES.ADMIN, rl.headers);
+  if (denied) return denied;
 
   let body: unknown;
   try {
@@ -86,7 +88,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const updated = await prisma.workspace.update({
-    where: { id: auth.workspace.id },
+    where: { id: auth!.workspace.id },
     data: { name: (name as string).trim() },
     select: { id: true, name: true, slug: true },
   });
@@ -98,11 +100,12 @@ export async function DELETE(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const denied = requireRole(auth, ROLES.ADMIN, rl.headers);
+  if (denied) return denied;
 
   await prisma.workspace.update({
-    where: { id: auth.workspace.id },
+    where: { id: auth!.workspace.id },
     data: { isActive: false },
   });
 

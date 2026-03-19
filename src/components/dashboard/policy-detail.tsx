@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { usePolicyDetail, updatePolicy, deletePolicy, testPolicy } from "@/hooks/use-policies";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,8 +20,7 @@ import { helpContent } from "@/lib/help-content";
 import { AuthGate } from "./auth-gate";
 
 export function PolicyDetail({ policyId }: { policyId: string }) {
-  const { token } = useWorkspace();
-  const { data, error, isLoading, mutate } = usePolicyDetail(token, policyId);
+  const { data, error, isLoading, mutate } = usePolicyDetail(policyId);
   const router = useRouter();
 
   const [isToggling, setIsToggling] = useState(false);
@@ -34,11 +32,11 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const handleToggleActive = async () => {
-    if (!token || !data) return;
+    if (!data) return;
     setIsToggling(true);
     setActionError(null);
     try {
-      await updatePolicy(token, policyId, { isActive: !data.isActive });
+      await updatePolicy(policyId, { isActive: !data.isActive });
       mutate();
     } catch {
       setActionError("Failed to toggle policy status.");
@@ -48,11 +46,11 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
   };
 
   const handleToggleDryRun = async () => {
-    if (!token || !data) return;
+    if (!data) return;
     setIsDryRunToggling(true);
     setActionError(null);
     try {
-      await updatePolicy(token, policyId, { dryRun: !data.dryRun });
+      await updatePolicy(policyId, { dryRun: !data.dryRun });
       mutate();
     } catch {
       setActionError("Failed to toggle dry run mode.");
@@ -62,11 +60,10 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
   };
 
   const handleDelete = async () => {
-    if (!token) return;
     setIsDeleting(true);
     setActionError(null);
     try {
-      await deletePolicy(token, policyId);
+      await deletePolicy(policyId);
       router.push("/dashboard/settings/policies");
     } catch {
       setActionError("Failed to delete policy.");
@@ -76,12 +73,11 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
   };
 
   const handleTest = async () => {
-    if (!token) return;
     setIsTesting(true);
     setTestResult(null);
     setActionError(null);
     try {
-      const result = await testPolicy(token, policyId);
+      const result = await testPolicy(policyId);
       setTestResult(result);
     } catch {
       setActionError("Failed to test policy.");

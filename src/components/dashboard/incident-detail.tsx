@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSWRConfig } from "swr";
-import { useWorkspace } from "@/hooks/use-workspace";
 import { useIncidentDetail, acknowledgeIncident, resolveIncident, addIncidentComment } from "@/hooks/use-incidents";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,8 +48,7 @@ interface IncidentDetailProps {
 }
 
 export function IncidentDetail({ incidentId }: IncidentDetailProps) {
-  const { token } = useWorkspace();
-  const { data: incident, error, isLoading, mutate } = useIncidentDetail(token, incidentId);
+  const { data: incident, error, isLoading, mutate } = useIncidentDetail(incidentId);
   const { mutate: globalMutate } = useSWRConfig();
   const [comment, setComment] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -69,14 +67,13 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
   }
 
   const handleAction = async (action: "acknowledge" | "resolve") => {
-    if (!token) return;
     setActionLoading(action);
     setActionError(null);
     try {
       if (action === "acknowledge") {
-        await acknowledgeIncident(token, incidentId);
+        await acknowledgeIncident(incidentId);
       } else {
-        await resolveIncident(token, incidentId);
+        await resolveIncident(incidentId);
       }
       await mutate();
       globalMutate("/api/incidents/summary");
@@ -89,11 +86,11 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
   };
 
   const handleComment = async () => {
-    if (!token || !comment.trim()) return;
+    if (!comment.trim()) return;
     setActionLoading("comment");
     setActionError(null);
     try {
-      await addIncidentComment(token, incidentId, comment.trim());
+      await addIncidentComment(incidentId, comment.trim());
       setComment("");
       await mutate();
     } catch {

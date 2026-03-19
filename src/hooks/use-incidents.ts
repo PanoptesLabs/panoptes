@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { workspaceSwrConfig, workspaceMutate } from "./use-api";
+import { sessionSwrConfig, sessionMutate } from "./use-api";
 import type { IncidentListResponse, IncidentSummary, IncidentItem } from "@/types";
 
 interface IncidentFilters {
@@ -12,7 +12,7 @@ interface IncidentFilters {
   offset?: number;
 }
 
-export function useIncidents(token: string | null, filters?: IncidentFilters) {
+export function useIncidents(filters?: IncidentFilters) {
   const params = new URLSearchParams();
   if (filters?.status) params.set("status", filters.status);
   if (filters?.severity) params.set("severity", filters.severity);
@@ -24,34 +24,34 @@ export function useIncidents(token: string | null, filters?: IncidentFilters) {
   const url = `/api/incidents${query ? `?${query}` : ""}`;
 
   return useSWR<IncidentListResponse>(
-    token ? url : null,
-    workspaceSwrConfig(token),
+    url,
+    sessionSwrConfig,
   );
 }
 
-export function useIncidentSummary(token: string | null) {
+export function useIncidentSummary() {
   return useSWR<IncidentSummary>(
-    token ? "/api/incidents/summary" : null,
-    workspaceSwrConfig(token),
+    "/api/incidents/summary",
+    sessionSwrConfig,
   );
 }
 
-export function useIncidentDetail(token: string | null, id: string | null) {
+export function useIncidentDetail(id: string | null) {
   return useSWR<IncidentItem>(
-    token && id ? `/api/incidents/${id}` : null,
-    workspaceSwrConfig(token),
+    id ? `/api/incidents/${id}` : null,
+    sessionSwrConfig,
   );
 }
 
 // Mutation helpers
-export function acknowledgeIncident(token: string, id: string) {
-  return workspaceMutate(token, `/api/incidents/${id}`, "PATCH", { status: "acknowledged" });
+export function acknowledgeIncident(id: string) {
+  return sessionMutate(`/api/incidents/${id}`, "PATCH", { status: "acknowledged" });
 }
 
-export function resolveIncident(token: string, id: string) {
-  return workspaceMutate(token, `/api/incidents/${id}`, "PATCH", { status: "resolved" });
+export function resolveIncident(id: string) {
+  return sessionMutate(`/api/incidents/${id}`, "PATCH", { status: "resolved" });
 }
 
-export function addIncidentComment(token: string, id: string, message: string) {
-  return workspaceMutate(token, `/api/incidents/${id}/events`, "POST", { eventType: "comment", message });
+export function addIncidentComment(id: string, message: string) {
+  return sessionMutate(`/api/incidents/${id}/events`, "POST", { eventType: "comment", message });
 }

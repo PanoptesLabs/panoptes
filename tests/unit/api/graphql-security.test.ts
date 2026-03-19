@@ -27,8 +27,8 @@ vi.mock("@/lib/api-helpers", () => ({
   getClientIp: vi.fn(() => "127.0.0.1"),
 }));
 
-vi.mock("@/lib/workspace-auth", () => ({
-  authenticateWorkspace: vi.fn(),
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock("@/lib/api-key", () => ({
