@@ -92,13 +92,15 @@ async function verifyEip191(
 }
 
 /**
- * Verify a standard ADR-036 amino signature (Cosmos).
+ * Verify an ADR-036 amino signature.
+ * Standard Cosmos (secp256k1) uses sha256, Ethermint (ethsecp256k1) uses keccak256.
  */
 async function verifyAdr036(
   address: string,
   pubkeyBytes: Uint8Array,
   data: string,
   sigBytes: Uint8Array,
+  hashFn: "sha256" | "keccak256" = "sha256",
 ): Promise<boolean> {
   const signDoc: StdSignDoc = {
     chain_id: "",
@@ -118,7 +120,7 @@ async function verifyAdr036(
   };
 
   const serialized = serializeSignDoc(signDoc);
-  const messageHash = sha256(serialized);
+  const messageHash = hashFn === "keccak256" ? keccak256(serialized) : sha256(serialized);
 
   const rawSig = sigBytes.length === 65 ? sigBytes.slice(0, 64) : sigBytes;
   const sig = Secp256k1Signature.fromFixedLength(rawSig);
@@ -141,8 +143,10 @@ export interface SignatureResult {
 
 /**
  * Verify an arbitrary data signature from Keplr.
- * Tries EIP-191 (Ethermint/eth-key-sign) first, then ADR-036 (standard Cosmos).
- * Returns detailed diagnostics for debugging.
+ * Keplr signArbitrary uses ADR-036 format:
+ *   - ethsecp256k1 (Ethermint) → ADR-036 + keccak256
+ *   - secp256k1 (standard Cosmos) → ADR-036 + sha256
+ * EIP-191 is tried as a fallback for non-standard signers.
  */
 export async function verifySignatureWithDiag(
   address: string,
@@ -180,7 +184,20 @@ export async function verifySignatureWithDiag(
     else if (debug.cosmosAddress === address) debug.addressMatch = "cosmos";
     else return { valid: false, debug };
 
-    // Try EIP-191
+    // Select hash function based on key type:
+    // Ethermint (ethsecp256k1) → keccak256, standard Cosmos (secp256k1) → sha256
+    const hashFn = debug.addressMatch === "ethermint" ? "keccak256" : "sha256";
+
+    // Try ADR-036 (primary — Keplr signArbitrary always uses this format)
+    try {
+      const adr036 = await verifyAdr036(address, pubkeyBytes, data, sigBytes, hashFn);
+      debug.adr036Result = adr036;
+      if (adr036) return { valid: true, debug };
+    } catch (e) {
+      debug.adr036Result = `error: ${e instanceof Error ? e.message : "unknown"}`;
+    }
+
+    // Try EIP-191 as fallback (for non-standard signers)
     try {
       const eip191 = await verifyEip191(pubkeyBytes, data, sigBytes);
       debug.eip191Result = eip191;
@@ -189,18 +206,9 @@ export async function verifySignatureWithDiag(
       debug.eip191Result = `error: ${e instanceof Error ? e.message : "unknown"}`;
     }
 
-    // Try ADR-036
-    try {
-      const adr036 = await verifyAdr036(address, pubkeyBytes, data, sigBytes);
-      debug.adr036Result = adr036;
-      if (adr036) return { valid: true, debug };
-    } catch (e) {
-      debug.adr036Result = `error: ${e instanceof Error ? e.message : "unknown"}`;
-    }
-
     return { valid: false, debug };
   } catch (e) {
-    debug.eip191Result = `outer: ${e instanceof Error ? e.message : "unknown"}`;
+    debug.adr036Result = `outer: ${e instanceof Error ? e.message : "unknown"}`;
     return { valid: false, debug };
   }
 }
