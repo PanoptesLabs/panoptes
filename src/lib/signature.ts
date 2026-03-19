@@ -21,20 +21,6 @@ function deriveCosmosAddress(pubkeyBytes: Uint8Array): string {
   return toBech32("rai", ripemd160(sha256(pubkeyBytes)));
 }
 
-/**
- * Check if pubkey derives to the expected address (Ethermint or Cosmos).
- */
-function matchesAddress(pubkeyBytes: Uint8Array, expectedAddress: string): boolean {
-  try {
-    if (deriveEthermintAddress(pubkeyBytes) === expectedAddress) return true;
-  } catch { /* decompression failed */ }
-
-  try {
-    if (deriveCosmosAddress(pubkeyBytes) === expectedAddress) return true;
-  } catch { /* derivation failed */ }
-
-  return false;
-}
 
 /**
  * Decompress a 33-byte compressed secp256k1 public key to 65-byte uncompressed form.
@@ -139,9 +125,88 @@ async function verifyAdr036(
   return Secp256k1.verifySignature(sig, messageHash, pubkeyBytes);
 }
 
+export interface SignatureResult {
+  valid: boolean;
+  debug: {
+    pubkeyLength: number;
+    sigLength: number;
+    claimedAddress: string;
+    ethermintAddress: string | null;
+    cosmosAddress: string | null;
+    addressMatch: "ethermint" | "cosmos" | "none";
+    eip191Result: boolean | string;
+    adr036Result: boolean | string;
+  };
+}
+
 /**
  * Verify an arbitrary data signature from Keplr.
  * Tries EIP-191 (Ethermint/eth-key-sign) first, then ADR-036 (standard Cosmos).
+ * Returns detailed diagnostics for debugging.
+ */
+export async function verifySignatureWithDiag(
+  address: string,
+  data: string,
+  pubKeyBase64: string,
+  signatureBase64: string,
+): Promise<SignatureResult> {
+  const debug: SignatureResult["debug"] = {
+    pubkeyLength: 0,
+    sigLength: 0,
+    claimedAddress: address,
+    ethermintAddress: null,
+    cosmosAddress: null,
+    addressMatch: "none",
+    eip191Result: "skipped",
+    adr036Result: "skipped",
+  };
+
+  try {
+    const pubkeyBytes = fromBase64(pubKeyBase64);
+    const sigBytes = fromBase64(signatureBase64);
+    debug.pubkeyLength = pubkeyBytes.length;
+    debug.sigLength = sigBytes.length;
+
+    // Derive addresses
+    try { debug.ethermintAddress = deriveEthermintAddress(pubkeyBytes); } catch (e) {
+      debug.ethermintAddress = `error: ${e instanceof Error ? e.message : "unknown"}`;
+    }
+    try { debug.cosmosAddress = deriveCosmosAddress(pubkeyBytes); } catch (e) {
+      debug.cosmosAddress = `error: ${e instanceof Error ? e.message : "unknown"}`;
+    }
+
+    // Check address match
+    if (debug.ethermintAddress === address) debug.addressMatch = "ethermint";
+    else if (debug.cosmosAddress === address) debug.addressMatch = "cosmos";
+    else return { valid: false, debug };
+
+    // Try EIP-191
+    try {
+      const eip191 = await verifyEip191(pubkeyBytes, data, sigBytes);
+      debug.eip191Result = eip191;
+      if (eip191) return { valid: true, debug };
+    } catch (e) {
+      debug.eip191Result = `error: ${e instanceof Error ? e.message : "unknown"}`;
+    }
+
+    // Try ADR-036
+    try {
+      const adr036 = await verifyAdr036(address, pubkeyBytes, data, sigBytes);
+      debug.adr036Result = adr036;
+      if (adr036) return { valid: true, debug };
+    } catch (e) {
+      debug.adr036Result = `error: ${e instanceof Error ? e.message : "unknown"}`;
+    }
+
+    return { valid: false, debug };
+  } catch (e) {
+    debug.eip191Result = `outer: ${e instanceof Error ? e.message : "unknown"}`;
+    return { valid: false, debug };
+  }
+}
+
+/**
+ * Simple boolean wrapper for backward compatibility.
  */
 export async function verifyAdr036Signature(
   address: string,
@@ -149,27 +214,6 @@ export async function verifyAdr036Signature(
   pubKeyBase64: string,
   signatureBase64: string,
 ): Promise<boolean> {
-  try {
-    const pubkeyBytes = fromBase64(pubKeyBase64);
-    const sigBytes = fromBase64(signatureBase64);
-
-    // Verify pubkey derives to the claimed address
-    if (!matchesAddress(pubkeyBytes, address)) {
-      return false;
-    }
-
-    // Try EIP-191 first (Ethermint chains with eth-key-sign)
-    try {
-      if (await verifyEip191(pubkeyBytes, data, sigBytes)) return true;
-    } catch { /* fall through */ }
-
-    // Fall back to standard ADR-036 (Cosmos chains)
-    try {
-      if (await verifyAdr036(address, pubkeyBytes, data, sigBytes)) return true;
-    } catch { /* fall through */ }
-
-    return false;
-  } catch {
-    return false;
-  }
+  const result = await verifySignatureWithDiag(address, data, pubKeyBase64, signatureBase64);
+  return result.valid;
 }
