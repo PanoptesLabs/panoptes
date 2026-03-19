@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { parseIntParam } from "@/lib/validation";
 
 interface RouteContext {
@@ -12,13 +12,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const error = requireRole(auth, "member", rl.headers);
+  if (error) return error;
 
   const { id } = await context.params;
 
   const webhook = await prisma.webhook.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
     select: { id: true },
   });
   if (!webhook) {

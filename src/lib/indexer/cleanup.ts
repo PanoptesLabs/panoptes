@@ -17,6 +17,7 @@ export async function cleanupOldData(): Promise<{
   deletedDelegationSnapshots: number;
   deletedPolicyExecutions: number;
   deletedForecasts: number;
+  deletedExpiredSessions: number;
   duration: number;
 }> {
   const start = Date.now();
@@ -49,7 +50,7 @@ export async function cleanupOldData(): Promise<{
     const policyExecutionCutoff = new Date(Date.now() - CONTROL_PLANE_RETENTION.POLICY_EXECUTIONS_DAYS * 86400_000);
     const forecastCutoff = new Date(Date.now() - FORECAST_DEFAULTS.RETENTION_DAYS * 86400_000);
 
-    const [snapshots, healthChecks, stats, scores, vScores, anomalies, outboxEvents, deliveriesSuccess, deliveriesFailure, sloEvaluations, incidents, delegationEvents, delegationSnapshots, policyExecutions, forecasts] = await prisma.$transaction([
+    const [snapshots, healthChecks, stats, scores, vScores, anomalies, outboxEvents, deliveriesSuccess, deliveriesFailure, sloEvaluations, incidents, delegationEvents, delegationSnapshots, policyExecutions, forecasts, expiredSessions] = await prisma.$transaction([
       prisma.validatorSnapshot.deleteMany({
         where: { timestamp: { lt: snapshotCutoff } },
       }),
@@ -95,6 +96,9 @@ export async function cleanupOldData(): Promise<{
       prisma.forecast.deleteMany({
         where: { createdAt: { lt: forecastCutoff } },
       }),
+      prisma.userSession.deleteMany({
+        where: { expiresAt: { lt: new Date() } },
+      }),
     ]);
 
     return {
@@ -112,6 +116,7 @@ export async function cleanupOldData(): Promise<{
       deletedDelegationSnapshots: delegationSnapshots.count,
       deletedPolicyExecutions: policyExecutions.count,
       deletedForecasts: forecasts.count,
+      deletedExpiredSessions: expiredSessions.count,
       duration: Date.now() - start,
     };
   } catch (error) {

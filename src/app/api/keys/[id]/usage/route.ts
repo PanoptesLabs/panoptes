@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { getApiKeyUsage } from "@/lib/api-key";
 
 export async function GET(
@@ -11,13 +11,14 @@ export async function GET(
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const error = requireRole(auth, "admin", rl.headers);
+  if (error) return error;
 
   const { id } = await params;
 
   const apiKey = await prisma.apiKey.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
     select: { id: true, dailyQuota: true, monthlyQuota: true },
   });
 

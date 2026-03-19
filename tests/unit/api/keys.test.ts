@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -21,8 +21,10 @@ vi.mock("@/lib/api-helpers", async () => {
   };
 });
 
-vi.mock("@/lib/workspace-auth", () => ({
-  requireWorkspace: vi.fn(),
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(),
+  requireRole: vi.fn(),
+  redactForRole: vi.fn((data: unknown) => data),
 }));
 
 vi.mock("@/lib/api-key", () => ({
@@ -36,10 +38,26 @@ vi.mock("@/lib/api-key-validation", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { validateApiKeyCreate } from "@/lib/api-key-validation";
 
 const mockWorkspace = { id: "ws1", name: "Test", slug: "test" };
+
+function authSuccess(role = "admin") {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: null,
+    workspace: mockWorkspace,
+    role: role as "admin" | "editor" | "member" | "viewer" | "anonymous",
+  });
+  vi.mocked(requireRole).mockReturnValue(null);
+}
+
+function authFail() {
+  vi.mocked(resolveAuth).mockResolvedValue(null);
+  vi.mocked(requireRole).mockReturnValue(
+    NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+  );
+}
 
 describe("GET /api/keys", () => {
   beforeEach(() => {
@@ -47,9 +65,7 @@ describe("GET /api/keys", () => {
   });
 
   it("returns 401 without auth", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({
-      error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }) as never,
-    });
+    authFail();
 
     const { GET } = await import("@/app/api/keys/route");
     const req = new NextRequest("http://localhost/api/keys");
@@ -58,7 +74,7 @@ describe("GET /api/keys", () => {
   });
 
   it("returns keys list", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(prisma.apiKey.findMany).mockResolvedValue([
       {
         id: "key1",
@@ -92,9 +108,7 @@ describe("POST /api/keys", () => {
   });
 
   it("returns 401 without auth", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({
-      error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }) as never,
-    });
+    authFail();
 
     const { POST } = await import("@/app/api/keys/route");
     const req = new NextRequest("http://localhost/api/keys", {
@@ -106,7 +120,7 @@ describe("POST /api/keys", () => {
   });
 
   it("returns 400 for invalid body", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(validateApiKeyCreate).mockReturnValue({ error: "Name required" });
 
     const { POST } = await import("@/app/api/keys/route");
@@ -123,7 +137,7 @@ describe("POST /api/keys", () => {
   });
 
   it("creates key successfully", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(validateApiKeyCreate).mockReturnValue({
       name: "Test Key",
       tier: "free",
@@ -169,7 +183,7 @@ describe("POST /api/keys", () => {
   });
 
   it("returns 409 when key limit reached", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(validateApiKeyCreate).mockReturnValue({
       name: "Test Key",
       tier: "free",
@@ -199,7 +213,7 @@ describe("POST /api/keys", () => {
   });
 
   it("returns 400 for malformed JSON", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
 
     const { POST } = await import("@/app/api/keys/route");
     const req = new NextRequest("http://localhost/api/keys", {
@@ -219,7 +233,7 @@ describe("GET /api/keys/[id]", () => {
   });
 
   it("returns 404 for non-existent key", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(prisma.apiKey.findFirst).mockResolvedValue(null);
 
     const { GET } = await import("@/app/api/keys/[id]/route");
@@ -230,7 +244,7 @@ describe("GET /api/keys/[id]", () => {
   });
 
   it("returns key details", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(prisma.apiKey.findFirst).mockResolvedValue({
       id: "key1",
       name: "Test",
@@ -261,7 +275,7 @@ describe("DELETE /api/keys/[id]", () => {
   });
 
   it("returns 404 for non-existent key", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(prisma.apiKey.findFirst).mockResolvedValue(null);
 
     const { DELETE } = await import("@/app/api/keys/[id]/route");
@@ -272,7 +286,7 @@ describe("DELETE /api/keys/[id]", () => {
   });
 
   it("deactivates key successfully", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(prisma.apiKey.findFirst).mockResolvedValue({ id: "key1" } as never);
     vi.mocked(prisma.apiKey.update).mockResolvedValue({} as never);
 

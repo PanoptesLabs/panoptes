@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole, redactForRole } from "@/lib/auth";
 import { validateWebhookCreate } from "@/lib/webhook-validation";
 import { encryptSecret, generateWebhookSecret } from "@/lib/webhook-crypto";
 import { WEBHOOK_DEFAULTS } from "@/lib/constants";
+
+const WEBHOOK_REDACTIONS = [
+  { field: "url" as const, minRole: "member" as const, mask: "https://***" },
+];
 
 export async function GET(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const webhooks = await prisma.webhook.findMany({
-    where: { workspaceId: auth.workspace.id },
+    where: { workspaceId: auth!.workspace.id },
     select: {
       id: true,
       name: true,
@@ -26,15 +31,18 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ webhooks }, { headers: rl.headers });
+  const redacted = webhooks.map((w) => redactForRole(w, auth!.role, WEBHOOK_REDACTIONS));
+
+  return NextResponse.json({ webhooks: redacted }, { headers: rl.headers });
 }
 
 export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   let body: unknown;
   try {
@@ -59,16 +67,16 @@ export async function POST(request: NextRequest) {
 
   const webhook = await prisma.$transaction(async (tx) => {
     // Lock workspace row to serialize concurrent webhook creation
-    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth.workspace.id} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth!.workspace.id} FOR UPDATE`;
     const count = await tx.webhook.count({
-      where: { workspaceId: auth.workspace.id },
+      where: { workspaceId: auth!.workspace.id },
     });
     if (count >= WEBHOOK_DEFAULTS.MAX_PER_WORKSPACE) {
       return null;
     }
     return tx.webhook.create({
       data: {
-        workspaceId: auth.workspace.id,
+        workspaceId: auth!.workspace.id,
         name: validated.name,
         url: validated.url,
         events: validated.events,

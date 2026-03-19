@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { decryptSecret, signPayload } from "@/lib/webhook-crypto";
 import { assertUrlNotPrivate } from "@/lib/webhook-validation";
 
@@ -13,13 +13,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "member", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await context.params;
 
   const webhook = await prisma.webhook.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
   if (!webhook) {
     return NextResponse.json(
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const testPayload = JSON.stringify({
     type: "webhook.test",
     timestamp: new Date().toISOString(),
-    workspace: { id: auth.workspace.id, name: auth.workspace.name },
+    workspace: { id: auth!.workspace.id, name: auth!.workspace.name },
   });
 
   const signature = signPayload(plainSecret, testPayload);

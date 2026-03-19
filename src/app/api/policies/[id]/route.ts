@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { validateConditions, validateActions, validateCooldown, safeParseJSON } from "@/lib/policy-validation";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -10,13 +10,14 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const { id } = await ctx.params;
 
   const policy = await prisma.policy.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
     include: {
       executions: {
         orderBy: { timestamp: "desc" },
@@ -46,13 +47,14 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await ctx.params;
 
   const existing = await prisma.policy.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
 
   if (!existing) {
@@ -140,13 +142,14 @@ export async function DELETE(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await ctx.params;
 
   const existing = await prisma.policy.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
 
   if (!existing) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { safeParseJSON } from "@/lib/policy-validation";
 import type { PolicyCondition } from "@/types";
 import { evaluateAllConditions, type EvaluationContext } from "@/lib/intelligence/policy-conditions";
@@ -12,13 +12,14 @@ export async function POST(request: NextRequest, ctx: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "member", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await ctx.params;
 
   const policy = await prisma.policy.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
 
   if (!policy) {

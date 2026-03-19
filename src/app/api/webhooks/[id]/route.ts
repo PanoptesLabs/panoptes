@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { validateWebhookUpdate } from "@/lib/webhook-validation";
 
 interface RouteContext {
@@ -12,8 +12,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await context.params;
 
@@ -36,7 +37,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   const existing = await prisma.webhook.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
   if (!existing) {
     return NextResponse.json(
@@ -66,13 +67,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   const rl = withRateLimit(request);
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const auth = await resolveAuth(request);
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await context.params;
 
   const existing = await prisma.webhook.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
   if (!existing) {
     return NextResponse.json(

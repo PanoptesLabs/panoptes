@@ -22,7 +22,7 @@ vi.mock("@/lib/workspace-auth", () => ({
   }),
 }));
 
-import { resolveAuth, hasRole, requireRole } from "@/lib/auth";
+import { resolveAuth, hasRole, requireRole, redactForRole } from "@/lib/auth";
 import type { AuthContext } from "@/lib/auth";
 
 // --- Fixtures ---
@@ -237,5 +237,49 @@ describe("requireRole", () => {
     expect(requireRole(auth, "editor")).toBeNull();
     expect(requireRole(auth, "viewer")).toBeNull();
     expect(requireRole(auth, "anonymous")).toBeNull();
+  });
+});
+
+describe("redactForRole", () => {
+  const redactions = [
+    { field: "url" as const, minRole: "member" as const, mask: "https://***" },
+    { field: "keyPrefix" as const, minRole: "member" as const, mask: "pk_***" },
+  ];
+
+  it("masks fields for anonymous", () => {
+    const data = { id: "1", url: "https://example.com/hook", keyPrefix: "pk_abc123" };
+    const result = redactForRole(data, "anonymous", redactions);
+    expect(result.url).toBe("https://***");
+    expect(result.keyPrefix).toBe("pk_***");
+    expect(result.id).toBe("1");
+  });
+
+  it("masks fields for viewer", () => {
+    const data = { id: "1", url: "https://example.com/hook", keyPrefix: "pk_abc123" };
+    const result = redactForRole(data, "viewer", redactions);
+    expect(result.url).toBe("https://***");
+    expect(result.keyPrefix).toBe("pk_***");
+  });
+
+  it("shows full data for member", () => {
+    const data = { id: "1", url: "https://example.com/hook", keyPrefix: "pk_abc123" };
+    const result = redactForRole(data, "member", redactions);
+    expect(result.url).toBe("https://example.com/hook");
+    expect(result.keyPrefix).toBe("pk_abc123");
+  });
+
+  it("shows full data for admin", () => {
+    const data = { id: "1", url: "https://example.com/hook", keyPrefix: "pk_abc123" };
+    const result = redactForRole(data, "admin", redactions);
+    expect(result.url).toBe("https://example.com/hook");
+    expect(result.keyPrefix).toBe("pk_abc123");
+  });
+
+  it("uses default mask when not specified", () => {
+    const data = { secret: "mysecret" };
+    const result = redactForRole(data, "anonymous", [
+      { field: "secret" as const, minRole: "member" as const },
+    ]);
+    expect(result.secret).toBe("***");
   });
 });

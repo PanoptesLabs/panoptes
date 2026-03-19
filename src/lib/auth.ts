@@ -140,3 +140,22 @@ export function requireRole(
 
   return null; // OK
 }
+
+/**
+ * Redact sensitive fields based on role.
+ * Anonymous/viewer: webhook URLs masked, API key prefixes hidden.
+ * Member+: full data.
+ */
+export function redactForRole<T extends Record<string, unknown>>(
+  data: T,
+  role: Role,
+  redactions: { field: keyof T; minRole: Role; mask?: string }[],
+): T {
+  const result = { ...data };
+  for (const { field, minRole, mask } of redactions) {
+    if (!hasRole(role, minRole) && field in result) {
+      (result as Record<string, unknown>)[field as string] = mask ?? "***";
+    }
+  }
+  return result;
+}
