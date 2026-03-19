@@ -10,10 +10,6 @@ export default function ApiKeysPage() {
       <PageHeader
         title="API Keys"
         description="Manage API keys for external access"
-        breadcrumbs={[
-          { label: "Settings" },
-          { label: "API Keys" },
-        ]}
       />
       <WorkspaceGuard>
         <ApiKeyList />

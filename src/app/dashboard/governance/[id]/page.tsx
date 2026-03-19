@@ -16,10 +16,6 @@ export default function GovernanceDetailPage({
       <PageHeader
         title="Proposal Detail"
         description="Proposal information and validator votes"
-        breadcrumbs={[
-          { label: "Governance", href: "/dashboard/governance" },
-          { label: `#${id}` },
-        ]}
       />
       <GovernanceDetail proposalId={id} />
     </div>

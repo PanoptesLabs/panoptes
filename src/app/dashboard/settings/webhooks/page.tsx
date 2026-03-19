@@ -10,10 +10,6 @@ export default function WebhooksPage() {
       <PageHeader
         title="Webhooks"
         description="Configure webhook notifications"
-        breadcrumbs={[
-          { label: "Settings" },
-          { label: "Webhooks" },
-        ]}
       />
       <WorkspaceGuard>
         <WebhookList />

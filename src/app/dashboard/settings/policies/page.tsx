@@ -10,10 +10,6 @@ export default function PoliciesPage() {
       <PageHeader
         title="Policies"
         description="Declarative rules for automated responses"
-        breadcrumbs={[
-          { label: "Settings" },
-          { label: "Policies" },
-        ]}
       />
       <WorkspaceGuard>
         <PolicyList />

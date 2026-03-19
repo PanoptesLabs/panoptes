@@ -9,7 +9,6 @@ export default function ForecastsPage() {
       <PageHeader
         title="Forecasts"
         description="Statistical predictions for network health and validator performance"
-        breadcrumbs={[{ label: "Forecasts" }]}
       />
       <ForecastList />
     </div>

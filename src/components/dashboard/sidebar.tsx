@@ -24,7 +24,6 @@ import {
   Trophy,
   Key,
   Wallet,
-  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PrismIcon } from "@/components/icons/prism-icon";
@@ -60,7 +59,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAuthenticated: hasWorkspaceToken } = useWorkspace();
-  const { user, isAuthenticated: hasWalletAuth, logout, setShowConnectModal } = useAuthContext();
+  const { isAuthenticated: hasWalletAuth, logout, setShowConnectModal } = useAuthContext();
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -138,31 +137,6 @@ export function Sidebar() {
         {settingsItems.map(renderNavItem)}
       </nav>
       <div className="mt-auto border-t border-slate-DEFAULT/10 px-4 py-4 space-y-2">
-        {hasWalletAuth && user ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-teal-DEFAULT">
-              <Wallet className="size-3.5" />
-              <span className="font-mono" title={user.address}>
-                {user.address.slice(0, 8)}...{user.address.slice(-4)}
-              </span>
-            </div>
-            <button
-              onClick={logout}
-              className="flex items-center gap-1 text-xs text-dusty-lavender/50 hover:text-dusty-lavender/70 transition-colors"
-              title="Disconnect wallet"
-            >
-              <LogOut className="size-3" />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowConnectModal(true)}
-            className="flex w-full items-center gap-2 text-xs text-soft-violet hover:text-soft-violet/80 transition-colors"
-          >
-            <Wallet className="size-3.5" />
-            Connect Wallet
-          </button>
-        )}
         {hasWorkspaceToken && (
           <div className="flex items-center gap-2 text-xs text-teal-DEFAULT">
             <span className="size-1.5 rounded-full bg-teal-DEFAULT" />
@@ -176,21 +150,30 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile hamburger */}
-      <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-slate-DEFAULT/20 bg-slate-dark/95 px-4 backdrop-blur-sm lg:hidden">
-        <button
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={mobileOpen}
-          className="flex size-9 items-center justify-center rounded-lg text-dusty-lavender hover:bg-deep-iris/20"
-        >
-          <Menu className="size-5" />
-        </button>
-        <div className="flex items-center gap-2">
-          <PrismIcon className="size-4 text-soft-violet" />
-          <span className="font-display text-sm font-bold text-soft-violet">
-            Panoptes
-          </span>
+      <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-slate-DEFAULT/20 bg-slate-dark/95 px-4 backdrop-blur-sm lg:hidden">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={mobileOpen}
+            className="flex size-9 items-center justify-center rounded-lg text-dusty-lavender hover:bg-deep-iris/20"
+          >
+            <Menu className="size-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <PrismIcon className="size-4 text-soft-violet" />
+            <span className="font-display text-sm font-bold text-soft-violet">
+              Panoptes
+            </span>
+          </div>
         </div>
+        <button
+          onClick={() => hasWalletAuth ? logout() : setShowConnectModal(true)}
+          aria-label={hasWalletAuth ? "Disconnect wallet" : "Connect wallet"}
+          className="flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-deep-iris/20"
+        >
+          <Wallet className={cn("size-4", hasWalletAuth ? "text-teal-DEFAULT" : "text-dusty-lavender/50")} />
+        </button>
       </div>
 
       {/* Mobile overlay */}
