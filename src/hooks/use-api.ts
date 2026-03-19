@@ -30,7 +30,7 @@ export function createWorkspaceFetcher(token: string | null) {
   return async (url: string) => {
     const headers: HeadersInit = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
-    const res = await fetch(url, { headers });
+    const res = await fetch(url, { headers, credentials: "include" });
     if (!res.ok) {
       const error = new Error("API request failed");
       (error as Error & { status: number }).status = res.status;
@@ -82,6 +82,7 @@ export async function workspaceMutate<T = void>(
   const res = await fetch(url, {
     method,
     headers,
+    credentials: "include",
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`${method} ${url} failed`);

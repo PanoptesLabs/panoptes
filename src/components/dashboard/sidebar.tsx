@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useAuthContext } from "@/components/dashboard/auth-provider";
 import {
   LayoutDashboard,
   Shield,
@@ -22,6 +23,8 @@ import {
   TrendingUp,
   Trophy,
   Key,
+  Wallet,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PrismIcon } from "@/components/icons/prism-icon";
@@ -56,7 +59,8 @@ const settingsItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isAuthenticated } = useWorkspace();
+  const { isAuthenticated: hasWorkspaceToken } = useWorkspace();
+  const { user, isAuthenticated: hasWalletAuth, logout, setShowConnectModal } = useAuthContext();
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -133,21 +137,37 @@ export function Sidebar() {
         </p>
         {settingsItems.map(renderNavItem)}
       </nav>
-      <div className="mt-auto border-t border-slate-DEFAULT/10 px-4 py-4">
-        {isAuthenticated ? (
-          <div className="flex items-center gap-2 text-xs text-teal-DEFAULT">
-            <span className="size-1.5 rounded-full bg-teal-DEFAULT" />
-            Connected
+      <div className="mt-auto border-t border-slate-DEFAULT/10 px-4 py-4 space-y-2">
+        {hasWalletAuth && user ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-teal-DEFAULT">
+              <Wallet className="size-3.5" />
+              <span className="font-mono" title={user.address}>
+                {user.address.slice(0, 8)}...{user.address.slice(-4)}
+              </span>
+            </div>
+            <button
+              onClick={logout}
+              className="flex items-center gap-1 text-xs text-dusty-lavender/50 hover:text-dusty-lavender/70 transition-colors"
+              title="Disconnect wallet"
+            >
+              <LogOut className="size-3" />
+            </button>
           </div>
         ) : (
-          <Link
-            href="/dashboard/settings/workspace"
-            onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-2 text-xs text-amber-DEFAULT hover:text-amber-light"
+          <button
+            onClick={() => setShowConnectModal(true)}
+            className="flex w-full items-center gap-2 text-xs text-soft-violet hover:text-soft-violet/80 transition-colors"
           >
-            <span className="size-1.5 rounded-full bg-amber-DEFAULT" />
-            Connect Workspace
-          </Link>
+            <Wallet className="size-3.5" />
+            Connect Wallet
+          </button>
+        )}
+        {hasWorkspaceToken && (
+          <div className="flex items-center gap-2 text-xs text-teal-DEFAULT">
+            <span className="size-1.5 rounded-full bg-teal-DEFAULT" />
+            Workspace Connected
+          </div>
         )}
       </div>
     </>
