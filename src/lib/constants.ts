@@ -5,7 +5,7 @@ export const APP_DESCRIPTION =
 export const APP_VERSION = "0.4.0";
 
 export const REPUBLIC_CHAIN = {
-  chainId: "republic-testnet-1",
+  chainId: "raitestnet_77701-1",
   rpcUrl: process.env.REPUBLIC_RPC_URL || "https://rpc.republicai.io",
   restUrl: process.env.REPUBLIC_REST_URL || "https://rest.republicai.io",
 } as const;
