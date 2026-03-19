@@ -28,8 +28,6 @@ import {
   tokensToNumber,
 } from "@/lib/formatters";
 import { timeAgo } from "@/lib/time";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   Shield,
   Blocks,
@@ -39,7 +37,6 @@ import {
   AlertTriangle,
   Target,
   Siren,
-  KeyRound,
 } from "lucide-react";
 
 export function Overview() {
@@ -137,23 +134,6 @@ export function Overview() {
           isLoading={endpointsLoading}
         />
       </div>
-
-      {/* Workspace connection banner */}
-      {!token && (
-        <Card className="border-amber-DEFAULT/20 bg-amber-dark/10">
-          <CardContent className="flex items-center gap-3 py-3">
-            <KeyRound className="size-4 shrink-0 text-amber-DEFAULT" />
-            <p className="flex-1 text-xs text-amber-light/80">
-              Connect your workspace to view SLO health and incident metrics.
-            </p>
-            <Link href="/dashboard/settings/workspace">
-              <Button variant="ghost" size="sm" className="text-amber-DEFAULT hover:text-amber-light">
-                Connect
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Reliability widgets (workspace-scoped) */}
       {token && (sloSummary || incidentSummary) && (

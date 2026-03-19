@@ -17,11 +17,6 @@ export default function PolicyDetailPage({
       <PageHeader
         title="Policy Detail"
         description="View and manage policy configuration"
-        breadcrumbs={[
-          { label: "Settings" },
-          { label: "Policies", href: "/dashboard/settings/policies" },
-          { label: "Detail" },
-        ]}
       />
       <WorkspaceGuard>
         <PolicyDetail policyId={id} />

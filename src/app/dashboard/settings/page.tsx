@@ -57,7 +57,6 @@ export default function SettingsPage() {
       <PageHeader
         title="Settings"
         description="Configure your workspace, integrations, and access controls"
-        breadcrumbs={[{ label: "Settings" }]}
       />
       <div className="grid gap-4 sm:grid-cols-2">
         {settingsCards.map((card) => {

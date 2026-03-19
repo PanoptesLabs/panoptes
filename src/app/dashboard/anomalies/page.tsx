@@ -65,7 +65,6 @@ export default function AnomaliesPage() {
         <PageHeader
           title="Anomalies"
           description="Network anomaly detection and alerts"
-          breadcrumbs={[{ label: "Anomalies" }]}
         />
         <ErrorState message="Failed to load anomalies" onRetry={() => mutate()} />
       </div>
@@ -77,7 +76,6 @@ export default function AnomaliesPage() {
       <PageHeader
         title="Anomalies"
         description="Network anomaly detection and alerts"
-        breadcrumbs={[{ label: "Anomalies" }]}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

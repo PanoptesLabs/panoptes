@@ -9,7 +9,6 @@ export default function GovernancePage() {
       <PageHeader
         title="Governance"
         description="Track proposals and validator voting participation"
-        breadcrumbs={[{ label: "Governance" }]}
       />
       <GovernanceList />
     </div>

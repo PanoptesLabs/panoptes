@@ -11,10 +11,6 @@ export default async function ValidatorDetailPage({
     <div>
       <PageHeader
         title="Validator Detail"
-        breadcrumbs={[
-          { label: "Validators", href: "/dashboard/validators" },
-          { label: id.slice(0, 12) + "..." },
-        ]}
       />
       <ValidatorDetail validatorId={id} />
     </div>

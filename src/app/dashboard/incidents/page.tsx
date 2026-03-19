@@ -10,7 +10,6 @@ export default function IncidentsPage() {
       <PageHeader
         title="Incidents"
         description="Active and historical incidents"
-        breadcrumbs={[{ label: "Incidents" }]}
       />
       <WorkspaceGuard>
         <IncidentList />

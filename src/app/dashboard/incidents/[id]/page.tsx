@@ -15,10 +15,6 @@ export default function IncidentDetailPage({
     <div>
       <PageHeader
         title="Incident Detail"
-        breadcrumbs={[
-          { label: "Incidents", href: "/dashboard/incidents" },
-          { label: id.slice(0, 12) + "..." },
-        ]}
       />
       <WorkspaceGuard>
         <IncidentDetail incidentId={id} />

@@ -10,7 +10,6 @@ export default function SlosPage() {
       <PageHeader
         title="SLOs"
         description="Service Level Objectives — reliability targets"
-        breadcrumbs={[{ label: "SLOs" }]}
       />
       <WorkspaceGuard>
         <SloList />

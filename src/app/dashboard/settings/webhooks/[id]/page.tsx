@@ -15,11 +15,6 @@ export default function WebhookDetailPage({
     <div>
       <PageHeader
         title="Webhook Detail"
-        breadcrumbs={[
-          { label: "Settings" },
-          { label: "Webhooks", href: "/dashboard/settings/webhooks" },
-          { label: id.slice(0, 12) + "..." },
-        ]}
       />
       <WorkspaceGuard>
         <WebhookDetail webhookId={id} />

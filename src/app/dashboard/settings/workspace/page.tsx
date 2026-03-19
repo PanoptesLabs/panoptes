@@ -9,10 +9,6 @@ export default function WorkspacePage() {
       <PageHeader
         title="Workspace"
         description="Manage workspace settings and API token"
-        breadcrumbs={[
-          { label: "Settings" },
-          { label: "Workspace" },
-        ]}
       />
       <WorkspaceSettings />
     </div>

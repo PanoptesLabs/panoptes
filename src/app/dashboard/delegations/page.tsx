@@ -10,7 +10,6 @@ export default function DelegationsPage() {
       <PageHeader
         title="Delegations"
         description="Stake movements, delegation flow, and whale detection"
-        breadcrumbs={[{ label: "Delegations" }]}
       />
       <div className="space-y-6">
         <DelegationFlow />

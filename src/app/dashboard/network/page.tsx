@@ -12,7 +12,6 @@ export default function NetworkPage() {
       <PageHeader
         title="Network"
         description="Chain statistics, validator trends, and staking analytics"
-        breadcrumbs={[{ label: "Network" }]}
       />
       <NetworkOverview />
     </div>

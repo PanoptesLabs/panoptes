@@ -12,7 +12,6 @@ export default function ValidatorsPage() {
       <PageHeader
         title="Validators"
         description="Monitor validator status, staking, and performance"
-        breadcrumbs={[{ label: "Validators" }]}
       />
       <ValidatorsList />
     </div>
