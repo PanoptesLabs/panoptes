@@ -67,8 +67,13 @@ export async function POST(request: NextRequest) {
   );
 
   if (!valid) {
+    console.error("[auth/verify] Signature verification failed", {
+      address,
+      pubKeyLength: pubKey.length,
+      signatureLength: signature.length,
+    });
     return NextResponse.json(
-      { error: "Invalid signature" },
+      { error: "Invalid signature — pubkey does not match address or signature is invalid" },
       { status: 401, headers: rl.headers },
     );
   }

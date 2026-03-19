@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         onConnect={auth.login}
         isConnecting={auth.isLoading}
         isKeplrInstalled={auth.keplr.isInstalled}
-        error={auth.keplr.error}
+        error={auth.loginError || auth.keplr.error}
       />
     </AuthContext.Provider>
   );
