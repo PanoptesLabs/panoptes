@@ -31,8 +31,11 @@ vi.mock("@/lib/api-helpers", async () => {
   };
 });
 
-vi.mock("@/lib/workspace-auth", () => ({
-  requireWorkspace: vi.fn(),
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(),
+  requireRole: vi.fn(),
+  redactForRole: vi.fn((data: unknown) => data),
+  rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
 }));
 
 vi.mock("@/lib/webhook-crypto", () => ({
@@ -51,7 +54,7 @@ vi.mock("@/lib/webhook-validation", async (importOriginal) => {
 });
 
 import { prisma } from "@/lib/db";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { assertUrlNotPrivate } from "@/lib/webhook-validation";
 
 const mockWorkspace = { id: "ws-1", name: "Test", slug: "test" };
@@ -68,17 +71,20 @@ const mockWebhook = {
   updatedAt: new Date("2026-01-01"),
 };
 
-function authSuccess() {
-  vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace });
+function authSuccess(role = "admin") {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: null,
+    workspace: mockWorkspace,
+    role: role as "admin" | "editor" | "member" | "viewer" | "anonymous",
+  });
+  vi.mocked(requireRole).mockReturnValue(null);
 }
 
 function authFail() {
-  vi.mocked(requireWorkspace).mockResolvedValue({
-    error: NextResponse.json(
-      { error: "Unauthorized — valid workspace token required" },
-      { status: 401 },
-    ),
-  });
+  vi.mocked(resolveAuth).mockResolvedValue(null);
+  vi.mocked(requireRole).mockReturnValue(
+    NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+  );
 }
 
 describe("GET /api/webhooks", () => {
@@ -124,7 +130,7 @@ describe("GET /api/webhooks", () => {
 describe("POST /api/webhooks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("editor");
     vi.mocked(prisma.webhook.count).mockResolvedValue(0);
     vi.mocked(prisma.webhook.create).mockResolvedValue({
       id: "wh-new",
@@ -156,6 +162,22 @@ describe("POST /api/webhooks", () => {
     expect(res.status).toBe(201);
     expect(body.secret).toMatch(/^whsec_/);
     expect(body.id).toBe("wh-new");
+  });
+
+  it("returns 401 for anonymous POST", async () => {
+    authFail();
+    const { POST } = await import("@/app/api/webhooks/route");
+    const req = new NextRequest("http://localhost/api/webhooks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "New Webhook",
+        url: "https://example.com/hook",
+        events: ["anomaly.created"],
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(401);
   });
 
   it("returns 400 on invalid body", async () => {
@@ -210,7 +232,7 @@ describe("POST /api/webhooks", () => {
 describe("PATCH /api/webhooks/:id", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("editor");
   });
 
   it("updates webhook fields", async () => {
@@ -272,7 +294,7 @@ describe("PATCH /api/webhooks/:id", () => {
 describe("DELETE /api/webhooks/:id", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("editor");
   });
 
   it("deletes webhook and returns 204", async () => {
@@ -304,7 +326,7 @@ describe("DELETE /api/webhooks/:id", () => {
 describe("GET /api/webhooks/:id/deliveries", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("member");
   });
 
   it("returns paginated delivery list", async () => {
@@ -347,7 +369,7 @@ describe("GET /api/webhooks/:id/deliveries", () => {
 describe("POST /api/webhooks/:id/test", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("member");
   });
 
   it("sends test request and returns result", async () => {

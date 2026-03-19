@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole, redactForRole, rateLimitForRole } from "@/lib/auth";
 import { validateApiKeyCreate } from "@/lib/api-key-validation";
 import { generateApiKey, hashApiKey, getKeyPrefix } from "@/lib/api-key";
 import { API_KEY_DEFAULTS, API_KEY_TIERS, type ApiKeyTier } from "@/lib/constants";
 
+const KEY_REDACTIONS = [
+  { field: "keyPrefix" as const, minRole: "member" as const, mask: "pk_***" },
+];
+
 export async function GET(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const keys = await prisma.apiKey.findMany({
-    where: { workspaceId: auth.workspace.id },
+    where: { workspaceId: auth!.workspace.id },
     select: {
       id: true,
       name: true,
@@ -31,15 +36,18 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ keys }, { headers: rl.headers });
+  const redacted = keys.map((k) => redactForRole(k, auth!.role, KEY_REDACTIONS));
+
+  return NextResponse.json({ keys: redacted }, { headers: rl.headers });
 }
 
 export async function POST(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const writeError = requireRole(auth, "admin", rl.headers);
+  if (writeError) return writeError;
 
   let body: unknown;
   try {
@@ -65,16 +73,16 @@ export async function POST(request: NextRequest) {
   const tierConfig = API_KEY_TIERS[validated.tier as ApiKeyTier];
 
   const apiKey = await prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth.workspace.id} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth!.workspace.id} FOR UPDATE`;
     const count = await tx.apiKey.count({
-      where: { workspaceId: auth.workspace.id },
+      where: { workspaceId: auth!.workspace.id },
     });
     if (count >= API_KEY_DEFAULTS.MAX_PER_WORKSPACE) {
       return null;
     }
     return tx.apiKey.create({
       data: {
-        workspaceId: auth.workspace.id,
+        workspaceId: auth!.workspace.id,
         name: validated.name,
         keyHash,
         keyPrefix,

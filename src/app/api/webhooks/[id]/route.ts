@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { validateWebhookUpdate } from "@/lib/webhook-validation";
 
 interface RouteContext {
@@ -9,11 +9,12 @@ interface RouteContext {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await context.params;
 
@@ -36,7 +37,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   const existing = await prisma.webhook.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
   if (!existing) {
     return NextResponse.json(
@@ -63,16 +64,17 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await context.params;
 
   const existing = await prisma.webhook.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
   if (!existing) {
     return NextResponse.json(

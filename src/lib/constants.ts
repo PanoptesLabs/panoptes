@@ -305,3 +305,28 @@ export const LEADERBOARD_DEFAULTS = {
   MAX_COMPARE: 5,
   TREND_PERIODS: ["7d", "30d", "90d"] as const,
 } as const;
+
+export const AUTH_DEFAULTS = {
+  SESSION_DURATION_DAYS: 7,
+  NONCE_EXPIRY_MINUTES: 5,
+  PUBLIC_WORKSPACE_SLUG: "republic",
+  COOKIE_NAME: "panoptes_session",
+} as const;
+
+export const ROLES = {
+  ANONYMOUS: "anonymous",
+  VIEWER: "viewer",
+  MEMBER: "member",
+  EDITOR: "editor",
+  ADMIN: "admin",
+} as const;
+
+export type Role = (typeof ROLES)[keyof typeof ROLES];
+
+export const ROLE_HIERARCHY: Record<string, number> = {
+  anonymous: 0,
+  viewer: 1,
+  member: 2,
+  editor: 3,
+  admin: 4,
+};

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { validateIncidentUpdate } from "@/lib/incident-validation";
 import { CHANNELS } from "@/lib/events/event-types";
 
@@ -9,16 +9,17 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const { id } = await params;
 
   const incident = await prisma.incident.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
     include: {
       events: { orderBy: { createdAt: "asc" } },
     },
@@ -38,11 +39,12 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const error = requireRole(auth, "editor", rl.headers);
+  if (error) return error;
 
   const { id } = await params;
 
@@ -65,7 +67,7 @@ export async function PATCH(
   }
 
   const incident = await prisma.incident.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
 
   if (!incident) {
@@ -122,7 +124,7 @@ export async function PATCH(
         channel: CHANNELS.INCIDENT,
         type: webhookType,
         visibility: "workspace",
-        workspaceId: auth.workspace.id,
+        workspaceId: auth!.workspace.id,
         payload: JSON.stringify({
           incidentId: id,
           entityType: result.entityType,

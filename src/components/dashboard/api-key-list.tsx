@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Key, Plus, X, Loader2, Copy, CheckCircle, Trash2 } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { AuthGate } from "./auth-gate";
 
 const TIER_OPTIONS = ["free", "pro"] as const;
 
@@ -137,15 +138,16 @@ export function ApiKeyList() {
       )}
 
       {!showForm ? (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowForm(true)}
-          className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20"
-        >
-          <Plus className="size-3.5" />
-          Create API Key
-        </Button>
+        <AuthGate requiredRole="admin" onAction={() => setShowForm(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20"
+          >
+            <Plus className="size-3.5" />
+            Create API Key
+          </Button>
+        </AuthGate>
       ) : (
         <Card className="border-soft-violet/30 bg-midnight-plum">
           <CardHeader className="pb-2">
@@ -275,14 +277,15 @@ export function ApiKeyList() {
                     {timeAgo(apiKey.createdAt)}
                   </span>
                   {apiKey.isActive && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeactivate(apiKey.id)}
-                      className="text-rose-DEFAULT/50 hover:bg-rose-DEFAULT/10 hover:text-rose-DEFAULT"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    <AuthGate requiredRole="admin" onAction={() => handleDeactivate(apiKey.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-rose-DEFAULT/50 hover:bg-rose-DEFAULT/10 hover:text-rose-DEFAULT"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </AuthGate>
                   )}
                 </div>
               </CardContent>

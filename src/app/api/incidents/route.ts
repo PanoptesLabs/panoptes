@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { parseIntParam, parseStringParam } from "@/lib/validation";
 import { INCIDENT_STATUSES } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const searchParams = request.nextUrl.searchParams;
   const limit = parseIntParam(searchParams.get("limit"), 50, 1, 200);
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   const entityType = parseStringParam(searchParams.get("entityType"), ["endpoint", "validator"]);
 
   const where: Record<string, unknown> = {
-    workspaceId: auth.workspace.id,
+    workspaceId: auth!.workspace.id,
   };
   if (status) where.status = status;
   if (severity) where.severity = severity;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { parseIntParam } from "@/lib/validation";
 
 interface RouteContext {
@@ -9,16 +9,17 @@ interface RouteContext {
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const { id } = await context.params;
 
   const slo = await prisma.slo.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
     select: { id: true },
   });
   if (!slo) {

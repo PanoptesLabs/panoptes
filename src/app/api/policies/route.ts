@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { POLICY_DEFAULTS } from "@/lib/constants";
 import { validatePolicyCreate, safeParseJSON } from "@/lib/policy-validation";
 
 export async function GET(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const policies = await prisma.policy.findMany({
-    where: { workspaceId: auth.workspace.id },
+    where: { workspaceId: auth!.workspace.id },
     orderBy: { priority: "asc" },
     select: {
       id: true,
@@ -40,11 +41,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const writeError = requireRole(auth, "editor", rl.headers);
+  if (writeError) return writeError;
 
   let body: unknown;
   try {
@@ -61,14 +63,14 @@ export async function POST(request: NextRequest) {
   let policy;
   try {
     policy = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth.workspace.id} FOR UPDATE`;
-      const count = await tx.policy.count({ where: { workspaceId: auth.workspace.id } });
+      await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id = ${auth!.workspace.id} FOR UPDATE`;
+      const count = await tx.policy.count({ where: { workspaceId: auth!.workspace.id } });
       if (count >= POLICY_DEFAULTS.MAX_PER_WORKSPACE) {
         throw new Error("LIMIT_REACHED");
       }
       return tx.policy.create({
         data: {
-          workspaceId: auth.workspace.id,
+          workspaceId: auth!.workspace.id,
           name: validated.name,
           description: validated.description,
           conditions: JSON.stringify(validated.conditions),

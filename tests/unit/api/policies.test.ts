@@ -36,23 +36,31 @@ vi.mock("@/lib/api-helpers", () => ({
   withRateLimit: vi.fn(() => ({ headers: { "X-RateLimit-Limit": "60" } })),
 }));
 
-vi.mock("@/lib/workspace-auth", () => ({
-  requireWorkspace: vi.fn(),
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(),
+  requireRole: vi.fn(),
+  rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
 }));
 
 import { prisma } from "@/lib/db";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 
 const mockWorkspace = { id: "ws-1", name: "Test", slug: "test" };
 
-function authSuccess() {
-  vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace });
+function authSuccess(role = "admin") {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: null,
+    workspace: mockWorkspace,
+    role: role as "admin" | "editor" | "member" | "viewer" | "anonymous",
+  });
+  vi.mocked(requireRole).mockReturnValue(null);
 }
 
 function authFail() {
-  vi.mocked(requireWorkspace).mockResolvedValue({
-    error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-  });
+  vi.mocked(resolveAuth).mockResolvedValue(null);
+  vi.mocked(requireRole).mockReturnValue(
+    NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+  );
 }
 
 describe("GET /api/policies", () => {
@@ -98,7 +106,7 @@ describe("GET /api/policies", () => {
 describe("POST /api/policies", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("editor");
     vi.mocked(prisma.policy.count).mockResolvedValue(0);
     vi.mocked(prisma.policy.create).mockResolvedValue({
       id: "p-new", name: "New Policy", description: null,
@@ -190,7 +198,7 @@ describe("POST /api/policies", () => {
 describe("PATCH /api/policies/:id", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("editor");
   });
 
   it("updates policy fields", async () => {
@@ -400,7 +408,7 @@ describe("PATCH /api/policies/:id", () => {
 describe("DELETE /api/policies/:id", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("editor");
   });
 
   it("deletes policy", async () => {
@@ -420,7 +428,7 @@ describe("DELETE /api/policies/:id", () => {
 describe("POST /api/policies - atomic creation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authSuccess();
+    authSuccess("editor");
     // Restore $transaction mock implementation (may have been overridden by previous tests)
     vi.mocked(prisma.$transaction).mockImplementation(((fn: (tx: unknown) => unknown) => fn({
       $queryRaw: vi.fn(),

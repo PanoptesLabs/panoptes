@@ -138,20 +138,60 @@ model Anomaly {
 }
 
 model Workspace {
-  id             String    @id @default(cuid())
+  id             String              @id @default(cuid())
   name           String
-  slug           String    @unique
-  adminTokenHash String    @unique
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  slug           String              @unique
+  adminTokenHash String              @unique
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   webhooks       Webhook[]
   slos           Slo[]
   incidents      Incident[]
   policies       Policy[]
   apiKeys        ApiKey[]
+  members        WorkspaceMember[]
 
   @@index([slug])
+}
+
+model User {
+  id        String            @id @default(cuid())
+  address   String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  sessions  UserSession[]
+  members   WorkspaceMember[]
+
+  @@index([address])
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  nonce     String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        String    @default("viewer")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
 }
 
 model Webhook {

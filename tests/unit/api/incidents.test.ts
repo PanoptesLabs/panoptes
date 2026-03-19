@@ -32,10 +32,18 @@ vi.mock("@/lib/api-helpers", () => ({
   withRateLimit: vi.fn(() => ({ headers: { "X-RateLimit-Limit": "60" } })),
 }));
 
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(),
+  requireRole: vi.fn(),
+  rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
+}));
+
+// Keep workspace-auth mock for routes that may still import it
 vi.mock("@/lib/workspace-auth", () => ({
   requireWorkspace: vi.fn(),
 }));
 
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { requireWorkspace } from "@/lib/workspace-auth";
 
 const mockWorkspace = { id: "ws-1", name: "Test", slug: "test" };
@@ -65,10 +73,24 @@ const mockIncident = {
 };
 
 function authSuccess() {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: null,
+    workspace: mockWorkspace,
+    role: "admin",
+  });
+  vi.mocked(requireRole).mockReturnValue(null);
+  // Keep old mock for summary route which may still use requireWorkspace
   vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace });
 }
 
 function authFail() {
+  vi.mocked(resolveAuth).mockResolvedValue(null);
+  vi.mocked(requireRole).mockReturnValue(
+    NextResponse.json(
+      { error: "Authentication required" },
+      { status: 401 },
+    ),
+  );
   vi.mocked(requireWorkspace).mockResolvedValue({
     error: NextResponse.json(
       { error: "Unauthorized — valid workspace token required" },
@@ -420,7 +442,7 @@ describe("GET /api/incidents/summary", () => {
     expect(body.open).toBe(2);
     expect(body.acknowledged).toBe(1);
     expect(body.resolved).toBe(2);
-    expect(body.critical).toBe(1); // only non-resolved critical
+    expect(body.critical).toBe(1);
   });
 
   it("returns 401 without auth", async () => {

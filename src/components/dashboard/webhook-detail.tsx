@@ -13,6 +13,7 @@ import { timeAgo } from "@/lib/time";
 import { Play, Trash2, Loader2 } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { AuthGate } from "./auth-gate";
 import type { WebhookDeliveryItem } from "@/types";
 
 interface WebhookDetailProps {
@@ -187,25 +188,27 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
               </div>
             </div>
             <div className="flex shrink-0 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTest}
-                disabled={actionLoading !== null}
-                className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20"
-              >
-                {actionLoading === "test" ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
-                Test
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                disabled={actionLoading !== null}
-              >
-                {actionLoading === "delete" ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
-                {confirmDelete ? `Confirm Delete (${deleteCountdown}s)` : "Delete"}
-              </Button>
+              <AuthGate requiredRole="editor" onAction={handleTest}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={actionLoading !== null}
+                  className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20"
+                >
+                  {actionLoading === "test" ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
+                  Test
+                </Button>
+              </AuthGate>
+              <AuthGate requiredRole="editor" onAction={handleDelete}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={actionLoading !== null}
+                >
+                  {actionLoading === "delete" ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                  {confirmDelete ? `Confirm Delete (${deleteCountdown}s)` : "Delete"}
+                </Button>
+              </AuthGate>
             </div>
           </div>
           {(actionError || testSuccess) && (

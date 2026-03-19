@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -15,8 +15,10 @@ vi.mock("@/lib/api-helpers", async () => {
   };
 });
 
-vi.mock("@/lib/workspace-auth", () => ({
-  requireWorkspace: vi.fn(),
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(),
+  requireRole: vi.fn(),
+  rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
 }));
 
 vi.mock("@/lib/api-key", () => ({
@@ -24,10 +26,26 @@ vi.mock("@/lib/api-key", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { getApiKeyUsage } from "@/lib/api-key";
 
 const mockWorkspace = { id: "ws1", name: "Test", slug: "test" };
+
+function authSuccess(role = "admin") {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: null,
+    workspace: mockWorkspace,
+    role: role as "admin" | "editor" | "member" | "viewer" | "anonymous",
+  });
+  vi.mocked(requireRole).mockReturnValue(null);
+}
+
+function authFail() {
+  vi.mocked(resolveAuth).mockResolvedValue(null);
+  vi.mocked(requireRole).mockReturnValue(
+    NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+  );
+}
 
 describe("GET /api/keys/[id]/usage", () => {
   beforeEach(() => {
@@ -35,7 +53,7 @@ describe("GET /api/keys/[id]/usage", () => {
   });
 
   it("returns 404 for non-existent key", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(prisma.apiKey.findFirst).mockResolvedValue(null);
 
     const { GET } = await import("@/app/api/keys/[id]/usage/route");
@@ -46,7 +64,7 @@ describe("GET /api/keys/[id]/usage", () => {
   });
 
   it("returns usage data", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace } as never);
+    authSuccess();
     vi.mocked(prisma.apiKey.findFirst).mockResolvedValue({
       id: "key1",
       dailyQuota: 1000,
@@ -69,9 +87,7 @@ describe("GET /api/keys/[id]/usage", () => {
   });
 
   it("returns 401 without auth", async () => {
-    vi.mocked(requireWorkspace).mockResolvedValue({
-      error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }) as never,
-    });
+    authFail();
 
     const { GET } = await import("@/app/api/keys/[id]/usage/route");
     const req = new NextRequest("http://localhost/api/keys/key1/usage");

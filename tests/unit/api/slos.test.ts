@@ -34,6 +34,12 @@ vi.mock("@/lib/workspace-auth", () => ({
   requireWorkspace: vi.fn(),
 }));
 
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(),
+  requireRole: vi.fn(),
+  rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
+}));
+
 vi.mock("@/lib/intelligence", () => ({
   computeEndpointScores: vi.fn().mockResolvedValue({ scored: 3, duration: 100 }),
   computeValidatorScores: vi.fn().mockResolvedValue({ scored: 5, duration: 200 }),
@@ -53,6 +59,7 @@ vi.mock("@/lib/intelligence", () => ({
 
 import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 
 const mockWorkspace = { id: "ws-1", name: "Test", slug: "test" };
 
@@ -76,10 +83,23 @@ const mockSlo = {
 };
 
 function authSuccess() {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: null,
+    workspace: mockWorkspace,
+    role: "admin",
+  });
+  vi.mocked(requireRole).mockReturnValue(null);
   vi.mocked(requireWorkspace).mockResolvedValue({ workspace: mockWorkspace });
 }
 
 function authFail() {
+  vi.mocked(resolveAuth).mockResolvedValue(null);
+  vi.mocked(requireRole).mockReturnValue(
+    NextResponse.json(
+      { error: "Authentication required" },
+      { status: 401 },
+    ),
+  );
   vi.mocked(requireWorkspace).mockResolvedValue({
     error: NextResponse.json(
       { error: "Unauthorized — valid workspace token required" },

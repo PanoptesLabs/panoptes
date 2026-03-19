@@ -1,22 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { requireWorkspace } from "@/lib/workspace-auth";
+import { resolveAuth, requireRole, redactForRole, rateLimitForRole } from "@/lib/auth";
+
+const KEY_REDACTIONS = [
+  { field: "keyPrefix" as const, minRole: "member" as const, mask: "pk_***" },
+];
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const error = requireRole(auth, "anonymous", rl.headers);
+  if (error) return error;
 
   const { id } = await params;
 
   const apiKey = await prisma.apiKey.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
     select: {
       id: true,
       name: true,
@@ -39,23 +44,24 @@ export async function GET(
     );
   }
 
-  return NextResponse.json({ key: apiKey }, { headers: rl.headers });
+  return NextResponse.json({ key: redactForRole(apiKey, auth!.role, KEY_REDACTIONS) }, { headers: rl.headers });
 }
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await requireWorkspace(request, rl.headers);
-  if (auth.error) return auth.error;
+  const writeError = requireRole(auth, "admin", rl.headers);
+  if (writeError) return writeError;
 
   const { id } = await params;
 
   const apiKey = await prisma.apiKey.findFirst({
-    where: { id, workspaceId: auth.workspace.id },
+    where: { id, workspaceId: auth!.workspace.id },
   });
 
   if (!apiKey) {
