@@ -36,6 +36,7 @@ const CHAIN_INFO = {
   currencies: [{ coinDenom: "RAI", coinMinimalDenom: "arai", coinDecimals: 18 }],
   feeCurrencies: [{ coinDenom: "RAI", coinMinimalDenom: "arai", coinDecimals: 18, gasPriceStep: { low: 0.01, average: 0.025, high: 0.04 } }],
   stakeCurrency: { coinDenom: "RAI", coinMinimalDenom: "arai", coinDecimals: 18 },
+  features: ["eth-address-gen", "eth-key-sign"],
 };
 
 function getKeplr() {
