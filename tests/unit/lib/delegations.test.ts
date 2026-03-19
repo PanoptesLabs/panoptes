@@ -25,7 +25,7 @@ describe("syncDelegations", () => {
         delegation_responses: [
           {
             delegation: { delegator_address: "rai1abc", validator_address: "raivaloper1xyz", shares: "1000" },
-            balance: { denom: "urai", amount: "1000000" },
+            balance: { denom: "arai", amount: "1000000" },
           },
         ],
       }),
@@ -61,11 +61,11 @@ describe("syncDelegations", () => {
         delegation_responses: [
           {
             delegation: { delegator_address: "rai1new", validator_address: "raivaloper1xyz", shares: "500" },
-            balance: { denom: "urai", amount: "500000" },
+            balance: { denom: "arai", amount: "500000" },
           },
           {
             delegation: { delegator_address: "rai1old", validator_address: "raivaloper1xyz", shares: "100" },
-            balance: { denom: "urai", amount: "100000" },
+            balance: { denom: "arai", amount: "100000" },
           },
         ],
       }),
@@ -177,7 +177,7 @@ describe("syncDelegations - pagination", () => {
           delegation_responses: [
             {
               delegation: { delegator_address: "rai1abc", validator_address: "raivaloper1xyz", shares: "1000" },
-              balance: { denom: "urai", amount: "1000000" },
+              balance: { denom: "arai", amount: "1000000" },
             },
           ],
           pagination: { next_key: "page2" },
@@ -189,7 +189,7 @@ describe("syncDelegations - pagination", () => {
           delegation_responses: [
             {
               delegation: { delegator_address: "rai1def", validator_address: "raivaloper1xyz", shares: "2000" },
-              balance: { denom: "urai", amount: "2000000" },
+              balance: { denom: "arai", amount: "2000000" },
             },
           ],
           pagination: { next_key: null },
@@ -254,7 +254,7 @@ describe("syncDelegations - BigInt edge cases", () => {
         delegation_responses: [
           {
             delegation: { delegator_address: "rai1zero", validator_address: "raivaloper1xyz", shares: "0" },
-            balance: { denom: "urai", amount: "0" },
+            balance: { denom: "arai", amount: "0" },
           },
         ],
       }),
@@ -293,7 +293,7 @@ describe("syncDelegations - BigInt edge cases", () => {
         delegation_responses: [
           {
             delegation: { delegator_address: "rai1whale", validator_address: "raivaloper1xyz", shares: "999999999999999999999999" },
-            balance: { denom: "urai", amount: "999999999999999999999999" },
+            balance: { denom: "arai", amount: "999999999999999999999999" },
           },
         ],
       }),

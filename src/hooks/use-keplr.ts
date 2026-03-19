@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { REPUBLIC_CHAIN } from "@/lib/constants";
 
 interface KeplrKey {
   bech32Address: string;
@@ -16,14 +17,14 @@ interface KeplrState {
   error: string | null;
 }
 
-const CHAIN_ID = "republic-testnet-1";
+const CHAIN_ID = REPUBLIC_CHAIN.chainId;
 
 const CHAIN_INFO = {
   chainId: CHAIN_ID,
   chainName: "Republic AI Testnet",
-  rpc: "https://rpc.republicai.io",
-  rest: "https://rest.republicai.io",
-  bip44: { coinType: 118 },
+  rpc: REPUBLIC_CHAIN.rpcUrl,
+  rest: REPUBLIC_CHAIN.restUrl,
+  bip44: { coinType: 60 },
   bech32Config: {
     bech32PrefixAccAddr: "rai",
     bech32PrefixAccPub: "raipub",
@@ -32,9 +33,9 @@ const CHAIN_INFO = {
     bech32PrefixConsAddr: "raivalcons",
     bech32PrefixConsPub: "raivalconspub",
   },
-  currencies: [{ coinDenom: "RAI", coinMinimalDenom: "urai", coinDecimals: 6 }],
-  feeCurrencies: [{ coinDenom: "RAI", coinMinimalDenom: "urai", coinDecimals: 6, gasPriceStep: { low: 0.01, average: 0.025, high: 0.04 } }],
-  stakeCurrency: { coinDenom: "RAI", coinMinimalDenom: "urai", coinDecimals: 6 },
+  currencies: [{ coinDenom: "RAI", coinMinimalDenom: "arai", coinDecimals: 18 }],
+  feeCurrencies: [{ coinDenom: "RAI", coinMinimalDenom: "arai", coinDecimals: 18, gasPriceStep: { low: 0.01, average: 0.025, high: 0.04 } }],
+  stakeCurrency: { coinDenom: "RAI", coinMinimalDenom: "arai", coinDecimals: 18 },
 };
 
 function getKeplr() {
