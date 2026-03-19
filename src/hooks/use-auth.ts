@@ -14,6 +14,7 @@ interface AuthState {
   role: Role;
   isLoading: boolean;
   isAuthenticated: boolean;
+  loginError: string | null;
 }
 
 type PendingAction = (() => void) | null;
@@ -25,6 +26,7 @@ export function useAuth() {
     role: "anonymous",
     isLoading: true,
     isAuthenticated: false,
+    loginError: null,
   });
   const [showConnectModal, setShowConnectModal] = useState(false);
   const pendingActionRef = useRef<PendingAction>(null);
@@ -39,6 +41,7 @@ export function useAuth() {
           role: data.role,
           isLoading: false,
           isAuthenticated: !!data.user,
+          loginError: null,
         });
         return;
       }
@@ -56,7 +59,7 @@ export function useAuth() {
       .then((data) => {
         if (cancelled) return;
         if (data?.user) {
-          setState({ user: data.user, role: data.role, isLoading: false, isAuthenticated: true });
+          setState({ user: data.user, role: data.role, isLoading: false, isAuthenticated: true, loginError: null });
         } else {
           setState((s) => ({ ...s, isLoading: false }));
         }
@@ -68,13 +71,13 @@ export function useAuth() {
   }, []);
 
   const login = useCallback(async () => {
-    setState((s) => ({ ...s, isLoading: true }));
+    setState((s) => ({ ...s, isLoading: true, loginError: null }));
 
     try {
       // 1. Connect Keplr
       const keplrResult = await keplr.connect();
       if (!keplrResult) {
-        setState((s) => ({ ...s, isLoading: false }));
+        setState((s) => ({ ...s, isLoading: false, loginError: "Keplr connection failed" }));
         return false;
       }
 
@@ -86,7 +89,12 @@ export function useAuth() {
       });
 
       if (!nonceRes.ok) {
-        setState((s) => ({ ...s, isLoading: false }));
+        const errData = await nonceRes.json().catch(() => ({}));
+        setState((s) => ({
+          ...s,
+          isLoading: false,
+          loginError: (errData as { error?: string }).error ?? `Nonce request failed (${nonceRes.status})`,
+        }));
         return false;
       }
 
@@ -95,7 +103,7 @@ export function useAuth() {
       // 3. Sign nonce with Keplr (pass address explicitly to avoid React state timing)
       const signature = await keplr.signArbitrary(nonce, keplrResult.address);
       if (!signature) {
-        setState((s) => ({ ...s, isLoading: false }));
+        setState((s) => ({ ...s, isLoading: false, loginError: "Signature rejected or failed" }));
         return false;
       }
 
@@ -113,7 +121,12 @@ export function useAuth() {
       });
 
       if (!verifyRes.ok) {
-        setState((s) => ({ ...s, isLoading: false }));
+        const errData = await verifyRes.json().catch(() => ({}));
+        setState((s) => ({
+          ...s,
+          isLoading: false,
+          loginError: (errData as { error?: string }).error ?? `Verification failed (${verifyRes.status})`,
+        }));
         return false;
       }
 
@@ -123,6 +136,7 @@ export function useAuth() {
         role: data.role,
         isLoading: false,
         isAuthenticated: true,
+        loginError: null,
       });
 
       setShowConnectModal(false);
@@ -135,8 +149,9 @@ export function useAuth() {
       }
 
       return true;
-    } catch {
-      setState((s) => ({ ...s, isLoading: false }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      setState((s) => ({ ...s, isLoading: false, loginError: message }));
       return false;
     }
   }, [keplr]);
@@ -157,6 +172,7 @@ export function useAuth() {
       role: "anonymous",
       isLoading: false,
       isAuthenticated: false,
+      loginError: null,
     });
   }, [keplr]);
 
