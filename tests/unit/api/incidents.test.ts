@@ -35,6 +35,7 @@ vi.mock("@/lib/api-helpers", () => ({
 vi.mock("@/lib/auth", () => ({
   resolveAuth: vi.fn(),
   requireRole: vi.fn(),
+  rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
 }));
 
 // Keep workspace-auth mock for routes that may still import it

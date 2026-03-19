@@ -20,6 +20,7 @@ import {
   Send,
 } from "lucide-react";
 import type { IncidentEventType } from "@/types";
+import { AuthGate } from "./auth-gate";
 
 const severityColors: Record<string, string> = {
   critical: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
@@ -140,28 +141,30 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
             </div>
             <div className="flex shrink-0 gap-2">
               {incident.status === "open" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAction("acknowledge")}
-                  disabled={actionLoading !== null}
-                  className="border-amber-DEFAULT/30 bg-amber-dark/20 text-amber-light hover:bg-amber-dark/40"
-                >
-                  {actionLoading === "acknowledge" ? <Loader2 className="size-3.5 animate-spin" /> : <Eye className="size-3.5" />}
-                  Acknowledge
-                </Button>
+                <AuthGate requiredRole="member" onAction={() => handleAction("acknowledge")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={actionLoading !== null}
+                    className="border-amber-DEFAULT/30 bg-amber-dark/20 text-amber-light hover:bg-amber-dark/40"
+                  >
+                    {actionLoading === "acknowledge" ? <Loader2 className="size-3.5 animate-spin" /> : <Eye className="size-3.5" />}
+                    Acknowledge
+                  </Button>
+                </AuthGate>
               )}
               {incident.status !== "resolved" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAction("resolve")}
-                  disabled={actionLoading !== null}
-                  className="border-teal-DEFAULT/30 bg-teal-dark/20 text-teal-light hover:bg-teal-dark/40"
-                >
-                  {actionLoading === "resolve" ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle className="size-3.5" />}
-                  Resolve
-                </Button>
+                <AuthGate requiredRole="member" onAction={() => handleAction("resolve")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={actionLoading !== null}
+                    className="border-teal-DEFAULT/30 bg-teal-dark/20 text-teal-light hover:bg-teal-dark/40"
+                  >
+                    {actionLoading === "resolve" ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle className="size-3.5" />}
+                    Resolve
+                  </Button>
+                </AuthGate>
               )}
             </div>
           </div>
@@ -231,15 +234,16 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
                 maxLength={1000}
                 className="flex-1 resize-none rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-3 py-2 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:border-soft-violet/50 focus:ring-1 focus:ring-soft-violet/20"
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleComment}
-                disabled={actionLoading === "comment" || !comment.trim()}
-                className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20"
-              >
-                {actionLoading === "comment" ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
-              </Button>
+              <AuthGate requiredRole="member" onAction={handleComment}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={actionLoading === "comment" || !comment.trim()}
+                  className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20"
+                >
+                  {actionLoading === "comment" ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+                </Button>
+              </AuthGate>
             </div>
           </CardContent>
         </Card>

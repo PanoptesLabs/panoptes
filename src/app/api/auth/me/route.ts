@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit } from "@/lib/api-helpers";
-import { resolveAuth } from "@/lib/auth";
+import { resolveAuth, rateLimitForRole } from "@/lib/auth";
 import { ROLES } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
-  const rl = withRateLimit(request);
-  if ("response" in rl) return rl.response;
-
   const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
+  if ("response" in rl) return rl.response;
 
   if (!auth || auth.role === ROLES.ANONYMOUS) {
     return NextResponse.json(

@@ -4,6 +4,7 @@ import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { hashToken } from "../src/lib/workspace-auth.js";
+import { AUTH_DEFAULTS } from "../src/lib/constants.js";
 import ws from "ws";
 
 neonConfig.webSocketConstructor = ws;
@@ -58,17 +59,17 @@ async function main() {
   if (adminToken) {
     const tokenHash = hashToken(adminToken);
     await prisma.workspace.upsert({
-      where: { slug: "default" },
+      where: { slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG },
       create: {
-        name: "Default Workspace",
-        slug: "default",
+        name: "Republic Community",
+        slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG,
         adminTokenHash: tokenHash,
       },
       update: {
         adminTokenHash: tokenHash,
       },
     });
-    console.log("  + Default workspace (slug: default)");
+    console.log(`  + Default workspace (slug: ${AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG})`);
   } else if (process.env.NODE_ENV === "production") {
     throw new Error(
       "PANOPTES_ADMIN_TOKEN is required in production. Generate with: openssl rand -hex 32",

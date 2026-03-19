@@ -25,6 +25,7 @@ vi.mock("@/lib/auth", () => ({
   resolveAuth: vi.fn(),
   requireRole: vi.fn(),
   redactForRole: vi.fn((data: unknown) => data),
+  rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
 }));
 
 vi.mock("@/lib/api-key", () => ({

@@ -18,7 +18,7 @@ export function withRateLimit(
 ): { response: NextResponse } | { headers: Record<string, string> } {
   const ip = getClientIp(request);
   const limit = checkRateLimit(ip, maxOverride);
-  const headers = rateLimitHeaders(limit);
+  const headers = rateLimitHeaders(limit, maxOverride);
 
   if (!limit.allowed) {
     return {

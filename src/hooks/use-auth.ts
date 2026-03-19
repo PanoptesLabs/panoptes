@@ -92,8 +92,8 @@ export function useAuth() {
 
       const { nonce, sessionId } = await nonceRes.json();
 
-      // 3. Sign nonce with Keplr
-      const signature = await keplr.signArbitrary(nonce);
+      // 3. Sign nonce with Keplr (pass address explicitly to avoid React state timing)
+      const signature = await keplr.signArbitrary(nonce, keplrResult.address);
       if (!signature) {
         setState((s) => ({ ...s, isLoading: false }));
         return false;

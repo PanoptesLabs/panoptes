@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { resolveAuth, requireRole } from "@/lib/auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { validateWebhookUpdate } from "@/lib/webhook-validation";
 
 interface RouteContext {
@@ -9,10 +9,10 @@ interface RouteContext {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await resolveAuth(request);
   const writeError = requireRole(auth, "editor", rl.headers);
   if (writeError) return writeError;
 
@@ -64,10 +64,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await resolveAuth(request);
   const writeError = requireRole(auth, "editor", rl.headers);
   if (writeError) return writeError;
 

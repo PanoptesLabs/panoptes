@@ -22,7 +22,7 @@ vi.mock("@/lib/workspace-auth", () => ({
   }),
 }));
 
-import { resolveAuth, hasRole, requireRole, redactForRole } from "@/lib/auth";
+import { resolveAuth, hasRole, requireRole, redactForRole, rateLimitForRole } from "@/lib/auth";
 import type { AuthContext } from "@/lib/auth";
 
 // --- Fixtures ---
@@ -132,6 +132,24 @@ describe("resolveAuth", () => {
     const auth = await resolveAuth(req);
 
     expect(auth!.role).toBe("anonymous");
+  });
+
+  it("Bearer ws_ token takes priority over cookie session", async () => {
+    // Both cookie and Bearer present — Bearer should win
+    mockFindFirstSession.mockResolvedValue(mockSession);
+    mockFindFirstWorkspace.mockResolvedValue(publicWorkspace);
+
+    const req = new NextRequest("http://localhost/api/test", {
+      headers: {
+        cookie: "panoptes_session=session-token",
+        authorization: "Bearer ws_testtoken",
+      },
+    });
+    const auth = await resolveAuth(req);
+
+    // Bearer ws_ yields admin, cookie would yield member — admin wins
+    expect(auth!.role).toBe("admin");
+    expect(auth!.user).toBeNull(); // Bearer ws_ is workspace-level, no user
   });
 
   it("ignores non-ws_ Bearer tokens for workspace auth", async () => {
@@ -281,5 +299,23 @@ describe("redactForRole", () => {
       { field: "secret" as const, minRole: "member" as const },
     ]);
     expect(result.secret).toBe("***");
+  });
+});
+
+describe("rateLimitForRole", () => {
+  it("returns 30 for anonymous", () => {
+    expect(rateLimitForRole("anonymous")).toBe(30);
+  });
+
+  it("returns 120 for viewer", () => {
+    expect(rateLimitForRole("viewer")).toBe(120);
+  });
+
+  it("returns 120 for member", () => {
+    expect(rateLimitForRole("member")).toBe(120);
+  });
+
+  it("returns 120 for admin", () => {
+    expect(rateLimitForRole("admin")).toBe(120);
   });
 });

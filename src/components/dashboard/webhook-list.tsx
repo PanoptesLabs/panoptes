@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Webhook, Plus, X, Loader2, Copy, CheckCircle } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { AuthGate } from "./auth-gate";
 
 const EVENT_OPTIONS = [
   "anomaly.created",
@@ -172,15 +173,16 @@ export function WebhookList() {
 
       {/* Create button / form */}
       {!showForm ? (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowForm(true)}
-          className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20"
-        >
-          <Plus className="size-3.5" />
-          Create Webhook
-        </Button>
+        <AuthGate requiredRole="editor" onAction={() => setShowForm(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20"
+          >
+            <Plus className="size-3.5" />
+            Create Webhook
+          </Button>
+        </AuthGate>
       ) : (
         <Card className="border-soft-violet/30 bg-midnight-plum">
           <CardHeader className="pb-2">

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { AuthGate } from "./auth-gate";
 
 export function PolicyDetail({ policyId }: { policyId: string }) {
   const { token } = useWorkspace();
@@ -149,65 +150,71 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleToggleActive}
-              disabled={isToggling}
-              className="border-slate-DEFAULT/20"
-            >
-              {isToggling ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : data.isActive ? (
-                <Pause className="size-3" />
-              ) : (
-                <Play className="size-3" />
-              )}
-              {data.isActive ? "Pause" : "Activate"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleToggleDryRun}
-              disabled={isDryRunToggling}
-              className="border-slate-DEFAULT/20"
-            >
-              {isDryRunToggling ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <TestTube className="size-3" />
-              )}
-              {data.dryRun ? "Enable Live" : "Enable Dry Run"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleTest}
-              disabled={isTesting}
-              className="border-slate-DEFAULT/20"
-            >
-              {isTesting ? <Loader2 className="size-3 animate-spin" /> : <TestTube className="size-3" />}
-              Test
-            </Button>
+            <AuthGate requiredRole="editor" onAction={handleToggleActive}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isToggling}
+                className="border-slate-DEFAULT/20"
+              >
+                {isToggling ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : data.isActive ? (
+                  <Pause className="size-3" />
+                ) : (
+                  <Play className="size-3" />
+                )}
+                {data.isActive ? "Pause" : "Activate"}
+              </Button>
+            </AuthGate>
+            <AuthGate requiredRole="editor" onAction={handleToggleDryRun}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isDryRunToggling}
+                className="border-slate-DEFAULT/20"
+              >
+                {isDryRunToggling ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <TestTube className="size-3" />
+                )}
+                {data.dryRun ? "Enable Live" : "Enable Dry Run"}
+              </Button>
+            </AuthGate>
+            <AuthGate requiredRole="editor" onAction={handleTest}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isTesting}
+                className="border-slate-DEFAULT/20"
+              >
+                {isTesting ? <Loader2 className="size-3 animate-spin" /> : <TestTube className="size-3" />}
+                Test
+              </Button>
+            </AuthGate>
             {showDeleteConfirm ? (
               <div className="flex gap-1">
-                <Button size="sm" variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-                  {isDeleting ? <Loader2 className="size-3 animate-spin" /> : "Confirm Delete"}
-                </Button>
+                <AuthGate requiredRole="editor" onAction={handleDelete}>
+                  <Button size="sm" variant="destructive" disabled={isDeleting}>
+                    {isDeleting ? <Loader2 className="size-3 animate-spin" /> : "Confirm Delete"}
+                  </Button>
+                </AuthGate>
                 <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
                   Cancel
                 </Button>
               </div>
             ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="text-rose-DEFAULT hover:text-rose-DEFAULT/80"
-              >
-                <Trash2 className="size-3" />
-                Delete
-              </Button>
+              <AuthGate requiredRole="editor" onAction={() => setShowDeleteConfirm(true)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-rose-DEFAULT hover:text-rose-DEFAULT/80"
+                >
+                  <Trash2 className="size-3" />
+                  Delete
+                </Button>
+              </AuthGate>
             )}
           </div>
         </CardContent>

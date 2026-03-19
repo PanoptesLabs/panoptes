@@ -12,12 +12,30 @@ export interface AuthContext {
 
 /**
  * Unified auth resolver. Tries (in order):
- * 1. Cookie `panoptes_session` → session lookup → user + WorkspaceMember role
- * 2. Authorization: Bearer ws_... → workspace admin token → role "admin"
+ * 1. Authorization: Bearer ws_... → workspace admin token → role "admin"
+ * 2. Cookie `panoptes_session` → session lookup → user + WorkspaceMember role
  * 3. No credentials → public workspace lookup → role "anonymous"
  */
 export async function resolveAuth(request: NextRequest): Promise<AuthContext | null> {
-  // 1. Cookie session auth
+  // 1. Bearer workspace token auth (explicit API access — always takes priority)
+  const bearerToken = extractBearerToken(request);
+  if (bearerToken?.startsWith("ws_")) {
+    const tokenHash = hashToken(bearerToken);
+    const workspace = await prisma.workspace.findFirst({
+      where: { adminTokenHash: tokenHash, isActive: true },
+      select: { id: true, name: true, slug: true },
+    });
+
+    if (workspace) {
+      return {
+        user: null,
+        workspace,
+        role: ROLES.ADMIN,
+      };
+    }
+  }
+
+  // 2. Cookie session auth
   const sessionToken = request.cookies.get(AUTH_DEFAULTS.COOKIE_NAME)?.value;
   if (sessionToken) {
     const tokenHash = hashToken(sessionToken);
@@ -65,24 +83,6 @@ export async function resolveAuth(request: NextRequest): Promise<AuthContext | n
           role: ROLES.VIEWER,
         };
       }
-    }
-  }
-
-  // 2. Bearer workspace token auth (existing API key flow)
-  const bearerToken = extractBearerToken(request);
-  if (bearerToken?.startsWith("ws_")) {
-    const tokenHash = hashToken(bearerToken);
-    const workspace = await prisma.workspace.findFirst({
-      where: { adminTokenHash: tokenHash, isActive: true },
-      select: { id: true, name: true, slug: true },
-    });
-
-    if (workspace) {
-      return {
-        user: null,
-        workspace,
-        role: ROLES.ADMIN,
-      };
     }
   }
 
@@ -158,4 +158,12 @@ export function redactForRole<T extends Record<string, unknown>>(
     }
   }
   return result;
+}
+
+/**
+ * Return per-minute rate limit based on role.
+ * Anonymous: 30, authenticated: 120.
+ */
+export function rateLimitForRole(role: Role): number {
+  return role === "anonymous" ? 30 : 120;
 }

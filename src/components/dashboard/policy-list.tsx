@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { ScrollText, Plus, X, Loader2, Play, Pause } from "lucide-react";
+import { AuthGate } from "./auth-gate";
 
 const CONDITION_FIELD_OPTIONS = [
   "anomaly.type",
@@ -95,14 +96,26 @@ export function PolicyList() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-dusty-lavender/50">{policies.length} policies</p>
-        <Button
-          size="sm"
-          onClick={() => setShowForm(!showForm)}
-          className="bg-soft-violet text-white hover:bg-soft-violet/80"
-        >
-          {showForm ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
-          {showForm ? "Cancel" : "New Policy"}
-        </Button>
+        {showForm ? (
+          <Button
+            size="sm"
+            onClick={() => setShowForm(false)}
+            className="bg-soft-violet text-white hover:bg-soft-violet/80"
+          >
+            <X className="size-3.5" />
+            Cancel
+          </Button>
+        ) : (
+          <AuthGate requiredRole="editor" onAction={() => setShowForm(true)}>
+            <Button
+              size="sm"
+              className="bg-soft-violet text-white hover:bg-soft-violet/80"
+            >
+              <Plus className="size-3.5" />
+              New Policy
+            </Button>
+          </AuthGate>
+        )}
       </div>
 
       {showForm && (

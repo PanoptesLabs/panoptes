@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { resolveAuth, requireRole } from "@/lib/auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { validateSloCreate } from "@/lib/slo-validation";
 import { SLO_DEFAULTS } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await resolveAuth(request);
   const error = requireRole(auth, "anonymous", rl.headers);
   if (error) return error;
 
@@ -22,10 +22,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await resolveAuth(request);
   const writeError = requireRole(auth, "editor", rl.headers);
   if (writeError) return writeError;
 

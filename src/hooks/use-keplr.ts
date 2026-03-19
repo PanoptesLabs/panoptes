@@ -93,12 +93,13 @@ export function useKeplr() {
   }, []);
 
   const signArbitrary = useCallback(
-    async (data: string) => {
+    async (data: string, signerAddress?: string) => {
       const keplr = getKeplr();
-      if (!keplr || !state.address) return null;
+      const addr = signerAddress ?? state.address;
+      if (!keplr || !addr) return null;
 
       try {
-        const response = await keplr.signArbitrary(CHAIN_ID, state.address, data);
+        const response = await keplr.signArbitrary(CHAIN_ID, addr, data);
         return response.signature as string;
       } catch {
         return null;

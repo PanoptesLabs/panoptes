@@ -39,6 +39,7 @@ vi.mock("@/lib/api-helpers", () => ({
 vi.mock("@/lib/auth", () => ({
   resolveAuth: vi.fn(),
   requireRole: vi.fn(),
+  rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
 }));
 
 import { prisma } from "@/lib/db";

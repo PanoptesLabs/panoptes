@@ -107,7 +107,7 @@ describe("useAuth", () => {
 
     expect(loginResult).toBe(true);
     expect(mockConnect).toHaveBeenCalled();
-    expect(mockSignArbitrary).toHaveBeenCalledWith("testnonce");
+    expect(mockSignArbitrary).toHaveBeenCalledWith("testnonce", "rai1abc");
     expect(result.current.isAuthenticated).toBe(true);
   });
 

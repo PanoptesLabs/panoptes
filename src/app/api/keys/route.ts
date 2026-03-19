@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { resolveAuth, requireRole, redactForRole } from "@/lib/auth";
+import { resolveAuth, requireRole, redactForRole, rateLimitForRole } from "@/lib/auth";
 import { validateApiKeyCreate } from "@/lib/api-key-validation";
 import { generateApiKey, hashApiKey, getKeyPrefix } from "@/lib/api-key";
 import { API_KEY_DEFAULTS, API_KEY_TIERS, type ApiKeyTier } from "@/lib/constants";
@@ -11,10 +11,10 @@ const KEY_REDACTIONS = [
 ];
 
 export async function GET(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await resolveAuth(request);
   const error = requireRole(auth, "anonymous", rl.headers);
   if (error) return error;
 
@@ -42,10 +42,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await resolveAuth(request);
   const writeError = requireRole(auth, "admin", rl.headers);
   if (writeError) return writeError;
 

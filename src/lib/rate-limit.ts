@@ -115,12 +115,12 @@ export function checkKeyRateLimit(keyId: string, maxRequests: number): {
   };
 }
 
-export function rateLimitHeaders(rateLimit: {
-  remaining: number;
-  resetAt: number;
-}): Record<string, string> {
+export function rateLimitHeaders(
+  rateLimit: { remaining: number; resetAt: number },
+  maxRequests?: number,
+): Record<string, string> {
   return {
-    "X-RateLimit-Limit": String(RATE_LIMIT.MAX_REQUESTS),
+    "X-RateLimit-Limit": String(maxRequests ?? RATE_LIMIT.MAX_REQUESTS),
     "X-RateLimit-Remaining": String(Math.max(0, rateLimit.remaining)),
     "X-RateLimit-Reset": String(Math.ceil(rateLimit.resetAt / 1000)),
   };

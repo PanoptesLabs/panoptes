@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
-import { resolveAuth, requireRole } from "@/lib/auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { validateIncidentUpdate } from "@/lib/incident-validation";
 import { CHANNELS } from "@/lib/events/event-types";
 
@@ -9,10 +9,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await resolveAuth(request);
   const error = requireRole(auth, "anonymous", rl.headers);
   if (error) return error;
 
@@ -39,10 +39,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const auth = await resolveAuth(request);
   const error = requireRole(auth, "editor", rl.headers);
   if (error) return error;
 
