@@ -43,7 +43,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/signature", () => ({
-  verifyAdr036Signature: vi.fn(),
+  verifySignatureWithDiag: vi.fn(),
 }));
 
 // --- Tests ---
@@ -173,8 +173,20 @@ describe("POST /api/auth/verify", () => {
   });
 
   it("returns 401 for invalid signature", async () => {
-    const { verifyAdr036Signature } = await import("@/lib/signature");
-    vi.mocked(verifyAdr036Signature).mockResolvedValue(false);
+    const { verifySignatureWithDiag } = await import("@/lib/signature");
+    vi.mocked(verifySignatureWithDiag).mockResolvedValue({
+      valid: false,
+      debug: {
+        pubkeyLength: 33,
+        sigLength: 64,
+        claimedAddress: "rai1abc",
+        ethermintAddress: null,
+        cosmosAddress: null,
+        addressMatch: "none",
+        eip191Result: "skipped",
+        adr036Result: "skipped",
+      },
+    });
 
     mockSessionFindFirst.mockResolvedValue({
       id: "sess-1",
@@ -196,12 +208,24 @@ describe("POST /api/auth/verify", () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toContain("Invalid signature");
+    expect(body.error).toContain("Signature failed");
   });
 
   it("creates session and sets cookie on valid signature", async () => {
-    const { verifyAdr036Signature } = await import("@/lib/signature");
-    vi.mocked(verifyAdr036Signature).mockResolvedValue(true);
+    const { verifySignatureWithDiag } = await import("@/lib/signature");
+    vi.mocked(verifySignatureWithDiag).mockResolvedValue({
+      valid: true,
+      debug: {
+        pubkeyLength: 33,
+        sigLength: 64,
+        claimedAddress: "rai1abc",
+        ethermintAddress: "rai1abc",
+        cosmosAddress: null,
+        addressMatch: "ethermint",
+        eip191Result: true,
+        adr036Result: "skipped",
+      },
+    });
 
     mockSessionFindFirst.mockResolvedValue({
       id: "sess-1",
