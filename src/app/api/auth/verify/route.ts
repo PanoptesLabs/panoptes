@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "crypto";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { AUTH_DEFAULTS, ROLES } from "@/lib/constants";
-import { verifyAdr036Signature } from "@/lib/signature";
+import { verifySignatureWithDiag } from "@/lib/signature";
 
 export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
@@ -58,22 +58,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Verify ADR-036 amino signature
-  const valid = await verifyAdr036Signature(
+  // Verify signature (EIP-191 for Ethermint, ADR-036 fallback)
+  const result = await verifySignatureWithDiag(
     address,
     session.nonce,
     pubKey,
     signature,
   );
 
-  if (!valid) {
-    console.error("[auth/verify] Signature verification failed", {
-      address,
-      pubKeyLength: pubKey.length,
-      signatureLength: signature.length,
-    });
+  if (!result.valid) {
+    console.error("[auth/verify] Signature verification failed", result.debug);
     return NextResponse.json(
-      { error: "Invalid signature — pubkey does not match address or signature is invalid" },
+      {
+        error: `Signature failed: address=${result.debug.addressMatch}, eip191=${result.debug.eip191Result}, adr036=${result.debug.adr036Result}, pk=${result.debug.pubkeyLength}B, sig=${result.debug.sigLength}B, eth=${result.debug.ethermintAddress?.slice(0, 16)}, cos=${result.debug.cosmosAddress?.slice(0, 16)}`,
+      },
       { status: 401, headers: rl.headers },
     );
   }
