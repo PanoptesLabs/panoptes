@@ -55,12 +55,14 @@ export function AdminAccess() {
   if (error) return <ErrorState message="Failed to load access data" onRetry={() => mutate()} />;
   if (!data) return null;
 
-  const confirmAndExecute = async (action: () => Promise<void>, key: string) => {
+  const confirmAndExecute = async (action: () => Promise<void>, key: string, errorLabel: string) => {
     setPending(null);
     setLoadingAction(key);
     try {
       await action();
       mutate();
+    } catch {
+      toast.error(`Failed to ${errorLabel}`);
     } finally {
       setLoadingAction(null);
     }
@@ -82,7 +84,7 @@ export function AdminAccess() {
     await confirmAndExecute(async () => {
       await changeUserRole(memberId, newRole);
       toast.success(`Role updated for ${address.slice(0, 10)}...`);
-    }, `role-${memberId}`);
+    }, `role-${memberId}`, "change role");
   };
 
   const handleRevokeSession = (sessionId: string) => {
@@ -98,7 +100,7 @@ export function AdminAccess() {
     await confirmAndExecute(async () => {
       await revokeSession(pending.id);
       toast.success("Session revoked");
-    }, `session-${pending.id}`);
+    }, `session-${pending.id}`, "revoke session");
   };
 
   const handleDisableKey = (keyId: string, keyName: string) => {
@@ -114,13 +116,13 @@ export function AdminAccess() {
     await confirmAndExecute(async () => {
       await disableApiKey(pending.id);
       toast.success("API key disabled");
-    }, `key-${pending.id}`);
+    }, `key-${pending.id}`, "disable API key");
   };
 
-  const handleConfirm = () => {
-    if (pending?.type === "role") confirmRoleChange();
-    else if (pending?.type === "revoke") confirmRevoke();
-    else if (pending?.type === "disable-key") confirmDisableKey();
+  const handleConfirm = async () => {
+    if (pending?.type === "role") await confirmRoleChange();
+    else if (pending?.type === "revoke") await confirmRevoke();
+    else if (pending?.type === "disable-key") await confirmDisableKey();
   };
 
   return (

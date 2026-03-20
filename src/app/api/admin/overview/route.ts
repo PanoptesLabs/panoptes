@@ -26,9 +26,15 @@ export async function GET(request: NextRequest) {
     deliveries24h,
     recentAudit,
   ] = await Promise.all([
-    prisma.user.count(),
+    prisma.workspaceMember.count({
+      where: { workspaceId: auth!.workspace.id },
+    }),
     prisma.userSession.count({
-      where: { expiresAt: { gt: now }, nonce: null },
+      where: {
+        expiresAt: { gt: now },
+        nonce: null,
+        user: { members: { some: { workspaceId: auth!.workspace.id } } },
+      },
     }),
     prisma.workspaceMember.groupBy({
       by: ["role"],
@@ -45,7 +51,10 @@ export async function GET(request: NextRequest) {
     prisma.webhookDelivery.groupBy({
       by: ["success"],
       _count: true,
-      where: { createdAt: { gt: twentyFourHoursAgo } },
+      where: {
+        createdAt: { gt: twentyFourHoursAgo },
+        webhook: { workspaceId: auth!.workspace.id },
+      },
     }),
     prisma.auditLog.findMany({
       where: { workspaceId: auth!.workspace.id },

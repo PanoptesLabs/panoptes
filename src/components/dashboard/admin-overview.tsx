@@ -86,18 +86,18 @@ export function AdminOverview() {
   if (!data) return null;
 
   const totalDeliveries = data.deliveries24h.success + data.deliveries24h.failed;
-  const healthPct = totalDeliveries > 0
-    ? Math.round((data.deliveries24h.success / totalDeliveries) * 100)
-    : 100;
+  const healthLabel = totalDeliveries > 0
+    ? `${Math.round((data.deliveries24h.success / totalDeliveries) * 100)}%`
+    : "—";
 
   return (
     <div className="space-y-6">
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Users" value={data.users.total} icon={Users} color="bg-soft-violet/15 text-soft-violet" />
+        <StatCard label="Members" value={data.users.total} icon={Users} color="bg-soft-violet/15 text-soft-violet" />
         <StatCard label="Active Sessions" value={data.sessions.active} icon={Monitor} color="bg-teal-DEFAULT/15 text-teal-DEFAULT" />
         <StatCard label="Open Incidents" value={data.resources.incidents} icon={AlertTriangle} color="bg-rose-DEFAULT/15 text-rose-DEFAULT" />
-        <StatCard label="Webhook Health (24h)" value={`${healthPct}%`} icon={Activity} color="bg-amber-DEFAULT/15 text-amber-DEFAULT" />
+        <StatCard label="Webhook Health (24h)" value={healthLabel} icon={Activity} color="bg-amber-DEFAULT/15 text-amber-DEFAULT" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
