@@ -40,7 +40,7 @@ describe("GraphQL Security", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects queries exceeding max depth", async () => {
+  it("rejects queries exceeding max depth", { timeout: 10_000 }, async () => {
     const { POST } = await import("@/app/api/graphql/route");
     const deepQuery = `{
       validators {

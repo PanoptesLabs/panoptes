@@ -3,9 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { count: vi.fn() },
     userSession: { count: vi.fn() },
-    workspaceMember: { groupBy: vi.fn() },
+    workspaceMember: { count: vi.fn(), groupBy: vi.fn() },
     webhook: { count: vi.fn() },
     slo: { count: vi.fn() },
     incident: { count: vi.fn() },
@@ -69,7 +68,7 @@ describe("GET /api/admin/overview", () => {
 
   it("returns overview stats for admin", async () => {
     authSuccess();
-    vi.mocked(prisma.user.count).mockResolvedValue(5);
+    vi.mocked(prisma.workspaceMember.count).mockResolvedValue(5);
     vi.mocked(prisma.userSession.count).mockResolvedValue(3);
     vi.mocked(prisma.workspaceMember.groupBy).mockResolvedValue([
       { role: "admin", _count: 1 },
