@@ -15,7 +15,6 @@ import {
   Target,
   Siren,
   Settings,
-  Building,
   ScrollText,
   Vote,
   ArrowLeftRight,
@@ -23,6 +22,7 @@ import {
   Trophy,
   Key,
   Wallet,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PrismIcon } from "@/components/icons/prism-icon";
@@ -51,13 +51,18 @@ const settingsItems = [
   { href: "/dashboard/settings/webhooks", label: "Webhooks", icon: Settings },
   { href: "/dashboard/settings/policies", label: "Policies", icon: ScrollText },
   { href: "/dashboard/settings/api-keys", label: "API Keys", icon: Key },
-  { href: "/dashboard/settings/workspace", label: "Workspace", icon: Building },
+];
+
+const adminItems = [
+  { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/admin/access", label: "Access", icon: Users },
+  { href: "/dashboard/admin/operations", label: "Operations", icon: Activity },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isAuthenticated: hasWalletAuth, logout, setShowConnectModal } = useAuthContext();
+  const { isAuthenticated: hasWalletAuth, logout, setShowConnectModal, role } = useAuthContext();
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -133,6 +138,16 @@ export function Sidebar() {
           Settings
         </p>
         {settingsItems.map(renderNavItem)}
+
+        {role === "admin" && (
+          <>
+            <div className="border-t border-slate-DEFAULT/10 my-2" />
+            <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
+              Admin
+            </p>
+            {adminItems.map(renderNavItem)}
+          </>
+        )}
       </nav>
       <div className="mt-auto border-t border-slate-DEFAULT/10 px-4 py-4 space-y-2">
         {hasWalletAuth && (

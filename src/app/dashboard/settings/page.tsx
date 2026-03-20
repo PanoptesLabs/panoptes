@@ -5,22 +5,12 @@ import { useAuthContext } from "@/components/dashboard/auth-provider";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Building,
   Settings,
   ScrollText,
   Key,
 } from "lucide-react";
 
 const settingsCards = [
-  {
-    href: "/dashboard/settings/workspace",
-    icon: Building,
-    title: "Workspace",
-    description: "View workspace details and resource overview",
-    color: "text-soft-violet",
-    bg: "bg-soft-violet/15",
-    requiresAuth: true,
-  },
   {
     href: "/dashboard/settings/webhooks",
     icon: Settings,
@@ -57,7 +47,7 @@ export default function SettingsPage() {
     <div>
       <PageHeader
         title="Settings"
-        description="Configure your workspace, integrations, and access controls"
+        description="Configure integrations and access controls"
       />
       <div className="grid gap-4 sm:grid-cols-2">
         {settingsCards.map((card) => {
