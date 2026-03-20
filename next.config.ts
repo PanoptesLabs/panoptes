@@ -9,6 +9,8 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   {
+    // Next.js App Router requires 'unsafe-inline' for script/style hydration.
+    // Removing it would break client-side navigation and styled-components injection.
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",

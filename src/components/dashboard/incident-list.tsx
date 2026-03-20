@@ -9,6 +9,7 @@ import { ErrorState } from "./error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
+import { SEVERITY_COLORS, STATUS_COLORS } from "@/lib/constants";
 import { Siren, AlertTriangle, CheckCircle, Eye, ShieldAlert } from "lucide-react";
 import { Pagination } from "./pagination";
 import { HelpTooltip } from "./help-tooltip";
@@ -35,19 +36,6 @@ const ENTITY_OPTIONS = [
   { label: "Endpoint", value: "endpoint" },
   { label: "Network", value: "network" },
 ];
-
-const severityColors: Record<string, string> = {
-  critical: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
-  high: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
-  medium: "bg-orange-900/50 text-orange-300 border-orange-500/30",
-  low: "bg-slate-dark/50 text-slate-light border-slate-DEFAULT/30",
-};
-
-const statusColors: Record<string, string> = {
-  open: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
-  acknowledged: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
-  resolved: "bg-teal-dark/50 text-teal-light border-teal-DEFAULT/30",
-};
 
 const severityIcons: Record<string, string> = {
   critical: "text-rose-DEFAULT",
@@ -173,7 +161,7 @@ export function IncidentList() {
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
-                            severityColors[incident.severity] ?? severityColors.low,
+                            SEVERITY_COLORS[incident.severity] ?? SEVERITY_COLORS.low,
                           )}
                         >
                           {incident.severity}
@@ -181,7 +169,7 @@ export function IncidentList() {
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
-                            statusColors[incident.status] ?? statusColors.open,
+                            STATUS_COLORS[incident.status] ?? STATUS_COLORS.open,
                           )}
                         >
                           {incident.status}

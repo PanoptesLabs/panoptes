@@ -26,6 +26,7 @@ export function ApiKeyList() {
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [pendingDeactivate, setPendingDeactivate] = useState<string | null>(null);
 
   const handleCreate = async () => {
     if (!formName.trim()) {
@@ -271,15 +272,36 @@ export function ApiKeyList() {
                     {timeAgo(apiKey.createdAt)}
                   </span>
                   {apiKey.isActive && (
-                    <AuthGate requiredRole="admin" onAction={() => handleDeactivate(apiKey.id)}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-rose-DEFAULT/50 hover:bg-rose-DEFAULT/10 hover:text-rose-DEFAULT"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </AuthGate>
+                    pendingDeactivate === apiKey.id ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPendingDeactivate(null)}
+                          className="h-6 px-2 text-[10px] text-dusty-lavender/70 hover:text-mist"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setPendingDeactivate(null); handleDeactivate(apiKey.id); }}
+                          className="h-6 px-2 text-[10px] text-rose-DEFAULT hover:bg-rose-DEFAULT/10"
+                        >
+                          Confirm
+                        </Button>
+                      </div>
+                    ) : (
+                      <AuthGate requiredRole="admin" onAction={() => setPendingDeactivate(apiKey.id)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-rose-DEFAULT/50 hover:bg-rose-DEFAULT/10 hover:text-rose-DEFAULT"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </AuthGate>
+                    )
                   )}
                 </div>
               </CardContent>

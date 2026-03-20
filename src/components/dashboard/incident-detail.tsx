@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { timeAgo, formatDateTime } from "@/lib/time";
+import { SEVERITY_COLORS, STATUS_COLORS } from "@/lib/constants";
 import {
   Eye,
   CheckCircle,
@@ -20,19 +21,6 @@ import {
 } from "lucide-react";
 import type { IncidentEventType } from "@/types";
 import { AuthGate } from "./auth-gate";
-
-const severityColors: Record<string, string> = {
-  critical: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
-  high: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
-  medium: "bg-orange-900/50 text-orange-300 border-orange-500/30",
-  low: "bg-slate-dark/50 text-slate-light border-slate-DEFAULT/30",
-};
-
-const statusColors: Record<string, string> = {
-  open: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
-  acknowledged: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
-  resolved: "bg-teal-dark/50 text-teal-light border-teal-DEFAULT/30",
-};
 
 const eventTypeConfig: Record<IncidentEventType, { icon: typeof Circle; color: string; label: string }> = {
   created: { icon: Circle, color: "text-teal-DEFAULT", label: "Created" },
@@ -113,7 +101,7 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
                 <span
                   className={cn(
                     "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                    severityColors[incident.severity] ?? severityColors.low,
+                    SEVERITY_COLORS[incident.severity] ?? SEVERITY_COLORS.low,
                   )}
                 >
                   {incident.severity}
@@ -121,7 +109,7 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
                 <span
                   className={cn(
                     "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                    statusColors[incident.status] ?? statusColors.open,
+                    STATUS_COLORS[incident.status] ?? STATUS_COLORS.open,
                   )}
                 >
                   {incident.status}

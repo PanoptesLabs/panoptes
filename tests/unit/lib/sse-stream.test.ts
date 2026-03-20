@@ -93,6 +93,45 @@ describe("createSSEStream", () => {
     reader.releaseLock();
   });
 
+  it("closes stream after MAX_DURATION_MS deadline", async () => {
+    vi.mocked(prisma.outboxEvent.findMany).mockResolvedValue([]);
+
+    // Stub Date.now to simulate time passing beyond 5-minute deadline
+    const realDateNow = Date.now;
+    let callCount = 0;
+    const startTime = realDateNow.call(Date);
+    vi.spyOn(Date, "now").mockImplementation(() => {
+      callCount++;
+      // First call: start time (inside createSSEStream for deadline)
+      // Second call onward: past deadline
+      if (callCount <= 1) return startTime;
+      return startTime + 300_001; // Past 5 min
+    });
+
+    const controller = new AbortController();
+    const req = new NextRequest("http://localhost/api/stream", {
+      signal: controller.signal,
+    });
+
+    const stream = createSSEStream(req, { visibility: "public" }, 0);
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+
+    let output = "";
+    // Stream should close itself due to deadline
+    for (let i = 0; i < 10; i++) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      output += decoder.decode(value, { stream: true });
+    }
+
+    // Should have initial heartbeat but stream ends
+    expect(output).toContain(": heartbeat");
+    reader.releaseLock();
+
+    vi.spyOn(Date, "now").mockRestore();
+  });
+
   it("emits events in SSE format", async () => {
     const mockEvent = {
       seq: 5,

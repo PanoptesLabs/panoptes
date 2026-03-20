@@ -42,6 +42,12 @@ export const sloResolvers = {
         });
       }
 
+      if (context.role === "viewer" || context.role === "anonymous") {
+        throw new GraphQLError("Insufficient permissions", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
       const validated = validateSloCreate(args.input);
       if ("error" in validated) {
         throw new GraphQLError(validated.error, {
@@ -111,6 +117,12 @@ export const sloResolvers = {
       if (!context.workspace) {
         throw new GraphQLError("Unauthorized", {
           extensions: { code: "UNAUTHORIZED" },
+        });
+      }
+
+      if (context.role === "viewer" || context.role === "anonymous") {
+        throw new GraphQLError("Insufficient permissions", {
+          extensions: { code: "FORBIDDEN" },
         });
       }
 

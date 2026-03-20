@@ -13,6 +13,23 @@ interface DetectionResult {
   resolved: number;
 }
 
+type ValidatorWithSnapshots = {
+  id: string;
+  moniker: string;
+  tokens: string;
+  jailed: boolean;
+  snapshots: { timestamp: Date; tokens: string; commission: number; jailed: boolean }[];
+};
+
+type EndpointWithHealthChecks = {
+  id: string;
+  url: string;
+  type: string;
+  isActive: boolean;
+  isOfficial: boolean;
+  healthChecks: { timestamp: Date; isHealthy: boolean; blockHeight: bigint | null }[];
+};
+
 export async function createOrSkipAnomaly(params: {
   type: string;
   severity: AnomalySeverity;
@@ -92,19 +109,9 @@ async function resolveAnomalies(type: string, entityId: string | null): Promise<
   return result.count;
 }
 
-async function detectJailing(): Promise<DetectionResult> {
+async function detectJailing(validators: ValidatorWithSnapshots[]): Promise<DetectionResult> {
   let detected = 0;
   let resolved = 0;
-
-  // Find validators that have recent snapshots showing jailed transition
-  const validators = await prisma.validator.findMany({
-    include: {
-      snapshots: {
-        orderBy: { timestamp: "desc" },
-        take: 2,
-      },
-    },
-  });
 
   for (const val of validators) {
     if (val.snapshots.length < 2) continue;
@@ -133,18 +140,9 @@ async function detectJailing(): Promise<DetectionResult> {
   return { detected, resolved };
 }
 
-async function detectLargeStakeChange(): Promise<DetectionResult> {
+async function detectLargeStakeChange(validators: ValidatorWithSnapshots[]): Promise<DetectionResult> {
   let detected = 0;
   let resolved = 0;
-
-  const validators = await prisma.validator.findMany({
-    include: {
-      snapshots: {
-        orderBy: { timestamp: "desc" },
-        take: 2,
-      },
-    },
-  });
 
   for (const val of validators) {
     if (val.snapshots.length < 2) continue;
@@ -182,18 +180,9 @@ async function detectLargeStakeChange(): Promise<DetectionResult> {
   return { detected, resolved };
 }
 
-async function detectCommissionSpike(): Promise<DetectionResult> {
+async function detectCommissionSpike(validators: ValidatorWithSnapshots[]): Promise<DetectionResult> {
   let detected = 0;
   let resolved = 0;
-
-  const validators = await prisma.validator.findMany({
-    include: {
-      snapshots: {
-        orderBy: { timestamp: "desc" },
-        take: 2,
-      },
-    },
-  });
 
   for (const val of validators) {
     if (val.snapshots.length < 2) continue;
@@ -221,19 +210,9 @@ async function detectCommissionSpike(): Promise<DetectionResult> {
   return { detected, resolved };
 }
 
-async function detectEndpointDown(): Promise<DetectionResult> {
+async function detectEndpointDown(endpoints: EndpointWithHealthChecks[]): Promise<DetectionResult> {
   let detected = 0;
   let resolved = 0;
-
-  const endpoints = await prisma.endpoint.findMany({
-    where: { isActive: true },
-    include: {
-      healthChecks: {
-        orderBy: { timestamp: "desc" },
-        take: ANOMALY_THRESHOLDS.ENDPOINT_DOWN_CONSECUTIVE,
-      },
-    },
-  });
 
   for (const ep of endpoints) {
     const checks = ep.healthChecks;
@@ -262,19 +241,9 @@ async function detectEndpointDown(): Promise<DetectionResult> {
   return { detected, resolved };
 }
 
-async function detectBlockStale(): Promise<DetectionResult> {
+async function detectBlockStale(endpoints: EndpointWithHealthChecks[]): Promise<DetectionResult> {
   let detected = 0;
   let resolved = 0;
-
-  const endpoints = await prisma.endpoint.findMany({
-    where: { isActive: true },
-    include: {
-      healthChecks: {
-        orderBy: { timestamp: "desc" },
-        take: 1,
-      },
-    },
-  });
 
   // Get max block height across all endpoints
   const maxBlockHeight = endpoints.reduce((max, ep) => {
@@ -353,12 +322,33 @@ async function detectMassUnbonding(): Promise<DetectionResult> {
 export async function detectAnomalies(): Promise<{ detected: number; resolved: number; duration: number }> {
   const start = Date.now();
 
+  // Pre-fetch shared data to avoid duplicate DB queries
+  const [validators, endpoints] = await Promise.all([
+    prisma.validator.findMany({
+      include: {
+        snapshots: {
+          orderBy: { timestamp: "desc" as const },
+          take: 2,
+        },
+      },
+    }),
+    prisma.endpoint.findMany({
+      where: { isActive: true },
+      include: {
+        healthChecks: {
+          orderBy: { timestamp: "desc" as const },
+          take: ANOMALY_THRESHOLDS.ENDPOINT_DOWN_CONSECUTIVE,
+        },
+      },
+    }),
+  ]);
+
   const results = await Promise.all([
-    detectJailing(),
-    detectLargeStakeChange(),
-    detectCommissionSpike(),
-    detectEndpointDown(),
-    detectBlockStale(),
+    detectJailing(validators),
+    detectLargeStakeChange(validators),
+    detectCommissionSpike(validators),
+    detectEndpointDown(endpoints),
+    detectBlockStale(endpoints),
     detectMassUnbonding(),
   ]);
 

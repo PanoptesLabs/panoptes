@@ -44,20 +44,20 @@ describe("detectJailing", () => {
   });
 
   it("creates anomaly when validator becomes jailed", async () => {
-    mockPrisma.validator.findMany.mockResolvedValue([
+    const validators = [
       {
         id: "val1",
         moniker: "TestVal",
         tokens: "1000000",
         jailed: true,
         snapshots: [
-          { jailed: true, timestamp: now },
-          { jailed: false, timestamp: new Date(Date.now() - 60000) },
+          { jailed: true, tokens: "1000000", commission: 0.05, timestamp: now },
+          { jailed: false, tokens: "1000000", commission: 0.05, timestamp: new Date(Date.now() - 60000) },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectJailing();
+    const result = await detectJailing(validators as never);
     expect(result.detected).toBe(1);
     expect(mockPrisma.anomaly.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -73,20 +73,20 @@ describe("detectJailing", () => {
 
   it("skips duplicate anomaly for already jailed validator", async () => {
     mockPrisma.anomaly.findFirst.mockResolvedValue({ id: "existing" });
-    mockPrisma.validator.findMany.mockResolvedValue([
+    const validators = [
       {
         id: "val1",
         moniker: "TestVal",
         tokens: "1000000",
         jailed: true,
         snapshots: [
-          { jailed: true, timestamp: now },
-          { jailed: false, timestamp: new Date(Date.now() - 60000) },
+          { jailed: true, tokens: "1000000", commission: 0.05, timestamp: now },
+          { jailed: false, tokens: "1000000", commission: 0.05, timestamp: new Date(Date.now() - 60000) },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectJailing();
+    const result = await detectJailing(validators as never);
     expect(result.detected).toBe(0);
     expect(mockPrisma.anomaly.create).not.toHaveBeenCalled();
   });
@@ -101,18 +101,20 @@ describe("detectLargeStakeChange", () => {
   });
 
   it("detects >10% stake change as high severity", async () => {
-    mockPrisma.validator.findMany.mockResolvedValue([
+    const validators = [
       {
         id: "val1",
         moniker: "TestVal",
+        tokens: "1200000",
+        jailed: false,
         snapshots: [
-          { tokens: "1200000", timestamp: now },
-          { tokens: "1000000", timestamp: new Date(Date.now() - 60000) },
+          { tokens: "1200000", commission: 0.05, jailed: false, timestamp: now },
+          { tokens: "1000000", commission: 0.05, jailed: false, timestamp: new Date(Date.now() - 60000) },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectLargeStakeChange();
+    const result = await detectLargeStakeChange(validators as never);
     expect(result.detected).toBe(1);
     expect(mockPrisma.anomaly.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -122,18 +124,20 @@ describe("detectLargeStakeChange", () => {
   });
 
   it("detects >30% stake change as critical severity", async () => {
-    mockPrisma.validator.findMany.mockResolvedValue([
+    const validators = [
       {
         id: "val1",
         moniker: "TestVal",
+        tokens: "500000",
+        jailed: false,
         snapshots: [
-          { tokens: "500000", timestamp: now },
-          { tokens: "1000000", timestamp: new Date(Date.now() - 60000) },
+          { tokens: "500000", commission: 0.05, jailed: false, timestamp: now },
+          { tokens: "1000000", commission: 0.05, jailed: false, timestamp: new Date(Date.now() - 60000) },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectLargeStakeChange();
+    const result = await detectLargeStakeChange(validators as never);
     expect(result.detected).toBe(1);
     expect(mockPrisma.anomaly.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -143,18 +147,20 @@ describe("detectLargeStakeChange", () => {
   });
 
   it("ignores <10% stake change", async () => {
-    mockPrisma.validator.findMany.mockResolvedValue([
+    const validators = [
       {
         id: "val1",
         moniker: "TestVal",
+        tokens: "1050000",
+        jailed: false,
         snapshots: [
-          { tokens: "1050000", timestamp: now },
-          { tokens: "1000000", timestamp: new Date(Date.now() - 60000) },
+          { tokens: "1050000", commission: 0.05, jailed: false, timestamp: now },
+          { tokens: "1000000", commission: 0.05, jailed: false, timestamp: new Date(Date.now() - 60000) },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectLargeStakeChange();
+    const result = await detectLargeStakeChange(validators as never);
     expect(result.detected).toBe(0);
   });
 });
@@ -168,18 +174,20 @@ describe("detectCommissionSpike", () => {
   });
 
   it("detects >5% commission change as medium severity", async () => {
-    mockPrisma.validator.findMany.mockResolvedValue([
+    const validators = [
       {
         id: "val1",
         moniker: "TestVal",
+        tokens: "1000000",
+        jailed: false,
         snapshots: [
-          { commission: 0.15, timestamp: now },
-          { commission: 0.05, timestamp: new Date(Date.now() - 60000) },
+          { commission: 0.15, tokens: "1000000", jailed: false, timestamp: now },
+          { commission: 0.05, tokens: "1000000", jailed: false, timestamp: new Date(Date.now() - 60000) },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectCommissionSpike();
+    const result = await detectCommissionSpike(validators as never);
     expect(result.detected).toBe(1);
     expect(mockPrisma.anomaly.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -198,7 +206,7 @@ describe("detectEndpointDown", () => {
   });
 
   it("detects 3+ consecutive failures", async () => {
-    mockPrisma.endpoint.findMany.mockResolvedValue([
+    const endpoints = [
       {
         id: "ep1",
         url: "https://rpc.test.io",
@@ -206,19 +214,19 @@ describe("detectEndpointDown", () => {
         isOfficial: false,
         isActive: true,
         healthChecks: [
-          { isHealthy: false, timestamp: now },
-          { isHealthy: false, timestamp: now },
-          { isHealthy: false, timestamp: now },
+          { isHealthy: false, blockHeight: null, timestamp: now },
+          { isHealthy: false, blockHeight: null, timestamp: now },
+          { isHealthy: false, blockHeight: null, timestamp: now },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectEndpointDown();
+    const result = await detectEndpointDown(endpoints as never);
     expect(result.detected).toBe(1);
   });
 
   it("sets critical severity for official endpoints", async () => {
-    mockPrisma.endpoint.findMany.mockResolvedValue([
+    const endpoints = [
       {
         id: "ep1",
         url: "https://rpc.republicai.io",
@@ -226,14 +234,14 @@ describe("detectEndpointDown", () => {
         isOfficial: true,
         isActive: true,
         healthChecks: [
-          { isHealthy: false, timestamp: now },
-          { isHealthy: false, timestamp: now },
-          { isHealthy: false, timestamp: now },
+          { isHealthy: false, blockHeight: null, timestamp: now },
+          { isHealthy: false, blockHeight: null, timestamp: now },
+          { isHealthy: false, blockHeight: null, timestamp: now },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectEndpointDown();
+    const result = await detectEndpointDown(endpoints as never);
     expect(result.detected).toBe(1);
     expect(mockPrisma.anomaly.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -244,7 +252,7 @@ describe("detectEndpointDown", () => {
 
   it("resolves anomaly when endpoint recovers", async () => {
     mockPrisma.anomaly.updateMany.mockResolvedValue({ count: 1 });
-    mockPrisma.endpoint.findMany.mockResolvedValue([
+    const endpoints = [
       {
         id: "ep1",
         url: "https://rpc.test.io",
@@ -252,14 +260,14 @@ describe("detectEndpointDown", () => {
         isOfficial: false,
         isActive: true,
         healthChecks: [
-          { isHealthy: true, timestamp: now },
-          { isHealthy: false, timestamp: now },
-          { isHealthy: false, timestamp: now },
+          { isHealthy: true, blockHeight: null, timestamp: now },
+          { isHealthy: false, blockHeight: null, timestamp: now },
+          { isHealthy: false, blockHeight: null, timestamp: now },
         ],
       },
-    ]);
+    ];
 
-    const result = await detectEndpointDown();
+    const result = await detectEndpointDown(endpoints as never);
     expect(result.detected).toBe(0);
     expect(result.resolved).toBe(1);
   });
@@ -274,22 +282,26 @@ describe("detectBlockStale", () => {
   });
 
   it("detects endpoint 10+ blocks behind", async () => {
-    mockPrisma.endpoint.findMany.mockResolvedValue([
+    const endpoints = [
       {
         id: "ep1",
         isActive: true,
+        isOfficial: false,
         url: "https://rpc.test.io",
-        healthChecks: [{ blockHeight: BigInt(1000), timestamp: now }],
+        type: "rpc",
+        healthChecks: [{ blockHeight: BigInt(1000), isHealthy: true, timestamp: now }],
       },
       {
         id: "ep2",
         isActive: true,
+        isOfficial: false,
         url: "https://rpc2.test.io",
-        healthChecks: [{ blockHeight: BigInt(985), timestamp: now }],
+        type: "rpc",
+        healthChecks: [{ blockHeight: BigInt(985), isHealthy: true, timestamp: now }],
       },
-    ]);
+    ];
 
-    const result = await detectBlockStale();
+    const result = await detectBlockStale(endpoints as never);
     expect(result.detected).toBe(1);
     expect(mockPrisma.anomaly.create).toHaveBeenCalledWith(
       expect.objectContaining({

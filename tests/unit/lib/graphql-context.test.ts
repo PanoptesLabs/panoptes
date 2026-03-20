@@ -15,8 +15,9 @@ beforeEach(() => {
 describe("createContext", () => {
   it("returns workspace context when authenticated", async () => {
     const mockWorkspace = { id: "ws-1", name: "Test", slug: "test" };
+    const mockUser = { id: "u-1", address: "rai1..." };
     vi.mocked(resolveAuth).mockResolvedValue({
-      user: { id: "u-1", address: "rai1..." },
+      user: mockUser,
       workspace: mockWorkspace,
       role: "admin",
     });
@@ -25,6 +26,8 @@ describe("createContext", () => {
 
     const ctx = await createContext(req);
     expect(ctx.workspace).toEqual(mockWorkspace);
+    expect(ctx.user).toEqual(mockUser);
+    expect(ctx.role).toBe("admin");
   });
 
   it("returns null workspace when no auth", async () => {
@@ -33,6 +36,8 @@ describe("createContext", () => {
     const req = new NextRequest("http://localhost/api/graphql");
     const ctx = await createContext(req);
     expect(ctx.workspace).toBeNull();
+    expect(ctx.user).toBeNull();
+    expect(ctx.role).toBe("anonymous");
   });
 
   it("returns null workspace for anonymous user", async () => {
@@ -42,6 +47,8 @@ describe("createContext", () => {
 
     const ctx = await createContext(req);
     expect(ctx.workspace).toBeNull();
+    expect(ctx.user).toBeNull();
+    expect(ctx.role).toBe("anonymous");
   });
 
   it("calls resolveAuth with the request", async () => {
@@ -56,8 +63,9 @@ describe("createContext", () => {
 
   it("passes through workspace context properties", async () => {
     const workspace = { id: "ws-abc", name: "Production", slug: "production" };
+    const user = { id: "u-1", address: "rai1..." };
     vi.mocked(resolveAuth).mockResolvedValue({
-      user: { id: "u-1", address: "rai1..." },
+      user,
       workspace,
       role: "admin",
     });
@@ -68,5 +76,8 @@ describe("createContext", () => {
     expect(ctx.workspace?.id).toBe("ws-abc");
     expect(ctx.workspace?.name).toBe("Production");
     expect(ctx.workspace?.slug).toBe("production");
+    expect(ctx.user?.id).toBe("u-1");
+    expect(ctx.user?.address).toBe("rai1...");
+    expect(ctx.role).toBe("admin");
   });
 });

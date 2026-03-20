@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
   response.cookies.set(AUTH_DEFAULTS.COOKIE_NAME, newTokenRaw, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     maxAge: AUTH_DEFAULTS.SESSION_DURATION_DAYS * 24 * 60 * 60,
     path: "/",
   });

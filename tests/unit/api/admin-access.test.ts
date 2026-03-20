@@ -122,6 +122,19 @@ describe("GET /api/admin/access", () => {
 
     expect(res.status).toBe(403);
   });
+
+  it("returns 500 when database throws", async () => {
+    authSuccess();
+    vi.mocked(prisma.workspaceMember.findMany).mockRejectedValue(new Error("DB connection lost"));
+
+    const { GET } = await import("@/app/api/admin/access/route");
+    const req = new NextRequest("http://localhost/api/admin/access");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBe("Internal server error");
+  });
 });
 
 describe("POST /api/admin/access/members/:id/role", () => {

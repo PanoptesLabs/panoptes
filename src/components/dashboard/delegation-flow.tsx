@@ -9,9 +9,9 @@ import { helpContent } from "@/lib/help-content";
 import { formatAmountShort, truncateAddress } from "@/lib/formatters";
 
 export function DelegationFlow() {
-  const { data, error, isLoading } = useDelegationFlow(7);
+  const { data, error, isLoading, mutate } = useDelegationFlow(7);
 
-  if (error) return <ErrorState message="Failed to load delegation flow" />;
+  if (error) return <ErrorState message="Failed to load delegation flow" onRetry={() => mutate()} />;
 
   if (isLoading || !data) {
     return (
@@ -43,7 +43,7 @@ export function DelegationFlow() {
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
-          <div className="grid grid-cols-4 gap-4 px-3 pb-2 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
+          <div className="grid grid-cols-2 gap-4 px-3 pb-2 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30 md:grid-cols-4">
             <span>Validator</span>
             <span className="text-right">Delegators</span>
             <span className="text-right">Total Delegated</span>
@@ -53,7 +53,7 @@ export function DelegationFlow() {
             </span>
           </div>
           {flow.map((v) => (
-            <div key={v.validatorId} className="grid grid-cols-4 gap-4 rounded bg-slate-dark/20 px-3 py-2 text-xs">
+            <div key={v.validatorId} className="grid grid-cols-2 gap-4 rounded bg-slate-dark/20 px-3 py-2 text-xs md:grid-cols-4">
               <span className="font-mono text-dusty-lavender truncate" title={v.validatorId}>{truncateAddress(v.validatorId, 8, 6)}</span>
               <span className="text-right text-mist">{v.latestDelegators}</span>
               <span className="text-right font-mono text-mist">
