@@ -80,8 +80,19 @@ import type { GraphQLContext } from "@/lib/graphql/context";
 
 const mockWorkspaceCtx: GraphQLContext = {
   workspace: { id: "ws-1", name: "Test", slug: "test" },
+  user: { id: "user-1", address: "rai1test" },
+  role: "admin",
 };
-const noAuthCtx: GraphQLContext = { workspace: null };
+const noAuthCtx: GraphQLContext = {
+  workspace: null,
+  user: null,
+  role: "anonymous",
+};
+const viewerCtx: GraphQLContext = {
+  workspace: { id: "ws-1", name: "Test", slug: "test" },
+  user: { id: "user-2", address: "rai1viewer" },
+  role: "viewer",
+};
 
 const now = new Date("2026-01-15T12:00:00Z");
 
@@ -369,6 +380,25 @@ describe("createSlo mutation", () => {
     ).rejects.toThrow("Unauthorized");
   });
 
+  it("rejects viewer role", async () => {
+    await expect(
+      sloResolvers.Mutation.createSlo(
+        {},
+        {
+          input: {
+            name: "Test",
+            indicator: "uptime",
+            entityType: "endpoint",
+            entityId: "ep-1",
+            target: 0.99,
+            windowDays: 7,
+          },
+        },
+        viewerCtx,
+      ),
+    ).rejects.toThrow("Insufficient permissions");
+  });
+
   it("rejects invalid indicator", async () => {
     await expect(
       sloResolvers.Mutation.createSlo(
@@ -537,6 +567,12 @@ describe("deleteSlo mutation", () => {
     ).rejects.toThrow("Unauthorized");
   });
 
+  it("rejects viewer role", async () => {
+    await expect(
+      sloResolvers.Mutation.deleteSlo({}, { id: "slo-1" }, viewerCtx),
+    ).rejects.toThrow("Insufficient permissions");
+  });
+
   it("deletes existing SLO", async () => {
     vi.mocked(prisma.slo.findFirst).mockResolvedValue({
       id: "slo-1", workspaceId: "ws-1",
@@ -636,6 +672,16 @@ describe("createWebhook mutation", () => {
     ).rejects.toThrow("Unauthorized");
   });
 
+  it("rejects viewer role", async () => {
+    await expect(
+      webhookResolvers.Mutation.createWebhook(
+        {},
+        { input: { name: "Test", url: "https://example.com", events: ["anomaly.created"] } },
+        viewerCtx,
+      ),
+    ).rejects.toThrow("Insufficient permissions");
+  });
+
   it("creates webhook for authenticated workspace", async () => {
     vi.mocked(prisma.webhook.count).mockResolvedValue(0);
     vi.mocked(prisma.webhook.create).mockResolvedValue({
@@ -663,6 +709,12 @@ describe("deleteWebhook mutation", () => {
     await expect(
       webhookResolvers.Mutation.deleteWebhook({}, { id: "wh-1" }, noAuthCtx),
     ).rejects.toThrow("Unauthorized");
+  });
+
+  it("rejects viewer role", async () => {
+    await expect(
+      webhookResolvers.Mutation.deleteWebhook({}, { id: "wh-1" }, viewerCtx),
+    ).rejects.toThrow("Insufficient permissions");
   });
 
   it("deletes existing webhook", async () => {

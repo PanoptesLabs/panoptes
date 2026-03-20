@@ -81,6 +81,11 @@ export function DataTable<T extends Record<string, any>>({
                     col.className
                   )}
                   onClick={() => col.sortable && handleSort(col.key)}
+                  aria-sort={
+                    col.sortable && sort === col.key
+                      ? order === "asc" ? "ascending" : "descending"
+                      : col.sortable ? "none" : undefined
+                  }
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.header}

@@ -123,12 +123,14 @@ export function PolicyList() {
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               placeholder="Policy name"
+              aria-label="Policy name"
               className="h-9 w-full rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:border-soft-violet/50"
             />
             <input
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Description (optional)"
+              aria-label="Policy description"
               className="h-9 w-full rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:border-soft-violet/50"
             />
             <div className="flex gap-2">
@@ -136,6 +138,7 @@ export function PolicyList() {
                 <select
                   value={formField}
                   onChange={(e) => setFormField(e.target.value)}
+                  aria-label="Condition field"
                   className="h-9 flex-1 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist outline-none"
                 >
                   {CONDITION_FIELD_OPTIONS.map((f) => (
@@ -154,6 +157,7 @@ export function PolicyList() {
                 <select
                   value={formOperator}
                   onChange={(e) => setFormOperator(e.target.value)}
+                  aria-label="Condition operator"
                   className="h-9 w-20 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist outline-none"
                 >
                   {["eq", "neq", "gt", "gte", "lt", "lte", "in"].map((op) => (
@@ -172,6 +176,7 @@ export function PolicyList() {
                 value={formValue}
                 onChange={(e) => setFormValue(e.target.value)}
                 placeholder="Value"
+                aria-label="Condition value"
                 className="h-9 w-32 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist outline-none"
               />
             </div>
@@ -180,6 +185,7 @@ export function PolicyList() {
               <select
                 value={formActionType}
                 onChange={(e) => setFormActionType(e.target.value)}
+                aria-label="Action type"
                 className="h-9 flex-1 rounded-lg border border-slate-DEFAULT/20 bg-slate-dark/50 px-2 text-xs text-mist outline-none"
               >
                 {ACTION_TYPE_OPTIONS.map((a) => (

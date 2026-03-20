@@ -132,6 +132,19 @@ describe("GET /api/admin/operations", () => {
 
     expect(res.status).toBe(403);
   });
+
+  it("returns 500 when database throws", async () => {
+    authSuccess();
+    vi.mocked(prisma.webhook.findMany).mockRejectedValue(new Error("DB connection lost"));
+
+    const { GET } = await import("@/app/api/admin/operations/route");
+    const req = new NextRequest("http://localhost/api/admin/operations");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBe("Internal server error");
+  });
 });
 
 describe("POST /api/admin/operations/webhooks/:id/disable", () => {

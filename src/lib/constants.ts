@@ -330,3 +330,29 @@ export const ROLE_HIERARCHY: Record<string, number> = {
   editor: 3,
   admin: 4,
 };
+
+export const SEVERITY_COLORS: Record<string, string> = {
+  critical: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
+  high: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
+  medium: "bg-orange-900/50 text-orange-300 border-orange-500/30",
+  low: "bg-slate-dark/50 text-slate-light border-slate-DEFAULT/30",
+};
+
+export const STATUS_COLORS: Record<string, string> = {
+  open: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
+  acknowledged: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
+  resolved: "bg-teal-dark/50 text-teal-light border-teal-DEFAULT/30",
+};
+
+export const SEVERITY_BADGE_COLORS: Record<string, string> = {
+  critical: "bg-rose-DEFAULT/15 text-rose-DEFAULT",
+  high: "bg-amber-DEFAULT/15 text-amber-DEFAULT",
+  medium: "bg-soft-violet/15 text-soft-violet",
+  low: "bg-dusty-lavender/15 text-dusty-lavender/70",
+};
+
+export const STATUS_BADGE_COLORS: Record<string, string> = {
+  open: "bg-rose-DEFAULT/15 text-rose-DEFAULT",
+  acknowledged: "bg-amber-DEFAULT/15 text-amber-DEFAULT",
+  resolved: "bg-teal-DEFAULT/15 text-teal-DEFAULT",
+};

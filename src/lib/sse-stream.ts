@@ -37,7 +37,10 @@ export function createSSEStream(
 
         let heartbeatCounter = 0;
 
-        while (!aborted) {
+        const MAX_DURATION_MS = 300_000; // 5 minutes
+        const deadline = Date.now() + MAX_DURATION_MS;
+
+        while (!aborted && Date.now() < deadline) {
           try {
             const events = await prisma.outboxEvent.findMany({
               where: { seq: { gt: currentSeq }, ...baseFilter },

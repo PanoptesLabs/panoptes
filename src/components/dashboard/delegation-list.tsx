@@ -20,10 +20,10 @@ const TYPE_CONFIG = {
 export function DelegationList() {
   const [offset, setOffset] = useState(0);
   const limit = 20;
-  const { data: eventsData, error: eventsError, isLoading: eventsLoading } = useDelegationEvents({ limit, offset });
-  const { data: whalesData, error: whalesError, isLoading: whalesLoading } = useWhaleMovements();
+  const { data: eventsData, error: eventsError, isLoading: eventsLoading, mutate: mutateEvents } = useDelegationEvents({ limit, offset });
+  const { data: whalesData, error: whalesError, isLoading: whalesLoading, mutate: mutateWhales } = useWhaleMovements();
 
-  if (eventsError || whalesError) return <ErrorState message="Failed to load delegation data" />;
+  if (eventsError || whalesError) return <ErrorState message="Failed to load delegation data" onRetry={() => { mutateEvents(); mutateWhales(); }} />;
 
   if (eventsLoading || whalesLoading) {
     return (
@@ -99,11 +99,11 @@ export function DelegationList() {
                             />
                           )}
                         </span>
-                        <span className="font-mono text-dusty-lavender/50 truncate max-w-[120px]">
+                        <span className="font-mono text-dusty-lavender/50 truncate max-w-[80px] sm:max-w-[120px]">
                           {e.delegator}
                         </span>
                         <span className="text-dusty-lavender/30">→</span>
-                        <span className="font-mono text-dusty-lavender/50 truncate max-w-[120px]">
+                        <span className="font-mono text-dusty-lavender/50 truncate max-w-[80px] sm:max-w-[120px]">
                           {e.validatorTo}
                         </span>
                       </div>

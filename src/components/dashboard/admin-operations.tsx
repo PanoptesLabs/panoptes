@@ -13,20 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { timeAgo } from "@/lib/time";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SEVERITY_BADGE_COLORS, STATUS_BADGE_COLORS } from "@/lib/constants";
 import { Settings, ScrollText, Siren, Ban } from "lucide-react";
-
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: "bg-rose-DEFAULT/15 text-rose-DEFAULT",
-  high: "bg-amber-DEFAULT/15 text-amber-DEFAULT",
-  medium: "bg-soft-violet/15 text-soft-violet",
-  low: "bg-dusty-lavender/15 text-dusty-lavender/70",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  open: "bg-rose-DEFAULT/15 text-rose-DEFAULT",
-  acknowledged: "bg-amber-DEFAULT/15 text-amber-DEFAULT",
-  resolved: "bg-teal-DEFAULT/15 text-teal-DEFAULT",
-};
 
 interface PendingAction {
   type: "disable-webhook" | "disable-policy";
@@ -243,13 +231,13 @@ export function AdminOperations() {
                       <p className="text-xs font-medium text-mist">{incident.title}</p>
                       <span className={cn(
                         "rounded px-1.5 py-0.5 text-[10px] font-medium",
-                        SEVERITY_COLORS[incident.severity] ?? SEVERITY_COLORS.low,
+                        SEVERITY_BADGE_COLORS[incident.severity] ?? SEVERITY_BADGE_COLORS.low,
                       )}>
                         {incident.severity}
                       </span>
                       <span className={cn(
                         "rounded px-1.5 py-0.5 text-[10px] font-medium",
-                        STATUS_COLORS[incident.status] ?? STATUS_COLORS.open,
+                        STATUS_BADGE_COLORS[incident.status] ?? STATUS_BADGE_COLORS.open,
                       )}>
                         {incident.status}
                       </span>

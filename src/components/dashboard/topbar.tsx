@@ -78,6 +78,7 @@ export function Topbar() {
               onClick={logout}
               className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-dusty-lavender/50 transition-colors hover:bg-deep-iris/20 hover:text-dusty-lavender/70"
               title="Disconnect wallet"
+              aria-label="Sign out"
             >
               <LogOut className="size-3" />
             </button>

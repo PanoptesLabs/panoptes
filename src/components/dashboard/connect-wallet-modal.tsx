@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useCallback } from "react";
 import { Wallet, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,10 +21,58 @@ export function ConnectWalletModal({
   isKeplrInstalled,
   error,
 }: ConnectWalletModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  const getFocusableElements = useCallback(() => {
+    if (!dialogRef.current) return [];
+    return Array.from(
+      dialogRef.current.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+      )
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const focusable = getFocusableElements();
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusable = getFocusableElements();
+    focusable[0]?.focus();
+
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose, getFocusableElements]);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="connect-wallet-title">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -31,8 +80,8 @@ export function ConnectWalletModal({
       />
 
       {/* Modal */}
-      <div className="relative mx-4 w-full max-w-sm rounded-xl border border-slate-DEFAULT/20 bg-midnight-plum p-6 shadow-2xl">
-        <h2 className="text-lg font-semibold text-mist">Connect Wallet</h2>
+      <div ref={dialogRef} className="relative mx-4 w-full max-w-sm rounded-xl border border-slate-DEFAULT/20 bg-midnight-plum p-6 shadow-2xl">
+        <h2 id="connect-wallet-title" className="text-lg font-semibold text-mist">Connect Wallet</h2>
         <p className="mt-1 text-sm text-dusty-lavender/70">
           Sign in with your Keplr wallet to perform actions.
         </p>

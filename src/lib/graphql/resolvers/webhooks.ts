@@ -45,6 +45,12 @@ export const webhookResolvers = {
         });
       }
 
+      if (context.role === "viewer" || context.role === "anonymous") {
+        throw new GraphQLError("Insufficient permissions", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
       const validated = validateWebhookCreate(args.input);
       if ("error" in validated) {
         throw new GraphQLError(validated.error, {
@@ -98,6 +104,12 @@ export const webhookResolvers = {
       if (!context.workspace) {
         throw new GraphQLError("Unauthorized", {
           extensions: { code: "UNAUTHORIZED" },
+        });
+      }
+
+      if (context.role === "viewer" || context.role === "anonymous") {
+        throw new GraphQLError("Insufficient permissions", {
+          extensions: { code: "FORBIDDEN" },
         });
       }
 

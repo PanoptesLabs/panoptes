@@ -20,9 +20,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 export function GovernanceList() {
   const [offset, setOffset] = useState(0);
   const limit = 20;
-  const { data, error, isLoading } = useGovernanceProposals({ limit, offset });
+  const { data, error, isLoading, mutate } = useGovernanceProposals({ limit, offset });
 
-  if (error) return <ErrorState message="Failed to load governance data" />;
+  if (error) return <ErrorState message="Failed to load governance data" onRetry={() => mutate()} />;
 
   if (isLoading) {
     return (

@@ -119,4 +119,17 @@ describe("GET /api/admin/overview", () => {
 
     expect(res.status).toBe(403);
   });
+
+  it("returns 500 when database throws", async () => {
+    authSuccess();
+    vi.mocked(prisma.workspaceMember.count).mockRejectedValue(new Error("DB connection lost"));
+
+    const { GET } = await import("@/app/api/admin/overview/route");
+    const req = new NextRequest("http://localhost/api/admin/overview");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBe("Internal server error");
+  });
 });
