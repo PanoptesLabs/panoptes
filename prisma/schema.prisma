@@ -151,6 +151,7 @@ model Workspace {
   policies       Policy[]
   apiKeys        ApiKey[]
   members        WorkspaceMember[]
+  auditLogs      AuditLog[]
 
   @@index([slug])
 }
@@ -162,8 +163,29 @@ model User {
   updatedAt DateTime          @updatedAt
   sessions  UserSession[]
   members   WorkspaceMember[]
+  auditLogs AuditLog[]
 
   @@index([address])
+}
+
+model AuditLog {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  actorUserId  String?
+  actorAddress String
+  action       String
+  resourceType String
+  resourceId   String?
+  metadata     String?
+  createdAt    DateTime  @default(now())
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor        User?     @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
 }
 
 model UserSession {

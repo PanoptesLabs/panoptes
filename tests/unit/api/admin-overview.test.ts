@@ -1,0 +1,123 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest, NextResponse } from "next/server";
+
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    user: { count: vi.fn() },
+    userSession: { count: vi.fn() },
+    workspaceMember: { groupBy: vi.fn() },
+    webhook: { count: vi.fn() },
+    slo: { count: vi.fn() },
+    incident: { count: vi.fn() },
+    policy: { count: vi.fn() },
+    apiKey: { count: vi.fn() },
+    webhookDelivery: { groupBy: vi.fn() },
+    auditLog: { findMany: vi.fn() },
+  },
+}));
+
+vi.mock("@/lib/api-helpers", () => ({
+  withRateLimit: vi.fn(() => ({ headers: { "X-RateLimit-Limit": "120" } })),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  resolveAuth: vi.fn(),
+  requireRole: vi.fn(),
+  rateLimitForRole: vi.fn(() => 120),
+}));
+
+import { prisma } from "@/lib/db";
+import { resolveAuth, requireRole } from "@/lib/auth";
+
+const mockWorkspace = { id: "ws-1", name: "Test", slug: "test" };
+
+function authSuccess(role = "admin") {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: { id: "user-1", address: "rai1admin" },
+    workspace: mockWorkspace,
+    role: role as "admin" | "editor" | "member" | "viewer" | "anonymous",
+  });
+  vi.mocked(requireRole).mockReturnValue(null);
+}
+
+function authAnonymous() {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: null,
+    workspace: mockWorkspace,
+    role: "anonymous",
+  });
+  vi.mocked(requireRole).mockReturnValue(
+    NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+  );
+}
+
+function authNonAdmin(role: string) {
+  vi.mocked(resolveAuth).mockResolvedValue({
+    user: { id: "user-2", address: "rai1viewer" },
+    workspace: mockWorkspace,
+    role: role as "viewer" | "member" | "editor",
+  });
+  vi.mocked(requireRole).mockReturnValue(
+    NextResponse.json({ error: "Insufficient permissions" }, { status: 403 }),
+  );
+}
+
+describe("GET /api/admin/overview", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns overview stats for admin", async () => {
+    authSuccess();
+    vi.mocked(prisma.user.count).mockResolvedValue(5);
+    vi.mocked(prisma.userSession.count).mockResolvedValue(3);
+    vi.mocked(prisma.workspaceMember.groupBy).mockResolvedValue([
+      { role: "admin", _count: 1 },
+      { role: "viewer", _count: 4 },
+    ] as never);
+    vi.mocked(prisma.webhook.count).mockResolvedValue(2);
+    vi.mocked(prisma.slo.count).mockResolvedValue(5);
+    vi.mocked(prisma.incident.count).mockResolvedValue(1);
+    vi.mocked(prisma.policy.count).mockResolvedValue(3);
+    vi.mocked(prisma.apiKey.count).mockResolvedValue(4);
+    vi.mocked(prisma.webhookDelivery.groupBy).mockResolvedValue([
+      { success: true, _count: 45 },
+      { success: false, _count: 2 },
+    ] as never);
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([]);
+
+    const { GET } = await import("@/app/api/admin/overview/route");
+    const req = new NextRequest("http://localhost/api/admin/overview");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.users.total).toBe(5);
+    expect(body.sessions.active).toBe(3);
+    expect(body.members.admin).toBe(1);
+    expect(body.members.viewer).toBe(4);
+    expect(body.resources.webhooks).toBe(2);
+    expect(body.deliveries24h.success).toBe(45);
+    expect(body.deliveries24h.failed).toBe(2);
+  });
+
+  it("returns 401 for anonymous", async () => {
+    authAnonymous();
+
+    const { GET } = await import("@/app/api/admin/overview/route");
+    const req = new NextRequest("http://localhost/api/admin/overview");
+    const res = await GET(req);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 for non-admin roles", async () => {
+    authNonAdmin("viewer");
+
+    const { GET } = await import("@/app/api/admin/overview/route");
+    const req = new NextRequest("http://localhost/api/admin/overview");
+    const res = await GET(req);
+
+    expect(res.status).toBe(403);
+  });
+});

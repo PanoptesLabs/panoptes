@@ -20,8 +20,10 @@ const ROUTE_LABELS: Record<string, string> = {
   webhooks: "Webhooks",
   policies: "Policies",
   "api-keys": "API Keys",
-  workspace: "Workspace",
   leaderboard: "Leaderboard",
+  admin: "Admin",
+  access: "Access",
+  operations: "Operations",
 };
 
 function formatSegment(segment: string): string {
