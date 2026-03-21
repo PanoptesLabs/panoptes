@@ -2,9 +2,33 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { STREAM_DEFAULTS } from "@/lib/constants";
 import { logger } from "@/lib/logger";
+import { getClientIp } from "@/lib/api-helpers";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Per-IP concurrent stream tracking for DoS protection */
+const activeStreams = new Map<string, number>();
+const MAX_CONCURRENT_STREAMS = 5;
+
+/**
+ * Check if IP can open a new stream. Returns false if limit reached.
+ */
+export function acquireStream(ip: string): boolean {
+  const current = activeStreams.get(ip) ?? 0;
+  if (current >= MAX_CONCURRENT_STREAMS) return false;
+  activeStreams.set(ip, current + 1);
+  return true;
+}
+
+function releaseStream(ip: string): void {
+  const current = activeStreams.get(ip) ?? 0;
+  if (current <= 1) {
+    activeStreams.delete(ip);
+  } else {
+    activeStreams.set(ip, current - 1);
+  }
 }
 
 /**
@@ -17,21 +41,41 @@ export function createSSEStream(
   initialSeq: number,
 ): ReadableStream {
   const encoder = new TextEncoder();
+  const ip = getClientIp(request);
 
   return new ReadableStream({
     start(controller) {
       let currentSeq = initialSeq;
-      let aborted = false;
+      let aborted = request.signal.aborted;
+      let released = false;
+
+      const safeRelease = () => {
+        if (released) return;
+        released = true;
+        releaseStream(ip);
+      };
 
       request.signal.addEventListener("abort", () => {
         aborted = true;
+        safeRelease();
       });
+
+      if (aborted) {
+        safeRelease();
+        try {
+          controller.close();
+        } catch {
+          // Already closed
+        }
+        return;
+      }
 
       const run = async () => {
         // Send initial heartbeat so client knows connection is alive
         try {
           controller.enqueue(encoder.encode(": heartbeat\n\n"));
         } catch {
+          safeRelease();
           return;
         }
 
@@ -71,6 +115,7 @@ export function createSSEStream(
           await sleep(STREAM_DEFAULTS.POLL_INTERVAL_MS);
         }
 
+        safeRelease();
         try {
           controller.close();
         } catch {

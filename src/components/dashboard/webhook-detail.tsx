@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useWebhookDetail, useWebhookDeliveries, testWebhook, deleteWebhook } from "@/hooks/use-webhooks";
+import { useAsyncAction } from "@/hooks/use-async-action";
 import { ErrorState } from "./error-state";
 import { DataTable, type Column } from "./data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,12 +77,15 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
     limit: 20,
     offset: deliveryOffset,
   });
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const testAction = useAsyncAction();
+  const deleteAction = useAsyncAction();
   const [testSuccess, setTestSuccess] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteCountdown, setDeleteCountdown] = useState(5);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const actionError = testAction.error || deleteAction.error;
+  const actionLoading = testAction.isLoading ? "test" : deleteAction.isLoading ? "delete" : null;
 
   const clearCountdown = useCallback(() => {
     if (countdownRef.current) {
@@ -105,18 +109,12 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
   }
 
   const handleTest = async () => {
-    setActionLoading("test");
-    setActionError(null);
     setTestSuccess(false);
-    try {
+    await testAction.execute(async () => {
       await testWebhook(webhookId);
       setTestSuccess(true);
       setTimeout(() => setTestSuccess(false), 3000);
-    } catch {
-      setActionError("Test delivery failed. Check the webhook URL.");
-    } finally {
-      setActionLoading(null);
-    }
+    }, "Test delivery failed. Check the webhook URL.");
   };
 
   const handleDelete = async () => {
@@ -136,16 +134,11 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
       }, 1000);
       return;
     }
-    setActionLoading("delete");
-    setActionError(null);
-    try {
+    await deleteAction.execute(async () => {
       await deleteWebhook(webhookId);
       router.push("/dashboard/settings/webhooks");
-    } catch {
-      setActionError("Failed to delete webhook. Please try again.");
-      setActionLoading(null);
-      setConfirmDelete(false);
-    }
+    }, "Failed to delete webhook. Please try again.");
+    if (deleteAction.error) setConfirmDelete(false);
   };
 
   return (

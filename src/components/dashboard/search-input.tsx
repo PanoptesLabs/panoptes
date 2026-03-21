@@ -37,6 +37,7 @@ export function SearchInput({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
+        aria-label={placeholder}
         className="border-slate-DEFAULT/20 bg-midnight-plum pl-9 text-mist placeholder:text-dusty-lavender/30 focus-visible:border-soft-violet/50 focus-visible:ring-soft-violet/20"
       />
     </div>

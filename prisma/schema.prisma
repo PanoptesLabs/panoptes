@@ -135,6 +135,7 @@ model Anomaly {
   @@index([severity])
   @@index([detectedAt])
   @@index([resolved])
+  @@index([type, entityId, resolved])
 }
 
 model Workspace {
@@ -484,6 +485,7 @@ model Forecast {
   @@index([metric])
   @@index([validUntil])
   @@index([createdAt])
+  @@index([entityType, entityId, validUntil])
 }
 
 model ApiKey {

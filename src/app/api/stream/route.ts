@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyStreamToken } from "@/lib/stream-token";
-import { createSSEStream, resolveInitialSeq, SSE_HEADERS } from "@/lib/sse-stream";
+import { createSSEStream, resolveInitialSeq, SSE_HEADERS, acquireStream } from "@/lib/sse-stream";
+import { getClientIp } from "@/lib/api-helpers";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,6 +18,14 @@ export async function GET(request: NextRequest) {
   const result = verifyStreamToken(token);
   if (!result.valid) {
     return NextResponse.json({ error: result.error }, { status: 401 });
+  }
+
+  const ip = getClientIp(request);
+  if (!acquireStream(ip)) {
+    return NextResponse.json(
+      { error: "Too many concurrent streams" },
+      { status: 429 },
+    );
   }
 
   const workspaceId = result.workspaceId;

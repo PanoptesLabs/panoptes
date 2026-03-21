@@ -52,7 +52,7 @@ export function Topbar() {
               <ChevronRight className="size-3.5 text-dusty-lavender/30" />
             )}
             {crumb.isLast ? (
-              <span className="text-mist font-medium">{crumb.label}</span>
+              <span className="text-mist font-medium" aria-current="page">{crumb.label}</span>
             ) : (
               <Link
                 href={crumb.href}

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  const error = requireRole(auth, "anonymous", rl.headers);
+  const error = requireRole(auth, "viewer", rl.headers);
   if (error) return error;
 
   const policies = await prisma.policy.findMany({

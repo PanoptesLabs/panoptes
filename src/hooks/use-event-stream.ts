@@ -50,7 +50,7 @@ export function useEventStream({
     onEventRef.current = onEvent;
     onErrorRef.current = onError;
     revalidateMapRef.current = revalidateMap;
-  });
+  }, [onEvent, onError, revalidateMap]);
 
   useEffect(() => {
     if (!enabled) return;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/api-helpers";
-import { createSSEStream, resolveInitialSeq, SSE_HEADERS } from "@/lib/sse-stream";
+import { createSSEStream, resolveInitialSeq, SSE_HEADERS, acquireStream } from "@/lib/sse-stream";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,6 +11,13 @@ export async function GET(request: NextRequest) {
   const limit = checkRateLimit(ip);
   if (!limit.allowed) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
+  if (!acquireStream(ip)) {
+    return NextResponse.json(
+      { error: "Too many concurrent streams" },
+      { status: 429 },
+    );
   }
 
   const channelsParam = request.nextUrl.searchParams.get("channels");
