@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePolicyDetail, updatePolicy, deletePolicy, testPolicy } from "@/hooks/use-policies";
+import { useAsyncAction } from "@/hooks/use-async-action";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,67 +24,45 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
   const { data, error, isLoading, mutate } = usePolicyDetail(policyId);
   const router = useRouter();
 
-  const [isToggling, setIsToggling] = useState(false);
-  const [isDryRunToggling, setIsDryRunToggling] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const toggle = useAsyncAction();
+  const dryRunToggle = useAsyncAction();
+  const del = useAsyncAction();
+  const test = useAsyncAction<Record<string, unknown>>();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+
+  const actionError = toggle.error || dryRunToggle.error || del.error || test.error;
 
   const handleToggleActive = async () => {
     if (!data) return;
-    setIsToggling(true);
-    setActionError(null);
-    try {
+    await toggle.execute(async () => {
       await updatePolicy(policyId, { isActive: !data.isActive });
       mutate();
-    } catch {
-      setActionError("Failed to toggle policy status.");
-    } finally {
-      setIsToggling(false);
-    }
+    }, "Failed to toggle policy status.");
   };
 
   const handleToggleDryRun = async () => {
     if (!data) return;
-    setIsDryRunToggling(true);
-    setActionError(null);
-    try {
+    await dryRunToggle.execute(async () => {
       await updatePolicy(policyId, { dryRun: !data.dryRun });
       mutate();
-    } catch {
-      setActionError("Failed to toggle dry run mode.");
-    } finally {
-      setIsDryRunToggling(false);
-    }
+    }, "Failed to toggle dry run mode.");
   };
 
   const handleDelete = async () => {
-    setIsDeleting(true);
-    setActionError(null);
-    try {
+    await del.execute(async () => {
       await deletePolicy(policyId);
       router.push("/dashboard/settings/policies");
-    } catch {
-      setActionError("Failed to delete policy.");
-    } finally {
-      setIsDeleting(false);
-    }
+    }, "Failed to delete policy.");
   };
 
   const handleTest = async () => {
-    setIsTesting(true);
     setTestResult(null);
-    setActionError(null);
-    try {
-      const result = await testPolicy(policyId);
-      setTestResult(result);
-    } catch {
-      setActionError("Failed to test policy.");
-    } finally {
-      setIsTesting(false);
-    }
+    const result = await test.execute(
+      () => testPolicy(policyId),
+      "Failed to test policy.",
+    );
+    if (result) setTestResult(result);
   };
 
   if (error) return <ErrorState message="Failed to load policy" />;
@@ -150,10 +129,10 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={isToggling}
+                disabled={toggle.isLoading}
                 className="border-slate-DEFAULT/20"
               >
-                {isToggling ? (
+                {toggle.isLoading ? (
                   <Loader2 className="size-3 animate-spin" />
                 ) : data.isActive ? (
                   <Pause className="size-3" />
@@ -167,10 +146,10 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={isDryRunToggling}
+                disabled={dryRunToggle.isLoading}
                 className="border-slate-DEFAULT/20"
               >
-                {isDryRunToggling ? (
+                {dryRunToggle.isLoading ? (
                   <Loader2 className="size-3 animate-spin" />
                 ) : (
                   <TestTube className="size-3" />
@@ -182,18 +161,18 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={isTesting}
+                disabled={test.isLoading}
                 className="border-slate-DEFAULT/20"
               >
-                {isTesting ? <Loader2 className="size-3 animate-spin" /> : <TestTube className="size-3" />}
+                {test.isLoading ? <Loader2 className="size-3 animate-spin" /> : <TestTube className="size-3" />}
                 Test
               </Button>
             </AuthGate>
             {showDeleteConfirm ? (
               <div className="flex gap-1">
                 <AuthGate requiredRole="editor" onAction={handleDelete}>
-                  <Button size="sm" variant="destructive" disabled={isDeleting}>
-                    {isDeleting ? <Loader2 className="size-3 animate-spin" /> : "Confirm Delete"}
+                  <Button size="sm" variant="destructive" disabled={del.isLoading}>
+                    {del.isLoading ? <Loader2 className="size-3 animate-spin" /> : "Confirm Delete"}
                   </Button>
                 </AuthGate>
                 <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)}>

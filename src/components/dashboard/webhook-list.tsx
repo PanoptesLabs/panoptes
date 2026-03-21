@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { toast } from "sonner";
-import { Webhook, Plus, X, Loader2, Copy, CheckCircle } from "lucide-react";
+import { Webhook, Plus, X, Loader2 } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { AuthGate } from "./auth-gate";
+import { SecretBanner } from "./secret-banner";
 
 const EVENT_OPTIONS = [
   "anomaly.created",
@@ -35,7 +36,6 @@ export function WebhookList() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [eventsError, setEventsError] = useState<string | null>(null);
@@ -116,13 +116,6 @@ export function WebhookList() {
     }
   };
 
-  const handleCopySecret = async () => {
-    if (!createdSecret) return;
-    await navigator.clipboard.writeText(createdSecret);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   if (error && !data) {
     return <ErrorState message="Failed to load webhooks" onRetry={() => mutate()} />;
   }
@@ -131,42 +124,12 @@ export function WebhookList() {
     <div className="space-y-6">
       {/* Secret display */}
       {createdSecret && (
-        <Card className="border-teal-DEFAULT/30 bg-teal-dark/10">
-          <CardContent className="py-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1 text-sm font-medium text-teal-light">
-                  Webhook Secret
-                  <HelpTooltip content={helpContent.webhooks.concepts.secret} side="right" />
-                </p>
-                <p className="mt-1 text-xs text-teal-light/60">
-                  Copy this secret now — it won&apos;t be shown again.
-                </p>
-                <code className="mt-2 block break-all rounded bg-slate-dark/50 px-3 py-2 font-mono text-xs text-mist">
-                  {createdSecret}
-                </code>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopySecret}
-                  className="text-teal-light hover:bg-teal-dark/30"
-                >
-                  {copied ? <CheckCircle className="size-3.5" /> : <Copy className="size-3.5" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCreatedSecret(null)}
-                  className="text-teal-light/50 hover:bg-teal-dark/30"
-                >
-                  <X className="size-3.5" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <SecretBanner
+          title="Webhook Secret"
+          value={createdSecret}
+          helpContent={<HelpTooltip content={helpContent.webhooks.concepts.secret} side="right" />}
+          onDismiss={() => setCreatedSecret(null)}
+        />
       )}
 
       {/* Create button / form */}
@@ -293,7 +256,6 @@ export function WebhookList() {
           icon={<Webhook className="size-5 text-dusty-lavender/40" />}
           title="No webhooks configured"
           description="Create a webhook to receive real-time notifications for events."
-          action={{ label: "Create Webhook", onClick: () => setShowForm(true) }}
         />
       )}
 

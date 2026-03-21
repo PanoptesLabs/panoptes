@@ -17,7 +17,7 @@ vi.mock("@/lib/workspace-auth", () => ({
   hashToken: vi.fn((t: string) => `hashed_${t}`),
 }));
 
-import { resolveAuth, hasRole, requireRole, redactForRole, rateLimitForRole } from "@/lib/auth";
+import { resolveAuth, hasRole, requireRole, redactForRole, rateLimitForRole, _resetWsCache } from "@/lib/auth";
 import type { AuthContext } from "@/lib/auth";
 
 // --- Fixtures ---
@@ -52,6 +52,7 @@ const mockSession = {
 describe("resolveAuth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    _resetWsCache();
   });
 
   it("resolves cookie session to user with workspace member role", async () => {

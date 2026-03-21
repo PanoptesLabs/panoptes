@@ -44,19 +44,31 @@ export function linearRegression(
   return { slope, intercept, r2 };
 }
 
-export async function forecastEndpointLatency(): Promise<ForecastResult[]> {
-  const results: ForecastResult[] = [];
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+interface EndpointWithHealthChecks {
+  id: string;
+  healthChecks: { timestamp: Date; latencyMs: number; isHealthy: boolean }[];
+}
 
-  const endpoints = await prisma.endpoint.findMany({
-    where: { isActive: true },
-    include: {
-      healthChecks: {
-        where: { timestamp: { gte: twentyFourHoursAgo } },
-        orderBy: { timestamp: "asc" },
+export async function forecastEndpointLatency(
+  preloaded?: EndpointWithHealthChecks[],
+): Promise<ForecastResult[]> {
+  const results: ForecastResult[] = [];
+
+  let endpoints: EndpointWithHealthChecks[];
+  if (preloaded) {
+    endpoints = preloaded;
+  } else {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    endpoints = await prisma.endpoint.findMany({
+      where: { isActive: true },
+      include: {
+        healthChecks: {
+          where: { timestamp: { gte: twentyFourHoursAgo } },
+          orderBy: { timestamp: "asc" },
+        },
       },
-    },
-  });
+    });
+  }
 
   for (const ep of endpoints) {
     const healthyChecks = ep.healthChecks.filter((c) => c.isHealthy);
@@ -174,19 +186,30 @@ export async function forecastJailRisk(): Promise<ForecastResult[]> {
   return results;
 }
 
-export async function forecastDowntimeRisk(): Promise<ForecastResult[]> {
+export async function forecastDowntimeRisk(
+  preloaded?: EndpointWithHealthChecks[],
+): Promise<ForecastResult[]> {
   const results: ForecastResult[] = [];
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const endpoints = await prisma.endpoint.findMany({
-    where: { isActive: true },
-    include: {
-      healthChecks: {
-        where: { timestamp: { gte: twentyFourHoursAgo } },
-        orderBy: { timestamp: "desc" },
+  let endpoints: EndpointWithHealthChecks[];
+  if (preloaded) {
+    // Downtime check needs desc order (most recent first)
+    endpoints = preloaded.map((ep) => ({
+      ...ep,
+      healthChecks: [...ep.healthChecks].reverse(),
+    }));
+  } else {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    endpoints = await prisma.endpoint.findMany({
+      where: { isActive: true },
+      include: {
+        healthChecks: {
+          where: { timestamp: { gte: twentyFourHoursAgo } },
+          orderBy: { timestamp: "desc" },
+        },
       },
-    },
-  });
+    });
+  }
 
   for (const ep of endpoints) {
     if (ep.healthChecks.length === 0) continue;
@@ -372,11 +395,23 @@ export async function generateForecasts(): Promise<{
 }> {
   const start = Date.now();
 
+  // Pre-fetch shared endpoint data (used by both latency and downtime forecasts)
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const endpointsWithHealth = await prisma.endpoint.findMany({
+    where: { isActive: true },
+    include: {
+      healthChecks: {
+        where: { timestamp: { gte: twentyFourHoursAgo } },
+        orderBy: { timestamp: "asc" },
+      },
+    },
+  });
+
   const [latency, jailRisk, downtime, unbonding, breachRisk] =
     await Promise.all([
-      forecastEndpointLatency(),
+      forecastEndpointLatency(endpointsWithHealth),
       forecastJailRisk(),
-      forecastDowntimeRisk(),
+      forecastDowntimeRisk(endpointsWithHealth),
       forecastUnbondingRisk(),
       forecastSloBreachRisk(),
     ]);

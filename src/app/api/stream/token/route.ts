@@ -1,24 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit } from "@/lib/api-helpers";
-import { resolveAuth } from "@/lib/auth";
+import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
 import { extractApiKey } from "@/lib/workspace-auth";
-import { authenticateApiKey } from "@/lib/api-key";
+import { authenticateApiKey, checkQuotas } from "@/lib/api-key";
+import { checkKeyRateLimit } from "@/lib/rate-limit";
 import { createStreamToken } from "@/lib/stream-token";
 import { STREAM_DEFAULTS } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const auth = await resolveAuth(request);
+  const rl = withRateLimit(request, rateLimitForRole(auth?.role ?? "anonymous"));
   if ("response" in rl) return rl.response;
 
-  // Try session auth first, then fall back to x-api-key header
-  const auth = await resolveAuth(request);
-  let workspace = auth?.workspace ?? null;
+  // Session auth: require at least viewer role (blocks anonymous)
+  const authError = requireRole(auth, "viewer", rl.headers);
 
+  let workspace = authError ? null : auth!.workspace;
+
+  // Fall back to x-api-key header only if session auth failed
   if (!workspace) {
     const rawKey = extractApiKey(request);
     if (rawKey) {
       const keyCtx = await authenticateApiKey(rawKey);
-      if (keyCtx) workspace = keyCtx.workspace;
+      if (keyCtx) {
+        const keyRl = checkKeyRateLimit(keyCtx.id, keyCtx.rateLimit);
+        if (!keyRl.allowed) {
+          return NextResponse.json(
+            { error: "API key rate limit exceeded" },
+            { status: 429, headers: rl.headers },
+          );
+        }
+        const quota = await checkQuotas(keyCtx.id, keyCtx.tier);
+        if (!quota.allowed) {
+          return NextResponse.json(
+            { error: "Quota exceeded" },
+            { status: 429, headers: rl.headers },
+          );
+        }
+        workspace = keyCtx.workspace;
+      }
     }
   }
 

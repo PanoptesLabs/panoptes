@@ -21,12 +21,18 @@ vi.mock("@/lib/rate-limit", () => ({
     remaining: 59,
     resetAt: Date.now() + 60000,
   })),
+  checkKeyRateLimit: vi.fn(() => ({
+    allowed: true,
+    remaining: 59,
+    resetAt: Date.now() + 60000,
+  })),
 }));
 
 vi.mock("@/lib/auth", () => ({
   resolveAuth: vi.fn(),
-  requireRole: vi.fn(),
+  requireRole: vi.fn(() => null),
   hasRole: vi.fn(),
+  rateLimitForRole: vi.fn(() => 120),
 }));
 
 vi.mock("@/lib/workspace-auth", () => ({
@@ -35,6 +41,7 @@ vi.mock("@/lib/workspace-auth", () => ({
 
 vi.mock("@/lib/api-key", () => ({
   authenticateApiKey: vi.fn(),
+  checkQuotas: vi.fn(() => ({ allowed: true })),
 }));
 
 vi.mock("@/lib/stream-token", () => ({
@@ -43,10 +50,11 @@ vi.mock("@/lib/stream-token", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { resolveAuth } from "@/lib/auth";
+import { resolveAuth, requireRole } from "@/lib/auth";
 import { extractApiKey } from "@/lib/workspace-auth";
 import { authenticateApiKey } from "@/lib/api-key";
 import { verifyStreamToken } from "@/lib/stream-token";
+import { NextResponse } from "next/server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockPrisma = prisma as any;
@@ -79,6 +87,9 @@ describe("POST /api/stream/token", () => {
 
   it("returns token when authenticated via x-api-key", async () => {
     vi.mocked(resolveAuth).mockResolvedValue(null);
+    vi.mocked(requireRole).mockReturnValue(
+      NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+    );
     vi.mocked(extractApiKey).mockReturnValue("pk_api_key_123");
     vi.mocked(authenticateApiKey).mockResolvedValue({
       id: "key-1",
@@ -104,6 +115,9 @@ describe("POST /api/stream/token", () => {
 
   it("returns 401 without any auth", async () => {
     vi.mocked(resolveAuth).mockResolvedValue(null);
+    vi.mocked(requireRole).mockReturnValue(
+      NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+    );
     vi.mocked(extractApiKey).mockReturnValue(null);
 
     const { POST } = await import("@/app/api/stream/token/route");
@@ -118,6 +132,9 @@ describe("POST /api/stream/token", () => {
 
   it("returns 401 when x-api-key is invalid", async () => {
     vi.mocked(resolveAuth).mockResolvedValue(null);
+    vi.mocked(requireRole).mockReturnValue(
+      NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+    );
     vi.mocked(extractApiKey).mockReturnValue("pk_bad_key");
     vi.mocked(authenticateApiKey).mockResolvedValue(null);
 

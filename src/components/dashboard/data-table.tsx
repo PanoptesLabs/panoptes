@@ -81,6 +81,14 @@ export function DataTable<T extends Record<string, any>>({
                     col.className
                   )}
                   onClick={() => col.sortable && handleSort(col.key)}
+                  onKeyDown={(e) => {
+                    if (col.sortable && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      handleSort(col.key);
+                    }
+                  }}
+                  tabIndex={col.sortable ? 0 : undefined}
+                  role={col.sortable ? "button" : undefined}
                   aria-sort={
                     col.sortable && sort === col.key
                       ? order === "asc" ? "ascending" : "descending"
@@ -125,6 +133,14 @@ export function DataTable<T extends Record<string, any>>({
                         onRowClick && "cursor-pointer"
                       )}
                       onClick={() => onRowClick?.(row)}
+                      onKeyDown={(e) => {
+                        if (onRowClick && (e.key === "Enter" || e.key === " ")) {
+                          e.preventDefault();
+                          onRowClick(row);
+                        }
+                      }}
+                      tabIndex={onRowClick ? 0 : undefined}
+                      role={onRowClick ? "button" : undefined}
                     >
                       {columns.map((col) => (
                         <TableCell key={col.key} className={col.className}>

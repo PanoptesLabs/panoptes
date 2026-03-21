@@ -14,6 +14,9 @@ Validator monitoring, endpoint health tracking, smart routing engine, and anomal
 - **Anomaly Detection** — 6 detectors (jailing, stake change, commission spike, endpoint down, block stale, mass unbonding)
 - **Preflight Validation** — 6-step pre-transaction validation with timeout protection
 - **REST API** — Rate limiting, caching, security headers, and CORS
+- **GraphQL API** — Full query/mutation support with depth limiting and introspection blocking
+- **SSE Event Stream** — Real-time push events with per-IP concurrent stream limiting
+- **Workspace Management** — Multi-tenant workspaces with role-based access control (RBAC)
 - **Dashboard** — Interactive UI with charts, filtering, score badges, and anomaly alerts
 
 ## Architecture
@@ -60,6 +63,13 @@ Validator monitoring, endpoint health tracking, smart routing engine, and anomal
 | `POST` | `/api/cron/health` | Scheduled endpoint health check |
 | `POST` | `/api/cron/stats` | Network stats aggregation |
 | `POST` | `/api/cron/cleanup` | Old data cleanup |
+| `POST` | `/api/graphql` | GraphQL API (queries + mutations) |
+| `POST` | `/api/stream/token` | Get SSE stream token (auth required) |
+| `GET` | `/api/stream` | Authenticated SSE event stream |
+| `GET` | `/api/stream/public` | Public SSE event stream |
+| `GET/POST` | `/api/keys` | API key management |
+| `GET/POST` | `/api/webhooks` | Webhook management |
+| `GET/POST` | `/api/policies` | Policy management |
 
 All endpoints include rate limiting (60 req/min), security headers, and CORS.
 
@@ -70,7 +80,7 @@ All endpoints include rate limiting (60 req/min), security headers, and CORS.
 - **Chain SDK:** republic-sdk
 - **UI:** Tailwind CSS v4 + shadcn/ui + Recharts
 - **Animation:** Motion (Framer Motion)
-- **Testing:** Vitest 4 (228 tests, 87%+ coverage)
+- **Testing:** Vitest 4 (1003+ tests)
 
 ## Development
 

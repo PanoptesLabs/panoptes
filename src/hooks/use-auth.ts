@@ -51,24 +51,11 @@ export function useAuth() {
     setState((s) => ({ ...s, isLoading: false }));
   }, []);
 
-  // Check session on mount
+  // Check session on mount - checkSession is async so setState is deferred, not synchronous
   useEffect(() => {
-    let cancelled = false;
-    fetch("/api/auth/me", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled) return;
-        if (data?.user) {
-          setState({ user: data.user, role: data.role, isLoading: false, isAuthenticated: true, loginError: null });
-        } else {
-          setState((s) => ({ ...s, isLoading: false }));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setState((s) => ({ ...s, isLoading: false }));
-      });
-    return () => { cancelled = true; };
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void checkSession();
+  }, [checkSession]);
 
   const login = useCallback(async () => {
     setState((s) => ({ ...s, isLoading: true, loginError: null }));

@@ -51,13 +51,8 @@ async function checkEndpointHealth(): Promise<PreflightCheck> {
   }
 }
 
-async function checkAccountExists(address: string): Promise<PreflightCheck> {
+async function checkAccountExists(address: string, restEndpoint: { url: string } | null): Promise<PreflightCheck> {
   try {
-    // Query REST endpoint for account info
-    const restEndpoint = await prisma.endpoint.findFirst({
-      where: { isActive: true, type: "rest" },
-    });
-
     if (!restEndpoint) {
       return {
         name: "account_exists",
@@ -97,12 +92,9 @@ async function checkBalance(
   address: string,
   amount: string,
   denom: string,
+  restEndpoint: { url: string } | null,
 ): Promise<PreflightCheck> {
   try {
-    const restEndpoint = await prisma.endpoint.findFirst({
-      where: { isActive: true, type: "rest" },
-    });
-
     if (!restEndpoint) {
       return {
         name: "balance_check",
@@ -127,7 +119,7 @@ async function checkBalance(
     const data = await res.json();
     const balances = data.balances || [];
     const tokenBalance = balances.find(
-      (b: { denom: string; amount: string }) => b.denom === denom,
+      (b: { denom: string; amount: string }) => b.denom.toLowerCase() === denom.toLowerCase(),
     );
     const balance = BigInt(tokenBalance?.amount ?? "0");
     const required = BigInt(amount);
@@ -266,7 +258,7 @@ export async function validatePreflight(params: {
   validatorAddress?: string;
 }): Promise<PreflightResponse> {
   const start = Date.now();
-  const denom = params.denom ?? "aRAI";
+  const denom = params.denom ?? "arai";
 
   const timeoutFallback = (name: string): PreflightCheck => ({
     name,
@@ -274,11 +266,17 @@ export async function validatePreflight(params: {
     message: `Check timed out after ${PREFLIGHT.TIMEOUT_MS}ms`,
   });
 
+  // Fetch REST endpoint once for account + balance checks
+  const restEndpoint = await prisma.endpoint.findFirst({
+    where: { isActive: true, type: "rest" },
+    select: { url: true },
+  });
+
   // Run checks in parallel with timeout
   const checkPromises: Promise<PreflightCheck>[] = [
     withTimeout(checkEndpointHealth(), PREFLIGHT.TIMEOUT_MS, timeoutFallback("endpoint_health")),
-    withTimeout(checkAccountExists(params.from), PREFLIGHT.TIMEOUT_MS, timeoutFallback("account_exists")),
-    withTimeout(checkBalance(params.from, params.amount, denom), PREFLIGHT.TIMEOUT_MS, timeoutFallback("balance_check")),
+    withTimeout(checkAccountExists(params.from, restEndpoint), PREFLIGHT.TIMEOUT_MS, timeoutFallback("account_exists")),
+    withTimeout(checkBalance(params.from, params.amount, denom, restEndpoint), PREFLIGHT.TIMEOUT_MS, timeoutFallback("balance_check")),
     Promise.resolve(checkGasEstimation(params.amount)),
   ];
 
@@ -295,19 +293,20 @@ export async function validatePreflight(params: {
   const checks = await Promise.all(checkPromises);
 
   // Risk assessment as final check
+  const overallStatus = assessOverall(checks);
   const riskCheck: PreflightCheck = {
     name: "risk_assessment",
-    status: assessOverall(checks),
+    status: overallStatus,
     message:
-      assessOverall(checks) === "pass"
+      overallStatus === "pass"
         ? "All checks passed"
-        : assessOverall(checks) === "warn"
+        : overallStatus === "warn"
           ? "Some checks raised warnings"
           : "One or more checks failed",
   };
   checks.push(riskCheck);
 
-  const overall = assessOverall(checks);
+  const overall = overallStatus;
 
   return {
     overall,

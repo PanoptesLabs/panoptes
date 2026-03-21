@@ -10,6 +10,24 @@ export interface AuthContext {
   role: Role;
 }
 
+/** Module-level cache for public workspace lookup (60s TTL) */
+let wsCache: { data: { id: string; name: string; slug: string }; expiresAt: number } | null = null;
+
+/** @internal Test-only: reset workspace cache */
+export function _resetWsCache(): void {
+  wsCache = null;
+}
+
+async function getPublicWorkspace(): Promise<{ id: string; name: string; slug: string } | null> {
+  if (wsCache && wsCache.expiresAt > Date.now()) return wsCache.data;
+  const ws = await prisma.workspace.findFirst({
+    where: { slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG, isActive: true },
+    select: { id: true, name: true, slug: true },
+  });
+  if (ws) wsCache = { data: ws, expiresAt: Date.now() + 60_000 };
+  return ws;
+}
+
 /**
  * Unified auth resolver. Tries (in order):
  * 1. Cookie `panoptes_session` → session lookup → user + WorkspaceMember role
@@ -52,10 +70,7 @@ export async function resolveAuth(request: NextRequest): Promise<AuthContext | n
       }
 
       // User exists but no membership in public workspace — treat as viewer
-      const publicWorkspace = await prisma.workspace.findFirst({
-        where: { slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG, isActive: true },
-        select: { id: true, name: true, slug: true },
-      });
+      const publicWorkspace = await getPublicWorkspace();
 
       if (publicWorkspace) {
         return {
@@ -68,10 +83,7 @@ export async function resolveAuth(request: NextRequest): Promise<AuthContext | n
   }
 
   // 3. Anonymous — use public workspace
-  const publicWorkspace = await prisma.workspace.findFirst({
-    where: { slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG, isActive: true },
-    select: { id: true, name: true, slug: true },
-  });
+  const publicWorkspace = await getPublicWorkspace();
 
   if (!publicWorkspace) return null;
 

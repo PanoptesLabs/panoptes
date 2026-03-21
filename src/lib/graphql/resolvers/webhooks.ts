@@ -14,6 +14,12 @@ export const webhookResolvers = {
         });
       }
 
+      if (context.role === "viewer" || context.role === "anonymous") {
+        throw new GraphQLError("Insufficient permissions", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
       const webhooks = await prisma.webhook.findMany({
         where: { workspaceId: context.workspace.id },
         select: {

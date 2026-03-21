@@ -155,15 +155,13 @@ async function handler(request: NextRequest) {
         );
       }
 
-      // AST-based introspection blocking in production
-      if (process.env.NODE_ENV === "production") {
-        const errors = validate(schema, doc, [NoIntrospectionRule]);
-        if (errors.length > 0) {
-          return NextResponse.json(
-            { errors: [{ message: "Introspection is disabled" }] },
-            { status: 400 },
-          );
-        }
+      // AST-based introspection blocking (all environments)
+      const errors = validate(schema, doc, [NoIntrospectionRule]);
+      if (errors.length > 0) {
+        return NextResponse.json(
+          { errors: [{ message: "Introspection is disabled" }] },
+          { status: 400 },
+        );
       }
     } catch {
       // GraphQL parse error - reject instead of passing through

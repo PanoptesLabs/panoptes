@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { toast } from "sonner";
-import { Key, Plus, X, Loader2, Copy, CheckCircle, Trash2 } from "lucide-react";
+import { Key, Plus, X, Loader2, Trash2 } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { AuthGate } from "./auth-gate";
+import { SecretBanner } from "./secret-banner";
 
 const TIER_OPTIONS = ["free", "pro"] as const;
 
@@ -24,7 +25,6 @@ export function ApiKeyList() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [pendingDeactivate, setPendingDeactivate] = useState<string | null>(null);
 
@@ -83,13 +83,6 @@ export function ApiKeyList() {
     }
   };
 
-  const handleCopyKey = async () => {
-    if (!createdKey) return;
-    await navigator.clipboard.writeText(createdKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   if (error && !data) {
     return <ErrorState message="Failed to load API keys" onRetry={() => mutate()} />;
   }
@@ -97,39 +90,11 @@ export function ApiKeyList() {
   return (
     <div className="space-y-6">
       {createdKey && (
-        <Card className="border-teal-DEFAULT/30 bg-teal-dark/10">
-          <CardContent className="py-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-teal-light">API Key Created</p>
-                <p className="mt-1 text-xs text-teal-light/60">
-                  Copy this key now — it won&apos;t be shown again.
-                </p>
-                <code className="mt-2 block break-all rounded bg-slate-dark/50 px-3 py-2 font-mono text-xs text-mist">
-                  {createdKey}
-                </code>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyKey}
-                  className="text-teal-light hover:bg-teal-dark/30"
-                >
-                  {copied ? <CheckCircle className="size-3.5" /> : <Copy className="size-3.5" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCreatedKey(null)}
-                  className="text-teal-light/50 hover:bg-teal-dark/30"
-                >
-                  <X className="size-3.5" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <SecretBanner
+          title="API Key Created"
+          value={createdKey}
+          onDismiss={() => setCreatedKey(null)}
+        />
       )}
 
       {!showForm ? (
@@ -234,7 +199,6 @@ export function ApiKeyList() {
           icon={<Key className="size-5 text-dusty-lavender/40" />}
           title="No API keys created"
           description="Create an API key to access Panoptes data programmatically."
-          action={{ label: "Create API Key", onClick: () => setShowForm(true) }}
         />
       )}
 
