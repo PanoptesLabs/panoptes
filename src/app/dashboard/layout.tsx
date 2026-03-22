@@ -14,7 +14,7 @@ export default function DashboardLayout({
       <TooltipProvider>
         <div className="flex min-h-screen bg-slate-dark">
           <Sidebar />
-          <main className="flex-1 overflow-x-hidden pt-14 lg:pt-0">
+          <main id="main-content" className="flex-1 overflow-x-hidden pt-14 lg:pt-0">
             <Topbar />
             <div className="p-4 sm:p-6 lg:p-8">{children}</div>
           </main>

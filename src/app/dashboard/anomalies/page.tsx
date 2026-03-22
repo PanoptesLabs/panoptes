@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { AlertTriangle } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "@/components/dashboard/pagination";
 import { HelpTooltip } from "@/components/dashboard/help-tooltip";
 import { helpContent } from "@/lib/help-content";
@@ -111,7 +112,7 @@ export default function AnomaliesPage() {
 
       {isLoading && !data && (
         <div className="flex items-center justify-center py-12">
-          <div className="size-6 animate-spin rounded-full border-2 border-soft-violet/30 border-t-soft-violet" />
+          <Spinner />
         </div>
       )}
 

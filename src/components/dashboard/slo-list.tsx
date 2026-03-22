@@ -8,6 +8,7 @@ import { FilterSelect } from "./filter-select";
 import { ErrorState } from "./error-state";
 import { EmptyState } from "./empty-state";
 import { Target, ShieldCheck, AlertTriangle, Ban } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 
@@ -94,7 +95,7 @@ export function SloList() {
       {/* Loading */}
       {isLoading && !data && (
         <div className="flex items-center justify-center py-12">
-          <div className="size-6 animate-spin rounded-full border-2 border-soft-violet/30 border-t-soft-violet" />
+          <Spinner />
         </div>
       )}
 

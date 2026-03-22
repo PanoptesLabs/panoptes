@@ -26,6 +26,7 @@ export function Hero() {
   return (
     <section
       ref={sectionRef}
+      id="main-content"
       className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-midnight-plum px-4 text-center"
     >
       {/* Radial gradient glow */}
@@ -131,6 +132,7 @@ export function Hero() {
       {/* Scroll indicator */}
       {!prefersReduced && (
         <motion.div
+          aria-hidden="true"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.5 }}

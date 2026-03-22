@@ -7,7 +7,7 @@ vi.mock("@/lib/db", () => ({
       findFirst: vi.fn(),
       create: vi.fn(),
     },
-    delegationEvent: { create: vi.fn() },
+    delegationEvent: { create: vi.fn(), createMany: vi.fn() },
   },
 }));
 
@@ -87,13 +87,15 @@ describe("syncDelegations", () => {
       timestamp: new Date(),
     } as never);
     vi.mocked(prisma.delegationSnapshot.create).mockResolvedValue({} as never);
-    vi.mocked(prisma.delegationEvent.create).mockResolvedValue({} as never);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked((prisma.delegationEvent as any).createMany).mockResolvedValue({ count: 1 });
 
     const { syncDelegations } = await import("@/lib/indexer/delegations");
     const result = await syncDelegations();
 
     expect(result.eventsSynced).toBeGreaterThan(0);
-    expect(prisma.delegationEvent.create).toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((prisma.delegationEvent as any).createMany).toHaveBeenCalled();
 
     vi.unstubAllGlobals();
   });
@@ -119,16 +121,19 @@ describe("syncDelegations", () => {
       timestamp: new Date(),
     } as never);
     vi.mocked(prisma.delegationSnapshot.create).mockResolvedValue({} as never);
-    vi.mocked(prisma.delegationEvent.create).mockResolvedValue({} as never);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked((prisma.delegationEvent as any).createMany).mockResolvedValue({ count: 1 });
 
     const { syncDelegations } = await import("@/lib/indexer/delegations");
     const result = await syncDelegations();
 
     expect(result.eventsSynced).toBe(1);
-    expect(prisma.delegationEvent.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ type: "undelegate", delegator: "rai1old" }),
-      }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const batchData = (prisma.delegationEvent as any).createMany.mock.calls[0][0].data;
+    expect(batchData).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "undelegate", delegator: "rai1old" }),
+      ]),
     );
 
     vi.unstubAllGlobals();

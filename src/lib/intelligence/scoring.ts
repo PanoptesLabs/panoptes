@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { SCORING, HEALTH_THRESHOLDS } from "@/lib/constants";
+import { hoursAgo, daysAgo } from "@/lib/time";
 import { computeGovernanceWeight } from "./governance-scoring";
 
 function clamp(value: number, min: number, max: number): number {
@@ -13,7 +14,7 @@ function getEmaScore(raw: number, prevScore: number | null, alpha: number): numb
 
 export async function computeEndpointScores(): Promise<{ scored: number; duration: number }> {
   const start = Date.now();
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const twentyFourHoursAgo = hoursAgo(24);
 
   const endpoints = await prisma.endpoint.findMany({
     where: { isActive: true },
@@ -41,20 +42,27 @@ export async function computeEndpointScores(): Promise<{ scored: number; duratio
 
   let scored = 0;
 
+  const scoreData: Array<{
+    endpointId: string;
+    score: number;
+    uptime: number;
+    latency: number;
+    freshness: number;
+    errorRate: number;
+  }> = [];
+
   for (const ep of endpoints) {
     const checks = ep.healthChecks;
     const totalChecks = checks.length;
 
     if (totalChecks === 0) {
-      await prisma.endpointScore.create({
-        data: {
-          endpointId: ep.id,
-          score: 0,
-          uptime: 0,
-          latency: 0,
-          freshness: 0,
-          errorRate: 0,
-        },
+      scoreData.push({
+        endpointId: ep.id,
+        score: 0,
+        uptime: 0,
+        latency: 0,
+        freshness: 0,
+        errorRate: 0,
       });
       scored++;
       continue;
@@ -97,17 +105,19 @@ export async function computeEndpointScores(): Promise<{ scored: number; duratio
     const prevScore = ep.scores[0]?.score ?? null;
     const score = getEmaScore(rawScore, prevScore, SCORING.EMA_ALPHA);
 
-    await prisma.endpointScore.create({
-      data: {
-        endpointId: ep.id,
-        score,
-        uptime,
-        latency,
-        freshness,
-        errorRate,
-      },
+    scoreData.push({
+      endpointId: ep.id,
+      score,
+      uptime,
+      latency,
+      freshness,
+      errorRate,
     });
     scored++;
+  }
+
+  if (scoreData.length > 0) {
+    await prisma.endpointScore.createMany({ data: scoreData });
   }
 
   return { scored, duration: Date.now() - start };
@@ -115,7 +125,7 @@ export async function computeEndpointScores(): Promise<{ scored: number; duratio
 
 export async function computeValidatorScores(): Promise<{ scored: number; duration: number }> {
   const start = Date.now();
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = daysAgo(7);
 
   const validators = await prisma.validator.findMany({
     include: {
@@ -160,16 +170,26 @@ export async function computeValidatorScores(): Promise<{ scored: number; durati
 
   let scored = 0;
 
+  const validatorScoreData: Array<{
+    validatorId: string;
+    score: number;
+    missedBlockRate: number;
+    jailPenalty: number;
+    stakeStability: number;
+    commissionScore: number;
+    governanceScore: number;
+  }> = [];
+
   for (const val of validators) {
     // Missed block rate: fewer missed = higher score
     const missedBlockRate = 1 - clamp(val.missedBlocks / 1000, 0, 1);
 
     // Jail penalty
-    let jailPenalty = val.jailCount === 0 ? 1 : Math.max(0, 1 - val.jailCount * 0.25);
+    let jailPenalty = val.jailCount === 0 ? 1 : Math.max(0, 1 - val.jailCount * SCORING.JAIL_PENALTY_MULTIPLIER);
     if (val.lastJailedAt) {
       const daysSinceJail = (Date.now() - val.lastJailedAt.getTime()) / (24 * 60 * 60 * 1000);
-      if (daysSinceJail < 7) {
-        jailPenalty = Math.max(0, jailPenalty - 0.25);
+      if (daysSinceJail < SCORING.JAIL_RECENT_DAYS) {
+        jailPenalty = Math.max(0, jailPenalty - SCORING.JAIL_PENALTY_MULTIPLIER);
       }
     }
 
@@ -220,18 +240,20 @@ export async function computeValidatorScores(): Promise<{ scored: number; durati
     const prevScore = val.scores[0]?.score ?? null;
     const score = getEmaScore(rawScore, prevScore, SCORING.EMA_ALPHA);
 
-    await prisma.validatorScore.create({
-      data: {
-        validatorId: val.id,
-        score,
-        missedBlockRate,
-        jailPenalty,
-        stakeStability,
-        commissionScore,
-        governanceScore,
-      },
+    validatorScoreData.push({
+      validatorId: val.id,
+      score,
+      missedBlockRate,
+      jailPenalty,
+      stakeStability,
+      commissionScore,
+      governanceScore,
     });
     scored++;
+  }
+
+  if (validatorScoreData.length > 0) {
+    await prisma.validatorScore.createMany({ data: validatorScoreData });
   }
 
   return { scored, duration: Date.now() - start };

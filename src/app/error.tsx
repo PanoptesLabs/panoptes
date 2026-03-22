@@ -22,6 +22,7 @@ export default function Error({
       </p>
       <button
         onClick={reset}
+        autoFocus
         className="mt-8 rounded-lg bg-deep-iris px-6 py-3 text-sm font-medium text-mist transition-colors hover:bg-soft-violet"
       >
         Try Again

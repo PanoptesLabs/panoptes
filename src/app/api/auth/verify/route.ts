@@ -5,6 +5,7 @@ import { withRateLimit } from "@/lib/api-helpers";
 import { AUTH_DEFAULTS, ROLES } from "@/lib/constants";
 import { verifySignatureWithDiag } from "@/lib/signature";
 import { logger } from "@/lib/logger";
+import { isAdminAddress } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
@@ -100,12 +101,8 @@ export async function POST(request: NextRequest) {
     where: { slug: AUTH_DEFAULTS.PUBLIC_WORKSPACE_SLUG, isActive: true },
   });
 
-  // Check if address is an admin
-  const adminAddresses = (process.env.PANOPTES_ADMIN_ADDRESSES ?? "")
-    .split(",")
-    .map((a) => a.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = adminAddresses.includes(address.toLowerCase());
+  // Check if address is an admin (cached)
+  const isAdmin = isAdminAddress(address);
 
   let role = ROLES.VIEWER;
   if (publicWorkspace) {

@@ -38,8 +38,8 @@ export function AuthGate({ children, requiredRole = "member", onAction }: AuthGa
   };
 
   return (
-    <button type="button" onClick={handleClick} className="contents">
+    <div role="button" tabIndex={0} onClick={handleClick} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }} className="contents">
       {children}
-    </button>
+    </div>
   );
 }

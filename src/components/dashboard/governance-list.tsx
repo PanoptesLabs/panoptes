@@ -22,7 +22,7 @@ export function GovernanceList() {
   const limit = 20;
   const { data, error, isLoading, mutate } = useGovernanceProposals({ limit, offset });
 
-  if (error) return <ErrorState message="Failed to load governance data" onRetry={() => mutate()} />;
+  if (error && !data) return <ErrorState message="Failed to load governance data" onRetry={() => mutate()} />;
 
   if (isLoading) {
     return (

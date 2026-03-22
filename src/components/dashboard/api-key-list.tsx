@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { toast } from "sonner";
 import { Key, Plus, X, Loader2, Trash2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { AuthGate } from "./auth-gate";
@@ -190,7 +191,7 @@ export function ApiKeyList() {
 
       {isLoading && !data && (
         <div className="flex items-center justify-center py-12">
-          <div className="size-6 animate-spin rounded-full border-2 border-soft-violet/30 border-t-soft-violet" />
+          <Spinner />
         </div>
       )}
 

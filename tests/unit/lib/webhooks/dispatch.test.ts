@@ -200,13 +200,15 @@ describe("dispatchWebhooks", () => {
     expect(mockPrisma.webhookDelivery.update).not.toHaveBeenCalled();
   });
 
-  it("rethrows non-unique-constraint errors from claim", async () => {
+  it("counts non-unique-constraint claim errors as failed", async () => {
     const event = makeEvent();
     mockPrisma.outboxEvent.findMany.mockResolvedValue([event]);
     mockPrisma.webhook.findMany.mockResolvedValue([makeWebhook()]);
     mockPrisma.webhookDelivery.create.mockRejectedValue(new Error("DB connection lost"));
 
-    await expect(dispatchWebhooks()).rejects.toThrow("DB connection lost");
+    const result = await dispatchWebhooks();
+    expect(result.dispatched).toBe(1);
+    expect(result.failed).toBe(1);
   });
 
   it("recovers claimed row on unexpected post-claim error", async () => {

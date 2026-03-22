@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { WEBHOOK_DISPATCH } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 import { deliverWebhook } from "./deliver";
 
 export interface DispatchResult {
@@ -65,12 +66,8 @@ export async function dispatchWebhooks(): Promise<DispatchResult> {
 
     let budgetExhausted = false;
 
-    for (const webhook of webhooks) {
-      if (overBudget()) {
-        budgetExhausted = true;
-        break;
-      }
-
+    // Parallel delivery for all webhooks of this event
+    const deliveryPromises = webhooks.map(async (webhook) => {
       // Claim: create delivery row first (atomic dedup via unique constraint)
       let deliveryId: string;
       try {
@@ -88,11 +85,10 @@ export async function dispatchWebhooks(): Promise<DispatchResult> {
         deliveryId = claimed.id;
       } catch (err) {
         // Unique constraint violation → already claimed by another worker
-        if (isUniqueViolation(err)) continue;
+        if (isUniqueViolation(err)) return { status: "skipped" as const };
         throw err;
       }
 
-      dispatched++;
       try {
         const result = await deliverWebhook(
           { webhookId: webhook.id, url: webhook.url, secretEncrypted: webhook.secretEncrypted },
@@ -100,7 +96,6 @@ export async function dispatchWebhooks(): Promise<DispatchResult> {
         );
 
         if (result.success) {
-          delivered++;
           await prisma.webhookDelivery.update({
             where: { id: deliveryId },
             data: {
@@ -111,8 +106,8 @@ export async function dispatchWebhooks(): Promise<DispatchResult> {
               deliveredAt: new Date(),
             },
           });
+          return { status: "delivered" as const };
         } else {
-          failed++;
           await prisma.webhookDelivery.update({
             where: { id: deliveryId },
             data: {
@@ -122,18 +117,38 @@ export async function dispatchWebhooks(): Promise<DispatchResult> {
               nextRetryAt: new Date(Date.now() + WEBHOOK_DISPATCH.RETRY_DELAYS_S[0] * 1000),
             },
           });
+          return { status: "failed" as const };
         }
       } catch {
         // Claimed row must not stay stuck — make it retryable
-        failed++;
         await prisma.webhookDelivery.update({
           where: { id: deliveryId },
           data: {
             attempts: 1,
             nextRetryAt: new Date(Date.now() + WEBHOOK_DISPATCH.RETRY_DELAYS_S[0] * 1000),
           },
-        }).catch(() => {}); // Best-effort — don't let recovery crash the worker
+        }).catch(() => {}); // Best-effort
+        return { status: "failed" as const };
       }
+    });
+
+    const results = await Promise.allSettled(deliveryPromises);
+
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        if (r.value.status === "skipped") continue;
+        dispatched++;
+        if (r.value.status === "delivered") delivered++;
+        else failed++;
+      } else {
+        logger.error("webhook-dispatch", r.reason);
+        dispatched++;
+        failed++;
+      }
+    }
+
+    if (overBudget()) {
+      budgetExhausted = true;
     }
 
     // Only advance cursor past fully-processed events

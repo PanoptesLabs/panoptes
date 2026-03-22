@@ -141,17 +141,35 @@ export async function correlateIncidents(): Promise<CorrelationResult> {
     },
   });
 
+  // Bulk lookup: all active SLOs for anomaly entities
+  const anomalyEntityIds = [...new Set(
+    unresolvedAnomalies
+      .filter((a) => a.entityId !== null)
+      .map((a) => a.entityId as string),
+  )];
+
+  const allWorkspaceSlos = anomalyEntityIds.length > 0
+    ? await prisma.slo.findMany({
+        where: {
+          isActive: true,
+          entityId: { in: anomalyEntityIds },
+        },
+        select: { workspaceId: true, entityType: true, entityId: true },
+        distinct: ["workspaceId", "entityId"],
+      })
+    : [];
+
+  const entitySloMap = new Map<string, Array<{ workspaceId: string; entityType: string }>>();
+  for (const slo of allWorkspaceSlos) {
+    const existing = entitySloMap.get(slo.entityId) ?? [];
+    existing.push({ workspaceId: slo.workspaceId, entityType: slo.entityType });
+    entitySloMap.set(slo.entityId, existing);
+  }
+
   for (const anomaly of unresolvedAnomalies) {
     if (!anomaly.entityId) continue;
 
-    const workspaceSlos = await prisma.slo.findMany({
-      where: {
-        isActive: true,
-        entityId: anomaly.entityId,
-      },
-      select: { workspaceId: true, entityType: true },
-      distinct: ["workspaceId"],
-    });
+    const workspaceSlos = entitySloMap.get(anomaly.entityId) ?? [];
 
     for (const slo of workspaceSlos) {
       await findOrCreateIncident(
@@ -185,42 +203,59 @@ export async function correlateIncidents(): Promise<CorrelationResult> {
     }
   }
 
-  for (const key of entityWorkspaceMap.keys()) {
-    const [workspaceId, entityType, entityId] = key.split(":");
+  const entityKeys = [...entityWorkspaceMap.keys()];
 
-    const stillBreaching = await prisma.slo.count({
-      where: {
-        workspaceId,
-        entityType,
-        entityId,
-        isActive: true,
-        isBreaching: true,
-      },
-    });
+  // Parallel: check all entity keys at once
+  const entityCheckResults = await Promise.all(
+    entityKeys.map(async (key) => {
+      const [workspaceId, entityType, entityId] = key.split(":");
 
-    if (stillBreaching > 0) continue;
+      const [stillBreaching, unresolvedEntityAnomalies] = await Promise.all([
+        prisma.slo.count({
+          where: {
+            workspaceId,
+            entityType,
+            entityId,
+            isActive: true,
+            isBreaching: true,
+          },
+        }),
+        prisma.anomaly.count({
+          where: {
+            entityId,
+            resolved: false,
+          },
+        }),
+      ]);
 
-    // Don't auto-resolve if entity still has unresolved anomalies
-    const unresolvedEntityAnomalies = await prisma.anomaly.count({
-      where: {
-        entityId,
-        resolved: false,
-      },
-    });
+      if (stillBreaching > 0 || unresolvedEntityAnomalies > 0) return null;
 
-    if (unresolvedEntityAnomalies > 0) continue;
+      const openIncidents = await prisma.incident.findMany({
+        where: {
+          workspaceId,
+          entityType,
+          entityId,
+          status: { in: ["open", "acknowledged"] },
+        },
+      });
 
-    const openIncidents = await prisma.incident.findMany({
-      where: {
-        workspaceId,
-        entityType,
-        entityId,
-        status: { in: ["open", "acknowledged"] },
-      },
-    });
+      return { workspaceId, entityType, entityId, openIncidents };
+    }),
+  );
 
-    for (const incident of openIncidents) {
-      await prisma.$transaction(async (tx) => {
+  // Batch resolve all incidents in a single transaction
+  const incidentsToResolve = entityCheckResults
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .flatMap((r) => r.openIncidents.map((inc) => ({
+      incident: inc,
+      workspaceId: r.workspaceId,
+      entityType: r.entityType,
+      entityId: r.entityId,
+    })));
+
+  if (incidentsToResolve.length > 0) {
+    await prisma.$transaction(async (tx) => {
+      for (const { incident, workspaceId, entityType, entityId } of incidentsToResolve) {
         await tx.incident.update({
           where: { id: incident.id },
           data: { status: "resolved", resolvedAt: new Date() },
@@ -249,10 +284,10 @@ export async function correlateIncidents(): Promise<CorrelationResult> {
             }),
           },
         });
-      });
+      }
+    });
 
-      counters.resolved++;
-    }
+    counters.resolved += incidentsToResolve.length;
   }
 
   return {
