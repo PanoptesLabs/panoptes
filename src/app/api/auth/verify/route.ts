@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger";
 import { isAdminAddress } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const rl = withRateLimit(request, 5);
   if ("response" in rl) return rl.response;
 
   let body: unknown;

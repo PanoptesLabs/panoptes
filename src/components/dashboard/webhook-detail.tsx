@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useWebhookDetail, useWebhookDeliveries, testWebhook, deleteWebhook } from "@/hooks/use-webhooks";
 import { useAsyncAction } from "@/hooks/use-async-action";
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
-import { Play, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Play, Trash2, Loader2 } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { AuthGate } from "./auth-gate";
@@ -143,6 +144,15 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
 
   return (
     <div className="space-y-6">
+      {/* Back navigation */}
+      <Link
+        href="/dashboard/settings/webhooks"
+        className="inline-flex items-center gap-1.5 text-sm text-dusty-lavender/50 transition-colors hover:text-dusty-lavender"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Webhooks
+      </Link>
+
       {/* Webhook info */}
       <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
         <CardContent className="py-5">

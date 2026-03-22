@@ -3,18 +3,15 @@ import { prisma } from "@/lib/db";
 import { validateSloCreate } from "@/lib/slo-validation";
 import { SLO_DEFAULTS } from "@/lib/constants";
 import type { GraphQLContext } from "../context";
+import { requireAuth, requireEditor } from "../auth-helpers";
 
 export const sloResolvers = {
   Query: {
     slos: async (_: unknown, _args: unknown, context: GraphQLContext) => {
-      if (!context.workspace) {
-        throw new GraphQLError("Unauthorized", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
+      const workspace = requireAuth(context);
 
       const slos = await prisma.slo.findMany({
-        where: { workspaceId: context.workspace.id },
+        where: { workspaceId: workspace.id },
         orderBy: { createdAt: "desc" },
       });
 
@@ -36,17 +33,7 @@ export const sloResolvers = {
       },
       context: GraphQLContext,
     ) => {
-      if (!context.workspace) {
-        throw new GraphQLError("Unauthorized", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
-      if (context.role === "viewer" || context.role === "anonymous") {
-        throw new GraphQLError("Insufficient permissions", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
+      requireEditor(context);
 
       const validated = validateSloCreate(args.input);
       if ("error" in validated) {
@@ -114,20 +101,10 @@ export const sloResolvers = {
       args: { id: string },
       context: GraphQLContext,
     ) => {
-      if (!context.workspace) {
-        throw new GraphQLError("Unauthorized", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
-      if (context.role === "viewer" || context.role === "anonymous") {
-        throw new GraphQLError("Insufficient permissions", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
+      const workspace = requireEditor(context);
 
       const slo = await prisma.slo.findFirst({
-        where: { id: args.id, workspaceId: context.workspace.id },
+        where: { id: args.id, workspaceId: workspace.id },
       });
       if (!slo) {
         throw new GraphQLError("SLO not found", {

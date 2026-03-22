@@ -6,7 +6,8 @@ import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { formatAmountShort } from "@/lib/formatters";
-import { Loader2, ArrowLeftRight, ArrowUpRight, ArrowDownRight, AlertTriangle } from "lucide-react";
+import { ArrowLeftRight, ArrowUpRight, ArrowDownRight, AlertTriangle } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "./pagination";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
@@ -28,7 +29,7 @@ export function DelegationList() {
   if (eventsLoading || whalesLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="size-6 animate-spin text-soft-violet" />
+        <Spinner />
       </div>
     );
   }
@@ -89,7 +90,7 @@ export function DelegationList() {
                   <div key={e.id} className="flex items-center gap-3 rounded bg-slate-dark/20 px-3 py-2">
                     <Icon className={`size-3.5 shrink-0 ${config.color}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 text-xs">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span className={`inline-flex items-center gap-1 font-medium ${config.color}`}>
                           {config.label}
                           {helpContent.delegations.types[e.type as keyof typeof helpContent.delegations.types] && (

@@ -13,7 +13,7 @@ import dynamic from "next/dynamic";
 
 const ValidatorHistoryChart = dynamic(
   () => import("@/components/charts/validator-history-chart").then((m) => m.ValidatorHistoryChart),
-  { ssr: false },
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-lg bg-deep-iris/20" /> },
 );
 import { getValidatorStatusInfo } from "@/lib/status";
 import {

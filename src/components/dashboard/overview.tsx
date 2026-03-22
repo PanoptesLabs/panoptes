@@ -11,15 +11,18 @@ import { useHistorySparklines } from "@/hooks/use-history-sparklines";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "./status-badge";
+
+const ChartSkeleton = () => <Skeleton className="h-64 w-full rounded-lg bg-deep-iris/20" />;
 
 const StakingTrendChart = dynamic(
   () => import("@/components/charts/staking-trend-chart").then((m) => m.StakingTrendChart),
-  { ssr: false }
+  { ssr: false, loading: ChartSkeleton },
 );
 const BlockHeightChart = dynamic(
   () => import("@/components/charts/block-height-chart").then((m) => m.BlockHeightChart),
-  { ssr: false }
+  { ssr: false, loading: ChartSkeleton },
 );
 import {
   formatTokensShort,
@@ -27,6 +30,7 @@ import {
   formatNumber,
 } from "@/lib/formatters";
 import { timeAgo } from "@/lib/time";
+import { SEVERITY_COLORS } from "@/lib/constants";
 import {
   Shield,
   Blocks,
@@ -192,17 +196,13 @@ export function Overview() {
                     <p className="truncate text-sm font-medium text-mist">
                       {a.title}
                     </p>
-                    <p className="truncate text-xs text-dusty-lavender/50">
+                    <p className="truncate text-xs text-dusty-lavender/60">
                       {a.entityType} &middot; {a.type}
                     </p>
                   </div>
                   <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                      a.severity === "critical"
-                        ? "bg-rose-dark/50 text-rose-light"
-                        : a.severity === "high"
-                          ? "bg-amber-dark/50 text-amber-light"
-                          : "bg-slate-dark/50 text-slate-light"
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
+                      SEVERITY_COLORS[a.severity] ?? SEVERITY_COLORS.low
                     }`}
                   >
                     {a.severity}

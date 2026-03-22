@@ -20,7 +20,7 @@ export function Sparkline({
   const chartData = data.map((value, index) => ({ index, value }));
 
   return (
-    <div style={{ width, height }}>
+    <div role="img" aria-label="Trend chart" style={{ width, height }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
           <defs>

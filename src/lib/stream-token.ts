@@ -64,7 +64,13 @@ export function verifyStreamToken(
 
   const sigA = Buffer.from(providedSig, "utf8");
   const sigB = Buffer.from(expectedSig, "utf8");
-  if (sigA.length !== sigB.length || !timingSafeEqual(sigA, sigB)) {
+  // Pad to equal length for timing-safe comparison, then check length
+  const maxLen = Math.max(sigA.length, sigB.length);
+  const paddedA = Buffer.alloc(maxLen);
+  const paddedB = Buffer.alloc(maxLen);
+  sigA.copy(paddedA);
+  sigB.copy(paddedB);
+  if (!timingSafeEqual(paddedA, paddedB) || sigA.length !== sigB.length) {
     return { valid: false, error: "Invalid signature" };
   }
 

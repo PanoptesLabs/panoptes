@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useGovernanceProposal } from "@/hooks/use-governance";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { truncateAddress } from "@/lib/formatters";
-import { Loader2, Vote, CheckCircle, XCircle, MinusCircle, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Loader2, Vote, CheckCircle, XCircle, MinusCircle, ShieldAlert } from "lucide-react";
 
 export function GovernanceDetail({ proposalId }: { proposalId: string }) {
   const { data, error, isLoading, mutate } = useGovernanceProposal(proposalId);
@@ -24,7 +25,14 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Proposal Info */}
+      {/* Back + Proposal Info */}
+      <Link
+        href="/dashboard/governance"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-dusty-lavender/50 transition-colors hover:text-dusty-lavender"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Governance
+      </Link>
       <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-mist">
@@ -35,21 +43,21 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <p className="text-xs text-dusty-lavender/50">Status</p>
+              <p className="text-xs text-dusty-lavender/60">Status</p>
               <p className="font-mono text-sm text-mist">{data.status.replace("PROPOSAL_STATUS_", "")}</p>
             </div>
             <div>
-              <p className="text-xs text-dusty-lavender/50">Submit Time</p>
+              <p className="text-xs text-dusty-lavender/60">Submit Time</p>
               <p className="text-sm text-mist">{data.submitTime ? timeAgo(data.submitTime) : "N/A"}</p>
             </div>
             <div>
-              <p className="text-xs text-dusty-lavender/50">Voting End</p>
+              <p className="text-xs text-dusty-lavender/60">Voting End</p>
               <p className="text-sm text-mist">{data.votingEndTime ? timeAgo(data.votingEndTime) : "N/A"}</p>
             </div>
           </div>
           {data.description && (
             <div>
-              <p className="text-xs text-dusty-lavender/50 mb-1">Description</p>
+              <p className="text-xs text-dusty-lavender/60 mb-1">Description</p>
               <p className="text-sm text-dusty-lavender/70 whitespace-pre-wrap line-clamp-6">{data.description}</p>
             </div>
           )}
@@ -63,7 +71,7 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
             <CheckCircle className="size-5 text-teal-DEFAULT" />
             <div>
               <p className="text-xl font-bold text-mist">{data.voteSummary.yes}</p>
-              <p className="text-xs text-dusty-lavender/50">Yes</p>
+              <p className="text-xs text-dusty-lavender/60">Yes</p>
             </div>
           </CardContent>
         </Card>
@@ -72,7 +80,7 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
             <XCircle className="size-5 text-rose-DEFAULT" />
             <div>
               <p className="text-xl font-bold text-mist">{data.voteSummary.no}</p>
-              <p className="text-xs text-dusty-lavender/50">No</p>
+              <p className="text-xs text-dusty-lavender/60">No</p>
             </div>
           </CardContent>
         </Card>
@@ -81,7 +89,7 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
             <MinusCircle className="size-5 text-dusty-lavender/50" />
             <div>
               <p className="text-xl font-bold text-mist">{data.voteSummary.abstain}</p>
-              <p className="text-xs text-dusty-lavender/50">Abstain</p>
+              <p className="text-xs text-dusty-lavender/60">Abstain</p>
             </div>
           </CardContent>
         </Card>
@@ -90,7 +98,7 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
             <ShieldAlert className="size-5 text-amber-DEFAULT" />
             <div>
               <p className="text-xl font-bold text-mist">{data.voteSummary.veto}</p>
-              <p className="text-xs text-dusty-lavender/50">Veto</p>
+              <p className="text-xs text-dusty-lavender/60">Veto</p>
             </div>
           </CardContent>
         </Card>

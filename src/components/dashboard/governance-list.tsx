@@ -8,7 +8,8 @@ import { EmptyState } from "./empty-state";
 import { Pagination } from "./pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
-import { Loader2, Vote, CheckCircle, XCircle, Clock, Ban } from "lucide-react";
+import { Vote, CheckCircle, XCircle, Clock, Ban } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   PROPOSAL_STATUS_VOTING_PERIOD: { label: "Voting", color: "text-amber-DEFAULT", icon: Clock },
@@ -28,7 +29,7 @@ export function GovernanceList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="size-6 animate-spin text-soft-violet" />
+        <Spinner />
       </div>
     );
   }

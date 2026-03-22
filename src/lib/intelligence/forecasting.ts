@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { FORECAST_DEFAULTS, FORECAST_THRESHOLDS } from "@/lib/constants";
 import { hoursAgo, daysAgo } from "@/lib/time";
+import type { EndpointWithHealthChecks } from "./types";
 
 export interface ForecastResult {
   entityType: string;
@@ -77,11 +78,6 @@ function buildForecastResult(params: {
   return { ...params };
 }
 
-interface EndpointWithHealthChecks {
-  id: string;
-  healthChecks: { timestamp: Date; latencyMs: number; isHealthy: boolean }[];
-}
-
 export async function forecastEndpointLatency(
   preloaded?: EndpointWithHealthChecks[],
 ): Promise<ForecastResult[]> {
@@ -104,7 +100,9 @@ export async function forecastEndpointLatency(
   }
 
   for (const ep of endpoints) {
-    const healthyChecks = ep.healthChecks.filter((c) => c.isHealthy);
+    const healthyChecks = ep.healthChecks.filter(
+      (c): c is typeof c & { latencyMs: number } => c.isHealthy && c.latencyMs != null,
+    );
     if (healthyChecks.length < 3) continue;
 
     const startTime = healthyChecks[0].timestamp.getTime();

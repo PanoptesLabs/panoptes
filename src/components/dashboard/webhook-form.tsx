@@ -160,6 +160,7 @@ export function WebhookForm({ onClose, onCreated }: WebhookFormProps) {
           <div className="flex flex-wrap gap-2">
             {WEBHOOK_EVENTS.map((event) => (
               <button
+                type="button"
                 key={event}
                 onClick={() => toggleEvent(event)}
                 className={cn(

@@ -80,10 +80,19 @@ export async function resolveAuth(request: NextRequest): Promise<AuthContext | n
       );
 
       if (publicMember) {
+        // Runtime admin check: sync role with current admin list
+        let role = publicMember.role as Role;
+        const addr = session.user.address;
+        if (isAdminAddress(addr) && role !== ROLES.ADMIN) {
+          role = ROLES.ADMIN;
+        } else if (!isAdminAddress(addr) && role === ROLES.ADMIN) {
+          role = ROLES.VIEWER;
+        }
+
         return {
-          user: { id: session.user.id, address: session.user.address },
+          user: { id: session.user.id, address: addr },
           workspace: publicMember.workspace,
-          role: publicMember.role as Role,
+          role,
         };
       }
 

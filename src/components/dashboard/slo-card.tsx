@@ -38,7 +38,7 @@ export function SloCard({ slo }: SloCardProps) {
             <CardTitle className="truncate text-sm font-medium text-mist">
               {slo.name}
             </CardTitle>
-            <p className="mt-1 text-xs text-dusty-lavender/50">
+            <p className="mt-1 text-xs text-dusty-lavender/60">
               {slo.entityType} &middot; {slo.indicator}
             </p>
           </div>
