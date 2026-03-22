@@ -172,7 +172,7 @@ export function AdminAccess() {
                       <p className="font-mono text-xs text-mist" title={member.address}>
                         {member.address.slice(0, 12)}...{member.address.slice(-4)}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-dusty-lavender/50">
+                      <p className="mt-0.5 text-[11px] text-dusty-lavender/50">
                         Joined {timeAgo(member.joinedAt)} &middot; {member.activeSessions} active session{member.activeSessions !== 1 ? "s" : ""}
                       </p>
                     </div>
@@ -199,7 +199,7 @@ export function AdminAccess() {
                     <div className="mt-2 space-y-1">
                       {member.sessions.map((session) => (
                         <div key={session.id} className="flex items-center justify-between rounded bg-slate-dark/30 px-2 py-1">
-                          <span className="text-[10px] text-dusty-lavender/50">
+                          <span className="text-[11px] text-dusty-lavender/50">
                             Session &middot; expires {timeAgo(session.expiresAt)}
                           </span>
                           <Button
@@ -255,7 +255,7 @@ export function AdminAccess() {
                         {key.isActive ? "Active" : "Disabled"}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[10px] text-dusty-lavender/50">
+                    <p className="mt-0.5 text-[11px] text-dusty-lavender/50">
                       {key.lastUsedAt ? `Last used ${timeAgo(key.lastUsedAt)}` : "Never used"}
                     </p>
                   </div>

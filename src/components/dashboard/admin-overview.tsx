@@ -162,14 +162,14 @@ export function AdminOverview() {
                     <p className="text-xs font-medium text-mist">
                       {ACTION_LABELS[entry.action] ?? entry.action}
                     </p>
-                    <p className="text-[10px] text-dusty-lavender/50">
+                    <p className="text-[11px] text-dusty-lavender/50">
                       <span className="font-mono">{entry.actorAddress.slice(0, 10)}...{entry.actorAddress.slice(-4)}</span>
                       {entry.resourceType && (
                         <span> &middot; {entry.resourceType}</span>
                       )}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[10px] text-dusty-lavender/60">
+                  <span className="shrink-0 text-[11px] text-dusty-lavender/60">
                     {timeAgo(entry.createdAt)}
                   </span>
                 </div>

@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
         { argsIgnorePattern: "^_" },
       ],
       "no-console": ["warn", { allow: ["warn", "error"] }],
+      "react/no-danger": "warn",
     },
   },
 ]);

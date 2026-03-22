@@ -353,6 +353,11 @@ export const ROLE_HIERARCHY: Record<string, number> = {
   admin: 4,
 };
 
+export const CHART_COLORS = {
+  primary: "#8B5CF6",
+  secondary: "#D97706",
+} as const;
+
 export const SEVERITY_COLORS: Record<string, string> = {
   critical: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
   high: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",

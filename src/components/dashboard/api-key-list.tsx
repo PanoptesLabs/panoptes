@@ -221,7 +221,7 @@ export function ApiKeyList() {
                   <p className="mt-1 font-mono text-xs text-dusty-lavender/50">
                     {apiKey.keyPrefix}...
                   </p>
-                  <p className="mt-1 text-[10px] text-dusty-lavender/50">
+                  <p className="mt-1 text-[11px] text-dusty-lavender/50">
                     {apiKey.lastUsedAt ? `Last used ${timeAgo(apiKey.lastUsedAt)}` : "Never used"}
                   </p>
                 </div>

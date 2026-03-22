@@ -172,7 +172,7 @@ export default function AnomaliesPage() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center gap-4 text-[10px] text-dusty-lavender/60">
+                  <div className="mt-2 flex items-center gap-4 text-[11px] text-dusty-lavender/60">
                     <span>{anomaly.entityType}</span>
                     <span>{anomaly.type}</span>
                     <span>Detected {timeAgo(anomaly.detectedAt)}</span>

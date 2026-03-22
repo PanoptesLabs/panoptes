@@ -55,7 +55,7 @@ export function GovernanceList() {
         const StatusIcon = config.icon;
 
         return (
-          <Link key={p.id} href={`/dashboard/governance/${p.id}`}>
+          <Link key={p.id} href={`/dashboard/governance/${p.id}`} aria-label={`Proposal #${p.id}: ${p.title}`}>
             <Card className="border-slate-DEFAULT/20 bg-midnight-plum transition-colors hover:border-soft-violet/30">
               <CardContent className="flex items-center gap-4 py-4">
                 <div className="flex size-9 items-center justify-center rounded-lg bg-soft-violet/15">

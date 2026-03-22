@@ -172,7 +172,7 @@ export function IncidentList() {
                         </span>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-4 text-[10px] text-dusty-lavender/60">
+                    <div className="mt-2 flex items-center gap-4 text-[11px] text-dusty-lavender/60">
                       <span>{incident.entityType}</span>
                       <span>Detected {timeAgo(incident.detectedAt)}</span>
                       {incident.resolvedAt && <span>Resolved {timeAgo(incident.resolvedAt)}</span>}

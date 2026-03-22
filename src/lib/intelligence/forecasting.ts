@@ -45,6 +45,38 @@ export function linearRegression(
   return { slope, intercept, r2 };
 }
 
+function classifyPrediction(
+  value: number,
+  warnThreshold: number,
+  critThreshold: number,
+  mode: "gt" | "lt" = "gt",
+): { prediction: "warning" | "critical" | "normal"; threshold: number | null } {
+  if (mode === "gt") {
+    if (value > critThreshold) return { prediction: "critical", threshold: critThreshold };
+    if (value > warnThreshold) return { prediction: "warning", threshold: warnThreshold };
+  } else {
+    if (value <= critThreshold) return { prediction: "critical", threshold: critThreshold };
+    if (value <= warnThreshold) return { prediction: "warning", threshold: warnThreshold };
+  }
+  return { prediction: "normal", threshold: null };
+}
+
+function buildForecastResult(params: {
+  entityType: string;
+  entityId: string;
+  metric: string;
+  prediction: "warning" | "critical" | "normal";
+  confidence: number;
+  timeHorizon: string;
+  currentValue: number;
+  predictedValue: number;
+  threshold: number | null;
+  reasoning: string;
+  validUntil: Date;
+}): ForecastResult {
+  return { ...params };
+}
+
 interface EndpointWithHealthChecks {
   id: string;
   healthChecks: { timestamp: Date; latencyMs: number; isHealthy: boolean }[];
@@ -90,21 +122,17 @@ export async function forecastEndpointLatency(
       const lastX = points[points.length - 1].x;
       const predictedValue = slope * (lastX + minutes) + intercept;
 
-      let prediction: "warning" | "critical" | "normal" = "normal";
-      let threshold: number | null = null;
-      if (predictedValue > FORECAST_THRESHOLDS.LATENCY_CRITICAL_MS) {
-        prediction = "critical";
-        threshold = FORECAST_THRESHOLDS.LATENCY_CRITICAL_MS;
-      } else if (predictedValue > FORECAST_THRESHOLDS.LATENCY_WARNING_MS) {
-        prediction = "warning";
-        threshold = FORECAST_THRESHOLDS.LATENCY_WARNING_MS;
-      }
+      const { prediction, threshold } = classifyPrediction(
+        predictedValue,
+        FORECAST_THRESHOLDS.LATENCY_WARNING_MS,
+        FORECAST_THRESHOLDS.LATENCY_CRITICAL_MS,
+      );
 
       const validUntil = new Date(
         Date.now() + minutes * 60 * 1000,
       );
 
-      results.push({
+      results.push(buildForecastResult({
         entityType: "endpoint",
         entityId: ep.id,
         metric: "latency",
@@ -119,7 +147,7 @@ export async function forecastEndpointLatency(
             ? `Latency trend stable (slope: ${slope.toFixed(2)}ms/min)`
             : `Latency projected to reach ${Math.round(predictedValue)}ms within ${horizon} (slope: ${slope.toFixed(2)}ms/min)`,
         validUntil,
-      });
+      }));
     }
   }
 
@@ -154,19 +182,15 @@ export async function forecastJailRisk(): Promise<ForecastResult[]> {
     const latestRate = val.scores[val.scores.length - 1].missedBlockRate;
     const predictedRate = latestRate + slope * 24;
 
-    let prediction: "warning" | "critical" | "normal" = "normal";
-    let threshold: number | null = null;
-    if (predictedRate > FORECAST_THRESHOLDS.JAIL_RISK_CRITICAL) {
-      prediction = "critical";
-      threshold = FORECAST_THRESHOLDS.JAIL_RISK_CRITICAL;
-    } else if (predictedRate > FORECAST_THRESHOLDS.JAIL_RISK_WARNING) {
-      prediction = "warning";
-      threshold = FORECAST_THRESHOLDS.JAIL_RISK_WARNING;
-    }
+    const { prediction, threshold } = classifyPrediction(
+      predictedRate,
+      FORECAST_THRESHOLDS.JAIL_RISK_WARNING,
+      FORECAST_THRESHOLDS.JAIL_RISK_CRITICAL,
+    );
 
     const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    results.push({
+    results.push(buildForecastResult({
       entityType: "validator",
       entityId: val.id,
       metric: "jail_risk",
@@ -181,7 +205,7 @@ export async function forecastJailRisk(): Promise<ForecastResult[]> {
           ? `Missed block rate trend stable for ${val.moniker}`
           : `Missed block rate projected to reach ${predictedRate.toFixed(2)} within 24h for ${val.moniker}`,
       validUntil,
-    });
+    }));
   }
 
   return results;
@@ -241,7 +265,7 @@ export async function forecastDowntimeRisk(
 
     const validUntil = new Date(Date.now() + 60 * 60 * 1000);
 
-    results.push({
+    results.push(buildForecastResult({
       entityType: "endpoint",
       entityId: ep.id,
       metric: "downtime",
@@ -256,7 +280,7 @@ export async function forecastDowntimeRisk(
           ? `Endpoint stable with ${consecutiveFailures} consecutive failures`
           : `${consecutiveFailures} consecutive failures detected, downtime likely`,
       validUntil,
-    });
+    }));
   }
 
   return results;
@@ -292,19 +316,16 @@ export async function forecastUnbondingRisk(): Promise<ForecastResult[]> {
       FORECAST_DEFAULTS.CONFIDENCE_MAX,
     );
 
-    let prediction: "warning" | "critical" | "normal" = "normal";
-    let threshold: number | null = null;
-    if (changePct <= FORECAST_THRESHOLDS.UNBONDING_CRITICAL_PCT) {
-      prediction = "critical";
-      threshold = FORECAST_THRESHOLDS.UNBONDING_CRITICAL_PCT;
-    } else if (changePct <= FORECAST_THRESHOLDS.UNBONDING_WARNING_PCT) {
-      prediction = "warning";
-      threshold = FORECAST_THRESHOLDS.UNBONDING_WARNING_PCT;
-    }
+    const { prediction, threshold } = classifyPrediction(
+      changePct,
+      FORECAST_THRESHOLDS.UNBONDING_WARNING_PCT,
+      FORECAST_THRESHOLDS.UNBONDING_CRITICAL_PCT,
+      "lt",
+    );
 
     const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    results.push({
+    results.push(buildForecastResult({
       entityType: "validator",
       entityId: val.id,
       metric: "unbonding",
@@ -319,7 +340,7 @@ export async function forecastUnbondingRisk(): Promise<ForecastResult[]> {
           ? `Delegation flow stable for ${val.moniker} (${changePct.toFixed(1)}%)`
           : `Delegation outflow of ${Math.abs(changePct).toFixed(1)}% detected for ${val.moniker}`,
       validUntil,
-    });
+    }));
   }
 
   return results;
@@ -358,18 +379,17 @@ export async function forecastSloBreachRisk(): Promise<ForecastResult[]> {
 
     if (slope > 0 && remaining > 0) {
       const hoursToExhaustion = remaining / slope;
-      if (hoursToExhaustion <= FORECAST_THRESHOLDS.SLO_BREACH_CRITICAL_HOURS) {
-        prediction = "critical";
-        threshold = FORECAST_THRESHOLDS.SLO_BREACH_CRITICAL_HOURS;
-      } else if (hoursToExhaustion <= FORECAST_THRESHOLDS.SLO_BREACH_WARNING_HOURS) {
-        prediction = "warning";
-        threshold = FORECAST_THRESHOLDS.SLO_BREACH_WARNING_HOURS;
-      }
+      ({ prediction, threshold } = classifyPrediction(
+        hoursToExhaustion,
+        FORECAST_THRESHOLDS.SLO_BREACH_WARNING_HOURS,
+        FORECAST_THRESHOLDS.SLO_BREACH_CRITICAL_HOURS,
+        "lt",
+      ));
     }
 
     const validUntil = new Date(Date.now() + 6 * 60 * 60 * 1000);
 
-    results.push({
+    results.push(buildForecastResult({
       entityType: slo.entityType,
       entityId: slo.entityId,
       metric: "breach_risk",
@@ -384,7 +404,7 @@ export async function forecastSloBreachRisk(): Promise<ForecastResult[]> {
           ? `SLO "${slo.name}" budget burn rate is sustainable`
           : `SLO "${slo.name}" budget projected to exhaust within ${slope > 0 ? Math.round((100 - currentBudget) / slope) : "N/A"}h at current burn rate`,
       validUntil,
-    });
+    }));
   }
 
   return results;

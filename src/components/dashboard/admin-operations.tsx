@@ -119,7 +119,7 @@ export function AdminOperations() {
                         {webhook.isActive ? "Active" : "Disabled"}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[10px] text-dusty-lavender/50">
+                    <p className="mt-0.5 text-[11px] text-dusty-lavender/50">
                       {webhook.totalDeliveries} deliveries &middot; {Math.round(webhook.successRate * 100)}% success
                       {webhook.lastDeliveryAt && (
                         <> &middot; last {timeAgo(webhook.lastDeliveryAt)}</>
@@ -180,7 +180,7 @@ export function AdminOperations() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-[10px] text-dusty-lavender/50">
+                    <p className="mt-0.5 text-[11px] text-dusty-lavender/50">
                       {policy.executionCount} executions
                       {policy.lastTriggeredAt && (
                         <> &middot; last triggered {timeAgo(policy.lastTriggeredAt)}</>
@@ -242,7 +242,7 @@ export function AdminOperations() {
                         {incident.status}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[10px] text-dusty-lavender/50">
+                    <p className="mt-0.5 text-[11px] text-dusty-lavender/50">
                       Detected {timeAgo(incident.detectedAt)}
                       {incident.resolvedAt && (
                         <> &middot; resolved {timeAgo(incident.resolvedAt)}</>
