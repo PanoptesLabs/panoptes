@@ -9,20 +9,11 @@ export type ValidatorStatus =
 
 export type PreflightStatus = "pass" | "warn" | "fail";
 
-// Intelligence Types — derived from constants.ts (single source of truth)
-import type {
-  AnomalyType as _AnomalyType,
-  AnomalySeverity as _AnomalySeverity,
-  IncidentStatus as _IncidentStatus,
-  IncidentEventType as _IncidentEventType,
-} from "@/lib/constants";
+// Intelligence Types — re-exported from constants.ts (single source of truth)
+import type { AnomalyType, AnomalySeverity, IncidentStatus, IncidentEventType } from "@/lib/constants";
+export type { AnomalyType, AnomalySeverity, IncidentStatus, IncidentEventType };
 
-export type AnomalyType = _AnomalyType;
-export type AnomalySeverity = _AnomalySeverity;
 export type AnomalyEntityType = "validator" | "endpoint" | "network";
-
-export type IncidentStatus = _IncidentStatus;
-export type IncidentEventType = _IncidentEventType;
 
 export interface EndpointScoreItem {
   score: number;

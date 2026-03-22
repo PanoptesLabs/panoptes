@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useGovernanceProposals } from "@/hooks/use-governance";
 import { ErrorState } from "./error-state";
+import { EmptyState } from "./empty-state";
 import { Pagination } from "./pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
@@ -36,12 +37,11 @@ export function GovernanceList() {
 
   if (proposals.length === 0) {
     return (
-      <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
-        <CardContent className="flex flex-col items-center py-12">
-          <Vote className="mb-3 size-8 text-dusty-lavender/50" />
-          <p className="text-sm text-dusty-lavender/50">No governance proposals found</p>
-        </CardContent>
-      </Card>
+      <EmptyState
+        icon={<Vote className="size-5 text-dusty-lavender/60" />}
+        title="No governance proposals found"
+        description="Governance proposals will appear here when submitted on-chain."
+      />
     );
   }
 

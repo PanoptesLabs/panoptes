@@ -6,17 +6,11 @@ import { Target, AlertTriangle, CheckCircle } from "lucide-react";
 import { timeAgo } from "@/lib/time";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { getBudgetClasses } from "@/lib/color-utils";
 import type { SloItem } from "@/types";
 
 interface SloCardProps {
   slo: SloItem;
-}
-
-function getBudgetColor(consumed: number | null): string {
-  if (consumed === null) return "bg-slate-DEFAULT";
-  if (consumed >= 100) return "bg-rose-DEFAULT";
-  if (consumed >= 80) return "bg-amber-DEFAULT";
-  return "bg-teal-DEFAULT";
 }
 
 function getStatusInfo(slo: SloItem) {
@@ -94,7 +88,7 @@ export function SloCard({ slo }: SloCardProps) {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-dark/50">
             <div
-              className={cn("h-full rounded-full transition-all", getBudgetColor(slo.budgetConsumed))}
+              className={cn("h-full rounded-full transition-all", getBudgetClasses(slo.budgetConsumed))}
               style={{ width: `${budgetWidth}%` }}
             />
           </div>

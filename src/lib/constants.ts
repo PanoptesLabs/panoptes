@@ -332,7 +332,7 @@ export const AUTH_DEFAULTS = {
   SESSION_DURATION_DAYS: 7,
   NONCE_EXPIRY_MINUTES: 5,
   PUBLIC_WORKSPACE_SLUG: "republic",
-  COOKIE_NAME: "panoptes_session",
+  COOKIE_NAME: "__Host-panoptes_session",
 } as const;
 
 export const ROLES = {
