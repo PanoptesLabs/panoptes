@@ -136,7 +136,7 @@ export function AdminOverview() {
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-xs text-dusty-lavender/70">
-                  <item.icon className="size-3 text-dusty-lavender/40" />
+                  <item.icon className="size-3 text-dusty-lavender/60" />
                   {item.label}
                 </span>
                 <span className="text-sm font-medium text-mist">{item.value}</span>
@@ -169,7 +169,7 @@ export function AdminOverview() {
                       )}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[10px] text-dusty-lavender/40">
+                  <span className="shrink-0 text-[10px] text-dusty-lavender/60">
                     {timeAgo(entry.createdAt)}
                   </span>
                 </div>

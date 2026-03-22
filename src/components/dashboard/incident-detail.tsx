@@ -114,11 +114,11 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
                 >
                   {incident.status}
                 </span>
-                <span className="text-xs text-dusty-lavender/40">
+                <span className="text-xs text-dusty-lavender/60">
                   {incident.entityType} &middot; {incident.entityId}
                 </span>
               </div>
-              <div className="mt-2 flex items-center gap-4 text-xs text-dusty-lavender/40">
+              <div className="mt-2 flex items-center gap-4 text-xs text-dusty-lavender/60">
                 <span>Detected {formatDateTime(incident.detectedAt)}</span>
                 {incident.acknowledgedAt && <span>Acknowledged {timeAgo(incident.acknowledgedAt)}</span>}
                 {incident.resolvedAt && <span>Resolved {timeAgo(incident.resolvedAt)}</span>}
@@ -178,7 +178,7 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-xs font-medium text-mist">{config.label}</span>
-                        <span className="text-[10px] text-dusty-lavender/40">{timeAgo(event.createdAt)}</span>
+                        <span className="text-[10px] text-dusty-lavender/60">{timeAgo(event.createdAt)}</span>
                       </div>
                       <p className="mt-0.5 text-xs text-dusty-lavender/60">{event.message}</p>
                     </div>
@@ -187,7 +187,7 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
               })}
             </div>
           ) : (
-            <p className="py-4 text-center text-sm text-dusty-lavender/40">No events yet</p>
+            <p className="py-4 text-center text-sm text-dusty-lavender/60">No events yet</p>
           )}
         </CardContent>
       </Card>

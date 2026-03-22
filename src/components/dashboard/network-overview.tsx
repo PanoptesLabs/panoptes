@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useNetworkStats } from "@/hooks/use-stats";
+import { useHistorySparklines } from "@/hooks/use-history-sparklines";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,6 @@ import {
   formatTokensShort,
   formatBlockHeight,
   formatNumber,
-  tokensToNumber,
 } from "@/lib/formatters";
 import {
   Shield,
@@ -48,14 +48,7 @@ export function NetworkOverview() {
   const current = data?.current;
   const history = useMemo(() => data?.history ?? [], [data?.history]);
 
-  const stakingSparkline = useMemo(
-    () => history.slice().reverse().map((h) => tokensToNumber(h.totalStaked)),
-    [history],
-  );
-  const blockSparkline = useMemo(
-    () => history.slice().reverse().map((h) => Number(h.blockHeight)),
-    [history],
-  );
+  const { stakingSparkline, blockSparkline } = useHistorySparklines(history);
 
   if (error && !data) {
     return (

@@ -22,7 +22,7 @@ export function HelpTooltip({ content, side = "top", className }: HelpTooltipPro
       <TooltipTrigger
         aria-label="More info"
         className={cn(
-          "inline-flex cursor-help text-dusty-lavender/40 transition-colors hover:text-dusty-lavender/70",
+          "inline-flex cursor-help text-dusty-lavender/60 transition-colors hover:text-dusty-lavender/70",
           className,
         )}
       >

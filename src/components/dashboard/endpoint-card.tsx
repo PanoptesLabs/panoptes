@@ -52,7 +52,7 @@ export function EndpointCard({ endpoint: ep }: EndpointCardProps) {
         {ep.latestCheck && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+              <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/60">
                 Latency
               </p>
               <p className="font-mono text-sm font-medium text-mist">
@@ -60,7 +60,7 @@ export function EndpointCard({ endpoint: ep }: EndpointCardProps) {
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+              <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/60">
                 Status
               </p>
               <p className="font-mono text-sm font-medium text-mist">
@@ -68,7 +68,7 @@ export function EndpointCard({ endpoint: ep }: EndpointCardProps) {
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+              <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/60">
                 Block Height
               </p>
               <p className="font-mono text-sm font-medium text-mist">
@@ -78,7 +78,7 @@ export function EndpointCard({ endpoint: ep }: EndpointCardProps) {
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+              <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/60">
                 Checked
               </p>
               <p className="text-sm text-mist">
@@ -91,7 +91,7 @@ export function EndpointCard({ endpoint: ep }: EndpointCardProps) {
         {/* 24h stats bar */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-dusty-lavender/40">24h Uptime</span>
+            <span className="text-dusty-lavender/60">24h Uptime</span>
             <span className="font-mono font-medium text-mist">
               {formatUptime(ep.stats24h.uptimePercent)}
             </span>
@@ -109,7 +109,7 @@ export function EndpointCard({ endpoint: ep }: EndpointCardProps) {
               style={{ width: `${Math.min(ep.stats24h.uptimePercent, 100)}%` }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-dusty-lavender/30">
+          <div className="flex justify-between text-[10px] text-dusty-lavender/50">
             <span>Avg {formatLatency(ep.stats24h.avgLatency)}</span>
             <span>
               {formatNumber(ep.stats24h.checkCount)} checks / {ep.stats24h.errorCount} errors

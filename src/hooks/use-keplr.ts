@@ -41,8 +41,7 @@ const CHAIN_INFO = {
 
 function getKeplr() {
   if (typeof window === "undefined") return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (window as any).keplr ?? null;
+  return window.keplr ?? null;
 }
 
 export function useKeplr() {

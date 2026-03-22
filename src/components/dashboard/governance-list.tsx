@@ -38,7 +38,7 @@ export function GovernanceList() {
     return (
       <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
         <CardContent className="flex flex-col items-center py-12">
-          <Vote className="mb-3 size-8 text-dusty-lavender/30" />
+          <Vote className="mb-3 size-8 text-dusty-lavender/50" />
           <p className="text-sm text-dusty-lavender/50">No governance proposals found</p>
         </CardContent>
       </Card>
@@ -63,7 +63,7 @@ export function GovernanceList() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-dusty-lavender/40">#{p.id}</span>
+                    <span className="font-mono text-xs text-dusty-lavender/60">#{p.id}</span>
                     <p className="truncate font-medium text-mist">{p.title}</p>
                   </div>
                   <p className="text-xs text-dusty-lavender/50">

@@ -7,6 +7,7 @@ import { useEndpoints } from "@/hooks/use-endpoints";
 import { useAnomalies } from "@/hooks/use-anomalies";
 import { useSloSummary } from "@/hooks/use-slos";
 import { useIncidentSummary } from "@/hooks/use-incidents";
+import { useHistorySparklines } from "@/hooks/use-history-sparklines";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,6 @@ import {
   formatTokensShort,
   formatBlockHeight,
   formatNumber,
-  tokensToNumber,
 } from "@/lib/formatters";
 import { timeAgo } from "@/lib/time";
 import {
@@ -60,19 +60,8 @@ export function Overview() {
     endpoints?.endpoints.filter((e) => e.latestCheck?.isHealthy).length ?? 0;
   const totalEndpoints = endpoints?.endpoints.length ?? 0;
 
-  // Sparkline data from history (reversed for chronological order)
-  const stakingSparkline = useMemo(
-    () => history.slice().reverse().map((h) => tokensToNumber(h.totalStaked)),
-    [history],
-  );
-  const blockSparkline = useMemo(
-    () => history.slice().reverse().map((h) => Number(h.blockHeight)),
-    [history],
-  );
-  const validatorSparkline = useMemo(
-    () => history.slice().reverse().map((h) => h.activeValidators),
-    [history],
-  );
+  const { stakingSparkline, blockSparkline, validatorSparkline } =
+    useHistorySparklines(history);
 
   if (statsError && !stats) {
     return <ErrorState message="Failed to load network stats" onRetry={() => mutateStats()} />;

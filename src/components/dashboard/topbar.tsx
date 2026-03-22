@@ -49,7 +49,7 @@ export function Topbar() {
         {crumbs.map((crumb) => (
           <span key={crumb.href} className="flex items-center gap-1">
             {crumb.href !== "/" + segments[0] && (
-              <ChevronRight className="size-3.5 text-dusty-lavender/30" />
+              <ChevronRight className="size-3.5 text-dusty-lavender/50" />
             )}
             {crumb.isLast ? (
               <span className="text-mist font-medium" aria-current="page">{crumb.label}</span>

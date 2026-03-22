@@ -97,7 +97,7 @@ export function Sidebar() {
             "size-4 shrink-0 transition-colors",
             active
               ? "text-soft-violet"
-              : "text-dusty-lavender/40 group-hover:text-dusty-lavender/70"
+              : "text-dusty-lavender/60 group-hover:text-dusty-lavender/70"
           )}
         />
         {item.label}
@@ -122,19 +122,19 @@ export function Sidebar() {
         {monitoringItems.map(renderNavItem)}
 
         <div className="border-t border-slate-DEFAULT/10 my-2" />
-        <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
+        <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/50">
           Reliability
         </p>
         {reliabilityItems.map(renderNavItem)}
 
         <div className="border-t border-slate-DEFAULT/10 my-2" />
-        <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
+        <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/50">
           Intelligence
         </p>
         {intelligenceItems.map(renderNavItem)}
 
         <div className="border-t border-slate-DEFAULT/10 my-2" />
-        <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
+        <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/50">
           Settings
         </p>
         {settingsItems.map(renderNavItem)}
@@ -142,7 +142,7 @@ export function Sidebar() {
         {role === "admin" && (
           <>
             <div className="border-t border-slate-DEFAULT/10 my-2" />
-            <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30">
+            <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/50">
               Admin
             </p>
             {adminItems.map(renderNavItem)}
@@ -169,7 +169,7 @@ export function Sidebar() {
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
             aria-expanded={mobileOpen}
-            className="flex size-9 items-center justify-center rounded-lg text-dusty-lavender hover:bg-deep-iris/20"
+            className="flex size-11 items-center justify-center rounded-lg text-dusty-lavender hover:bg-deep-iris/20"
           >
             <Menu className="size-5" />
           </button>

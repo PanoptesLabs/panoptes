@@ -165,7 +165,7 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <Calendar className="size-4 text-dusty-lavender/40" />
+              <Calendar className="size-4 text-dusty-lavender/60" />
               <span className="text-sm text-mist">{formatDate(v.firstSeen)}</span>
             </div>
           </CardContent>
@@ -184,7 +184,7 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
             <p className="font-mono text-xl font-bold text-mist">
               {formatTokensShort(v.tokens)}
             </p>
-            <p className="mt-1 text-xs text-dusty-lavender/40">
+            <p className="mt-1 text-xs text-dusty-lavender/60">
               {formatTokens(v.tokens)}
             </p>
           </CardContent>

@@ -196,7 +196,7 @@ export function ApiKeyList() {
 
       {data && data.keys.length === 0 && (
         <EmptyState
-          icon={<Key className="size-5 text-dusty-lavender/40" />}
+          icon={<Key className="size-5 text-dusty-lavender/60" />}
           title="No API keys created"
           description="Create an API key to access Panoptes data programmatically."
         />
@@ -217,7 +217,7 @@ export function ApiKeyList() {
                   <p className="mt-1 font-mono text-xs text-dusty-lavender/50">
                     {apiKey.keyPrefix}...
                   </p>
-                  <p className="mt-1 text-[10px] text-dusty-lavender/30">
+                  <p className="mt-1 text-[10px] text-dusty-lavender/50">
                     {apiKey.lastUsedAt ? `Last used ${timeAgo(apiKey.lastUsedAt)}` : "Never used"}
                   </p>
                 </div>
@@ -232,7 +232,7 @@ export function ApiKeyList() {
                   >
                     {apiKey.isActive ? "Active" : "Inactive"}
                   </span>
-                  <span className="text-[10px] text-dusty-lavender/40">
+                  <span className="text-[10px] text-dusty-lavender/60">
                     {timeAgo(apiKey.createdAt)}
                   </span>
                   {apiKey.isActive && (

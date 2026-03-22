@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { AUTH_DEFAULTS, ROLES } from "@/lib/constants";
 import { verifySignatureWithDiag } from "@/lib/signature";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const rl = withRateLimit(request);
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (!result.valid) {
-    console.error("[auth/verify] Signature verification failed", result.debug);
+    logger.error("auth/verify", "Signature verification failed");
     return NextResponse.json(
       { error: "Invalid signature" },
       { status: 401, headers: rl.headers },

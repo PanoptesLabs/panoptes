@@ -12,6 +12,7 @@ import { AlertTriangle } from "lucide-react";
 import { Pagination } from "@/components/dashboard/pagination";
 import { HelpTooltip } from "@/components/dashboard/help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { SEVERITY_COLORS } from "@/lib/constants";
 
 const TYPE_OPTIONS = [
   { label: "All Types", value: "" },
@@ -36,13 +37,6 @@ const RESOLVED_OPTIONS = [
   { label: "Active", value: "false" },
   { label: "Resolved", value: "true" },
 ];
-
-const severityColors: Record<string, string> = {
-  critical: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
-  high: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
-  medium: "bg-orange-900/50 text-orange-300 border-orange-500/30",
-  low: "bg-slate-dark/50 text-slate-light border-slate-DEFAULT/30",
-};
 
 export default function AnomaliesPage() {
   const [type, setType] = useState("");
@@ -123,7 +117,7 @@ export default function AnomaliesPage() {
 
       {data && data.anomalies.length === 0 && (
         <EmptyState
-          icon={<AlertTriangle className="size-5 text-dusty-lavender/40" />}
+          icon={<AlertTriangle className="size-5 text-dusty-lavender/60" />}
           title="No anomalies found"
           description="Anomalies are detected automatically from network activity."
         />
@@ -161,7 +155,7 @@ export default function AnomaliesPage() {
                     <div className="flex shrink-0 items-center gap-2">
                       <span
                         className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                          severityColors[anomaly.severity] ?? severityColors.low
+                          SEVERITY_COLORS[anomaly.severity] ?? SEVERITY_COLORS.low
                         }`}
                       >
                         {anomaly.severity}
@@ -177,7 +171,7 @@ export default function AnomaliesPage() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center gap-4 text-[10px] text-dusty-lavender/40">
+                  <div className="mt-2 flex items-center gap-4 text-[10px] text-dusty-lavender/60">
                     <span>{anomaly.entityType}</span>
                     <span>{anomaly.type}</span>
                     <span>Detected {timeAgo(anomaly.detectedAt)}</span>

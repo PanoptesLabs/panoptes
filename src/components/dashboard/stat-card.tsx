@@ -45,7 +45,7 @@ export function StatCard({
           {title}
         </CardTitle>
         {icon && (
-          <div className="text-dusty-lavender/40">{icon}</div>
+          <div className="text-dusty-lavender/60">{icon}</div>
         )}
       </CardHeader>
       <CardContent>
