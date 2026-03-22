@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { FORECAST_DEFAULTS } from "@/lib/constants";
+import { FORECAST_DEFAULTS, FORECAST_THRESHOLDS } from "@/lib/constants";
+import { hoursAgo, daysAgo } from "@/lib/time";
 
 export interface ForecastResult {
   entityType: string;
@@ -58,7 +59,7 @@ export async function forecastEndpointLatency(
   if (preloaded) {
     endpoints = preloaded;
   } else {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const twentyFourHoursAgo = hoursAgo(24);
     endpoints = await prisma.endpoint.findMany({
       where: { isActive: true },
       include: {
@@ -91,12 +92,12 @@ export async function forecastEndpointLatency(
 
       let prediction: "warning" | "critical" | "normal" = "normal";
       let threshold: number | null = null;
-      if (predictedValue > 10000) {
+      if (predictedValue > FORECAST_THRESHOLDS.LATENCY_CRITICAL_MS) {
         prediction = "critical";
-        threshold = 10000;
-      } else if (predictedValue > 5000) {
+        threshold = FORECAST_THRESHOLDS.LATENCY_CRITICAL_MS;
+      } else if (predictedValue > FORECAST_THRESHOLDS.LATENCY_WARNING_MS) {
         prediction = "warning";
-        threshold = 5000;
+        threshold = FORECAST_THRESHOLDS.LATENCY_WARNING_MS;
       }
 
       const validUntil = new Date(
@@ -127,7 +128,7 @@ export async function forecastEndpointLatency(
 
 export async function forecastJailRisk(): Promise<ForecastResult[]> {
   const results: ForecastResult[] = [];
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = daysAgo(7);
 
   const validators = await prisma.validator.findMany({
     where: { jailed: false },
@@ -155,12 +156,12 @@ export async function forecastJailRisk(): Promise<ForecastResult[]> {
 
     let prediction: "warning" | "critical" | "normal" = "normal";
     let threshold: number | null = null;
-    if (predictedRate > 0.8) {
+    if (predictedRate > FORECAST_THRESHOLDS.JAIL_RISK_CRITICAL) {
       prediction = "critical";
-      threshold = 0.8;
-    } else if (predictedRate > 0.5) {
+      threshold = FORECAST_THRESHOLDS.JAIL_RISK_CRITICAL;
+    } else if (predictedRate > FORECAST_THRESHOLDS.JAIL_RISK_WARNING) {
       prediction = "warning";
-      threshold = 0.5;
+      threshold = FORECAST_THRESHOLDS.JAIL_RISK_WARNING;
     }
 
     const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -199,7 +200,7 @@ export async function forecastDowntimeRisk(
       healthChecks: [...ep.healthChecks].reverse(),
     }));
   } else {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const twentyFourHoursAgo = hoursAgo(24);
     endpoints = await prisma.endpoint.findMany({
       where: { isActive: true },
       include: {
@@ -227,14 +228,14 @@ export async function forecastDowntimeRisk(
     const totalChecks = ep.healthChecks.length;
     const failureRate = ep.healthChecks.filter((c) => !c.isHealthy).length / totalChecks;
     const confidence = Math.min(
-      (totalChecks / 20) * FORECAST_DEFAULTS.CONFIDENCE_MAX,
+      (totalChecks / FORECAST_THRESHOLDS.MIN_SAMPLE_SIZE) * FORECAST_DEFAULTS.CONFIDENCE_MAX,
       FORECAST_DEFAULTS.CONFIDENCE_MAX,
     );
 
     let prediction: "warning" | "critical" | "normal" = "normal";
-    if (consecutiveFailures >= 5) {
+    if (consecutiveFailures >= FORECAST_THRESHOLDS.DOWNTIME_CRITICAL_FAILURES) {
       prediction = "critical";
-    } else if (consecutiveFailures >= 3) {
+    } else if (consecutiveFailures >= FORECAST_THRESHOLDS.DOWNTIME_WARNING_FAILURES) {
       prediction = "warning";
     }
 
@@ -263,7 +264,7 @@ export async function forecastDowntimeRisk(
 
 export async function forecastUnbondingRisk(): Promise<ForecastResult[]> {
   const results: ForecastResult[] = [];
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = daysAgo(7);
 
   const validators = await prisma.validator.findMany({
     include: {
@@ -293,12 +294,12 @@ export async function forecastUnbondingRisk(): Promise<ForecastResult[]> {
 
     let prediction: "warning" | "critical" | "normal" = "normal";
     let threshold: number | null = null;
-    if (changePct <= -25) {
+    if (changePct <= FORECAST_THRESHOLDS.UNBONDING_CRITICAL_PCT) {
       prediction = "critical";
-      threshold = -25;
-    } else if (changePct <= -10) {
+      threshold = FORECAST_THRESHOLDS.UNBONDING_CRITICAL_PCT;
+    } else if (changePct <= FORECAST_THRESHOLDS.UNBONDING_WARNING_PCT) {
       prediction = "warning";
-      threshold = -10;
+      threshold = FORECAST_THRESHOLDS.UNBONDING_WARNING_PCT;
     }
 
     const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -357,12 +358,12 @@ export async function forecastSloBreachRisk(): Promise<ForecastResult[]> {
 
     if (slope > 0 && remaining > 0) {
       const hoursToExhaustion = remaining / slope;
-      if (hoursToExhaustion <= 6) {
+      if (hoursToExhaustion <= FORECAST_THRESHOLDS.SLO_BREACH_CRITICAL_HOURS) {
         prediction = "critical";
-        threshold = 6;
-      } else if (hoursToExhaustion <= 24) {
+        threshold = FORECAST_THRESHOLDS.SLO_BREACH_CRITICAL_HOURS;
+      } else if (hoursToExhaustion <= FORECAST_THRESHOLDS.SLO_BREACH_WARNING_HOURS) {
         prediction = "warning";
-        threshold = 24;
+        threshold = FORECAST_THRESHOLDS.SLO_BREACH_WARNING_HOURS;
       }
     }
 
@@ -396,7 +397,7 @@ export async function generateForecasts(): Promise<{
   const start = Date.now();
 
   // Pre-fetch shared endpoint data (used by both latency and downtime forecasts)
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const twentyFourHoursAgo = hoursAgo(24);
   const endpointsWithHealth = await prisma.endpoint.findMany({
     where: { isActive: true },
     include: {

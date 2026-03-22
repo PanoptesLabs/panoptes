@@ -3,9 +3,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     endpoint: { findMany: vi.fn() },
-    endpointScore: { create: vi.fn() },
+    endpointScore: { create: vi.fn(), createMany: vi.fn() },
     validator: { findMany: vi.fn() },
-    validatorScore: { create: vi.fn() },
+    validatorScore: { create: vi.fn(), createMany: vi.fn() },
   },
 }));
 
@@ -92,6 +92,7 @@ describe("computeEndpointScores", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPrisma.endpointScore.create.mockResolvedValue({});
+    mockPrisma.endpointScore.createMany.mockResolvedValue({ count: 0 });
   });
 
   it("scores healthy endpoint with high score", async () => {
@@ -105,7 +106,8 @@ describe("computeEndpointScores", () => {
     const result = await computeEndpointScores();
     expect(result.scored).toBe(1);
 
-    const createCall = mockPrisma.endpointScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.endpointScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     expect(createCall.score).toBeGreaterThan(80);
     expect(createCall.uptime).toBe(1);
     expect(createCall.errorRate).toBe(1);
@@ -122,7 +124,8 @@ describe("computeEndpointScores", () => {
     const result = await computeEndpointScores();
     expect(result.scored).toBe(1);
 
-    const createCall = mockPrisma.endpointScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.endpointScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     expect(createCall.score).toBeLessThan(30);
     expect(createCall.uptime).toBe(0);
   });
@@ -143,7 +146,8 @@ describe("computeEndpointScores", () => {
     const result = await computeEndpointScores();
     expect(result.scored).toBe(1);
 
-    const createCall = mockPrisma.endpointScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.endpointScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     expect(createCall.uptime).toBe(0.7);
     expect(createCall.score).toBeGreaterThan(40);
     expect(createCall.score).toBeLessThan(90);
@@ -156,7 +160,8 @@ describe("computeEndpointScores", () => {
 
     await computeEndpointScores();
 
-    const createCall = mockPrisma.endpointScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.endpointScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     expect(createCall.score).toBe(0);
   });
 
@@ -173,7 +178,8 @@ describe("computeEndpointScores", () => {
 
     await computeEndpointScores();
 
-    const createCall = mockPrisma.endpointScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.endpointScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     // EMA: 0.3 * rawScore + 0.7 * 50
     // rawScore is high (all healthy, low latency)
     // So result should be between 50 and rawScore
@@ -190,7 +196,8 @@ describe("computeEndpointScores", () => {
 
     await computeEndpointScores();
 
-    const createCall = mockPrisma.endpointScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.endpointScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     // latency at 3000ms should be lower than at 200ms
     expect(createCall.latency).toBeLessThan(0.5);
   });
@@ -210,7 +217,8 @@ describe("computeEndpointScores", () => {
     await computeEndpointScores();
 
     // ep2 is 20 blocks behind -> freshness should be 0
-    const ep2Call = mockPrisma.endpointScore.create.mock.calls[1][0].data;
+    const batchData = mockPrisma.endpointScore.createMany.mock.calls[0][0].data;
+    const ep2Call = batchData[1];
     expect(ep2Call.freshness).toBe(0);
   });
 });
@@ -219,6 +227,7 @@ describe("computeValidatorScores", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPrisma.validatorScore.create.mockResolvedValue({});
+    mockPrisma.validatorScore.createMany.mockResolvedValue({ count: 0 });
   });
 
   it("scores clean validator with high score", async () => {
@@ -229,7 +238,8 @@ describe("computeValidatorScores", () => {
     const result = await computeValidatorScores();
     expect(result.scored).toBe(1);
 
-    const createCall = mockPrisma.validatorScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.validatorScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     expect(createCall.score).toBeGreaterThan(80);
     expect(createCall.missedBlockRate).toBe(1);
     expect(createCall.jailPenalty).toBe(1);
@@ -245,7 +255,8 @@ describe("computeValidatorScores", () => {
 
     await computeValidatorScores();
 
-    const createCall = mockPrisma.validatorScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.validatorScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     // jailCount=2 -> 1 - 2*0.25 = 0.5, recent jail -> 0.5 - 0.25 = 0.25
     expect(createCall.jailPenalty).toBe(0.25);
   });
@@ -257,7 +268,8 @@ describe("computeValidatorScores", () => {
 
     await computeValidatorScores();
 
-    const createCall = mockPrisma.validatorScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.validatorScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     // 1 - 800/1000 = 0.2
     expect(createCall.missedBlockRate).toBeCloseTo(0.2);
   });
@@ -269,7 +281,8 @@ describe("computeValidatorScores", () => {
 
     await computeValidatorScores();
 
-    const createCall = mockPrisma.validatorScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.validatorScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     // 1 - clamp(0.25/0.20, 0, 1) = 1 - 1 = 0
     expect(createCall.commissionScore).toBe(0);
   });
@@ -287,7 +300,8 @@ describe("computeValidatorScores", () => {
 
     await computeValidatorScores();
 
-    const createCall = mockPrisma.validatorScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.validatorScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     // No variance = max stability
     expect(createCall.stakeStability).toBe(1);
   });
@@ -301,7 +315,8 @@ describe("computeValidatorScores", () => {
 
     await computeValidatorScores();
 
-    const createCall = mockPrisma.validatorScore.create.mock.calls[0][0].data;
+    const batchData = mockPrisma.validatorScore.createMany.mock.calls[0][0].data;
+    const createCall = batchData[0];
     // Should be between 40 and raw score
     expect(createCall.score).toBeGreaterThan(40);
   });

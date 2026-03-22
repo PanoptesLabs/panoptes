@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { SEVERITY_COLORS, STATUS_COLORS } from "@/lib/constants";
 import { Siren, AlertTriangle, CheckCircle, Eye, ShieldAlert } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "./pagination";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
@@ -125,7 +126,7 @@ export function IncidentList() {
       {/* Loading */}
       {isLoading && !data && (
         <div className="flex items-center justify-center py-12">
-          <div className="size-6 animate-spin rounded-full border-2 border-soft-violet/30 border-t-soft-violet" />
+          <Spinner />
         </div>
       )}
 

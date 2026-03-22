@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
+import { hoursAgo } from "@/lib/time";
 import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const twentyFourHoursAgo = hoursAgo(24);
 
     const [
       userCount,

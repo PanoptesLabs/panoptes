@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { HEALTH_THRESHOLDS } from "@/lib/constants";
+import { daysAgo } from "@/lib/time";
 import { CHANNELS } from "@/lib/events/event-types";
 import type { WebhookEventType } from "@/lib/constants";
 
@@ -106,9 +107,7 @@ export async function evaluateSlos(): Promise<EvaluationResult> {
   let skipped = 0;
 
   for (const slo of slos) {
-    const windowStart = new Date(
-      Date.now() - slo.windowDays * 24 * 60 * 60 * 1000,
-    );
+    const windowStart = daysAgo(slo.windowDays);
 
     const computer = SLI_COMPUTERS[slo.indicator];
     if (!computer) {

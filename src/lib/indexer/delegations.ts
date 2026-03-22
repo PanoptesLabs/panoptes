@@ -70,29 +70,30 @@ async function processValidatorDelegations(val: { id: string; moniker: string })
 
   // Detect delegation events by comparing with prev snapshot (if exists)
   if (prevSnapshot) {
+    const newEvents: Array<{
+      type: string;
+      delegator: string;
+      validatorTo: string;
+      amount: string;
+    }> = [];
+
     // New delegations
     for (const [addr, amount] of currentDelegators) {
       const prevAmount = prevDelegators.get(addr);
       if (!prevAmount) {
-        await prisma.delegationEvent.create({
-          data: {
-            type: "delegate",
-            delegator: addr,
-            validatorTo: val.id,
-            amount,
-          },
+        newEvents.push({
+          type: "delegate",
+          delegator: addr,
+          validatorTo: val.id,
+          amount,
         });
-        events++;
       } else if (BigInt(amount) > BigInt(prevAmount)) {
-        await prisma.delegationEvent.create({
-          data: {
-            type: "delegate",
-            delegator: addr,
-            validatorTo: val.id,
-            amount: (BigInt(amount) - BigInt(prevAmount)).toString(),
-          },
+        newEvents.push({
+          type: "delegate",
+          delegator: addr,
+          validatorTo: val.id,
+          amount: (BigInt(amount) - BigInt(prevAmount)).toString(),
         });
-        events++;
       }
     }
 
@@ -100,26 +101,25 @@ async function processValidatorDelegations(val: { id: string; moniker: string })
     for (const [addr, amount] of prevDelegators) {
       const currentAmount = currentDelegators.get(addr);
       if (!currentAmount) {
-        await prisma.delegationEvent.create({
-          data: {
-            type: "undelegate",
-            delegator: addr,
-            validatorTo: val.id,
-            amount,
-          },
+        newEvents.push({
+          type: "undelegate",
+          delegator: addr,
+          validatorTo: val.id,
+          amount,
         });
-        events++;
       } else if (BigInt(currentAmount) < BigInt(amount)) {
-        await prisma.delegationEvent.create({
-          data: {
-            type: "undelegate",
-            delegator: addr,
-            validatorTo: val.id,
-            amount: (BigInt(amount) - BigInt(currentAmount)).toString(),
-          },
+        newEvents.push({
+          type: "undelegate",
+          delegator: addr,
+          validatorTo: val.id,
+          amount: (BigInt(amount) - BigInt(currentAmount)).toString(),
         });
-        events++;
       }
+    }
+
+    if (newEvents.length > 0) {
+      await prisma.delegationEvent.createMany({ data: newEvents });
+      events = newEvents.length;
     }
   }
 

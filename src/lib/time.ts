@@ -31,3 +31,15 @@ export function formatChartDate(iso: string): string {
     return "";
   }
 }
+
+export function hoursAgo(h: number): Date {
+  return new Date(Date.now() - h * 60 * 60 * 1000);
+}
+
+export function daysAgo(d: number): Date {
+  return new Date(Date.now() - d * 24 * 60 * 60 * 1000);
+}
+
+export function minutesAgo(m: number): Date {
+  return new Date(Date.now() - m * 60 * 1000);
+}

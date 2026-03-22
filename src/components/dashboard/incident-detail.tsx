@@ -20,6 +20,7 @@ import {
   Send,
 } from "lucide-react";
 import type { IncidentEventType } from "@/types";
+import { Spinner } from "@/components/ui/spinner";
 import { AuthGate } from "./auth-gate";
 
 const eventTypeConfig: Record<IncidentEventType, { icon: typeof Circle; color: string; label: string }> = {
@@ -45,7 +46,7 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="size-6 animate-spin rounded-full border-2 border-soft-violet/30 border-t-soft-violet" />
+        <Spinner />
       </div>
     );
   }

@@ -1,6 +1,6 @@
 import { RATE_LIMIT } from "@/lib/constants";
 
-const MAX_ENTRIES = 10_000;
+const MAX_ENTRIES = 5_000;
 
 interface RateLimitEntry {
   count: number;
@@ -26,15 +26,23 @@ function ensureCleanup() {
 }
 
 function evictOldest() {
-  let oldestKey: string | null = null;
-  let oldestReset = Infinity;
+  const now = Date.now();
+  // First pass: clean expired entries
   for (const [key, entry] of store) {
-    if (entry.resetAt < oldestReset) {
-      oldestReset = entry.resetAt;
-      oldestKey = key;
-    }
+    if (entry.resetAt < now) store.delete(key);
   }
-  if (oldestKey) store.delete(oldestKey);
+  // If still over limit, evict oldest
+  if (store.size >= MAX_ENTRIES) {
+    let oldestKey: string | null = null;
+    let oldestReset = Infinity;
+    for (const [key, entry] of store) {
+      if (entry.resetAt < oldestReset) {
+        oldestReset = entry.resetAt;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) store.delete(oldestKey);
+  }
 }
 
 function _checkLimit(

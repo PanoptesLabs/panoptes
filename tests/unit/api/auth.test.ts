@@ -40,6 +40,7 @@ vi.mock("@/lib/workspace-auth", () => ({
 vi.mock("@/lib/auth", () => ({
   resolveAuth: vi.fn(),
   rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
+  isAdminAddress: vi.fn(() => false),
 }));
 
 vi.mock("@/lib/signature", () => ({

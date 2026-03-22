@@ -78,7 +78,7 @@ export function PolicyList() {
     }
   };
 
-  if (error) return <ErrorState message="Failed to load policies" />;
+  if (error && !data) return <ErrorState message="Failed to load policies" onRetry={() => mutate()} />;
 
   if (isLoading) {
     return (

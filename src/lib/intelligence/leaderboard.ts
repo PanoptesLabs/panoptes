@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { SCORING } from "@/lib/constants";
+import { hoursAgo, daysAgo } from "@/lib/time";
 
 export type LeaderboardCategory =
   | "overall"
@@ -91,9 +93,9 @@ export async function getLeaderboard(
           break;
         case "reliable":
           value =
-            (1 - s.missedBlockRate) * 0.5 +
-            (1 - s.jailPenalty) * 0.3 +
-            s.stakeStability * 0.2;
+            (1 - s.missedBlockRate) * SCORING.RELIABLE_WEIGHTS.uptimeWeight +
+            (1 - s.jailPenalty) * SCORING.RELIABLE_WEIGHTS.jailWeight +
+            s.stakeStability * SCORING.RELIABLE_WEIGHTS.stabilityWeight;
           break;
         default:
           value = s.score;
@@ -121,7 +123,7 @@ export async function getLeaderboard(
 }
 
 async function getRisingLeaderboard(limit: number): Promise<LeaderboardEntry[]> {
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const twentyFourHoursAgo = hoursAgo(24);
 
   const validators = await prisma.validator.findMany({
     include: {
@@ -170,7 +172,7 @@ async function getRisingLeaderboard(limit: number): Promise<LeaderboardEntry[]> 
 }
 
 async function getStakeMagnetLeaderboard(limit: number): Promise<LeaderboardEntry[]> {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = daysAgo(7);
 
   const validators = await prisma.validator.findMany({
     include: {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { serializeBigInt } from "@/lib/api-helpers";
+import { hoursAgo } from "@/lib/time";
 import type { EndpointItem, EndpointScoreItem } from "@/types";
 import { getActiveExcludedEndpointIds } from "./remediation";
 
@@ -26,7 +27,7 @@ export async function selectBestEndpoint(
   alternatives: ScoredEndpoint[];
   strategy: "score_weighted" | "fallback";
 }> {
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const twentyFourHoursAgo = hoursAgo(24);
 
   // Merge explicit excludeIds with policy-based exclusions
   let allExcludeIds = options?.excludeIds ?? [];

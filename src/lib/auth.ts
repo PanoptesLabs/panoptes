@@ -13,6 +13,24 @@ export interface AuthContext {
 /** Module-level cache for public workspace lookup (60s TTL) */
 let wsCache: { data: { id: string; name: string; slug: string }; expiresAt: number } | null = null;
 
+/** Module-level cache for admin addresses */
+let adminSet: Set<string> | null = null;
+
+export function isAdminAddress(addr: string): boolean {
+  if (!adminSet) {
+    const raw = process.env.PANOPTES_ADMIN_ADDRESSES ?? "";
+    adminSet = new Set(
+      raw.split(",").map((a) => a.trim().toLowerCase()).filter(Boolean),
+    );
+  }
+  return adminSet.has(addr.toLowerCase());
+}
+
+/** @internal Test-only: reset admin address cache */
+export function _resetAdminCache(): void {
+  adminSet = null;
+}
+
 /** @internal Test-only: reset workspace cache */
 export function _resetWsCache(): void {
   wsCache = null;

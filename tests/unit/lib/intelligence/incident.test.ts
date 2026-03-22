@@ -112,7 +112,7 @@ describe("correlateIncidents", () => {
   it("creates incident from anomaly with workspace SLO", async () => {
     mockPrisma.slo.findMany
       .mockResolvedValueOnce([]) // no breaching SLOs
-      .mockResolvedValueOnce([{ workspaceId: "ws-1", entityType: "endpoint" }]) // workspace SLOs for entity
+      .mockResolvedValueOnce([{ workspaceId: "ws-1", entityType: "endpoint", entityId: "ep-1" }]) // bulk SLO lookup for anomaly entities
       .mockResolvedValueOnce([]) // recovered SLOs
     ;
     mockPrisma.anomaly.findMany.mockResolvedValue([{ ...baseAnomaly }]);
@@ -245,7 +245,7 @@ describe("correlateIncidents", () => {
   it("adds anomaly_linked event to existing incident", async () => {
     mockPrisma.slo.findMany
       .mockResolvedValueOnce([]) // no breaching SLOs
-      .mockResolvedValueOnce([{ workspaceId: "ws-1", entityType: "endpoint" }])
+      .mockResolvedValueOnce([{ workspaceId: "ws-1", entityType: "endpoint", entityId: "ep-1" }]) // bulk SLO lookup
       .mockResolvedValueOnce([]) // recovered
     ;
     mockPrisma.anomaly.findMany.mockResolvedValue([{ ...baseAnomaly }]);

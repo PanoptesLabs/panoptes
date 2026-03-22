@@ -81,6 +81,13 @@ export const SCORING = {
   EMA_ALPHA: 0.3,
   LATENCY_BASELINE_MS: 200,
   LATENCY_MAX_MS: 5000,
+  JAIL_PENALTY_MULTIPLIER: 0.25,
+  JAIL_RECENT_DAYS: 7,
+  RELIABLE_WEIGHTS: {
+    uptimeWeight: 0.5,
+    jailWeight: 0.3,
+    stabilityWeight: 0.2,
+  },
 } as const;
 
 export const ANOMALY_TYPES = [
@@ -113,6 +120,7 @@ export const PREFLIGHT = {
   MIN_GAS_BALANCE: "1000",
   DEFAULT_GAS_LIMIT: 200_000,
   TIMEOUT_MS: 10_000,
+  FETCH_TIMEOUT_MS: 5_000,
 } as const;
 
 export const WORKSPACE_DEFAULTS = {
@@ -297,6 +305,20 @@ export const FORECAST_DEFAULTS = {
   RETENTION_DAYS: 7,
   TIME_HORIZONS: ["1h", "6h", "24h"] as const,
   METRICS: ["latency", "jail_risk", "downtime", "unbonding", "breach_risk"] as const,
+} as const;
+
+export const FORECAST_THRESHOLDS = {
+  LATENCY_CRITICAL_MS: 10_000,
+  LATENCY_WARNING_MS: 5_000,
+  JAIL_RISK_CRITICAL: 0.8,
+  JAIL_RISK_WARNING: 0.5,
+  DOWNTIME_CRITICAL_FAILURES: 5,
+  DOWNTIME_WARNING_FAILURES: 3,
+  UNBONDING_CRITICAL_PCT: -25,
+  UNBONDING_WARNING_PCT: -10,
+  SLO_BREACH_CRITICAL_HOURS: 6,
+  SLO_BREACH_WARNING_HOURS: 24,
+  MIN_SAMPLE_SIZE: 20,
 } as const;
 
 export const LEADERBOARD_DEFAULTS = {

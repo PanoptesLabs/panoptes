@@ -63,7 +63,7 @@ async function checkAccountExists(address: string, restEndpoint: { url: string }
 
     const res = await fetch(
       `${restEndpoint.url}/cosmos/auth/v1beta1/accounts/${address}`,
-      { signal: AbortSignal.timeout(5000) },
+      { signal: AbortSignal.timeout(PREFLIGHT.FETCH_TIMEOUT_MS) },
     );
 
     if (res.ok) {
@@ -105,7 +105,7 @@ async function checkBalance(
 
     const res = await fetch(
       `${restEndpoint.url}/cosmos/bank/v1beta1/balances/${address}`,
-      { signal: AbortSignal.timeout(5000) },
+      { signal: AbortSignal.timeout(PREFLIGHT.FETCH_TIMEOUT_MS) },
     );
 
     if (!res.ok) {
