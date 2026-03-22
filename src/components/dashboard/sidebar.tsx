@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/components/dashboard/auth-provider";
@@ -63,15 +63,53 @@ export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAuthenticated: hasWalletAuth, logout, setShowConnectModal, role } = useAuthContext();
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  const getFocusableElements = useCallback(() => {
+    if (!sidebarRef.current) return [];
+    return Array.from(
+      sidebarRef.current.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+      )
+    );
+  }, []);
 
   useEffect(() => {
     if (!mobileOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileOpen(false);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileOpen(false);
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const focusable = getFocusableElements();
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
     };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [mobileOpen]);
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusable = getFocusableElements();
+    focusable[0]?.focus();
+
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen, getFocusableElements]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -199,6 +237,7 @@ export function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
+        ref={sidebarRef}
         aria-label="Sidebar"
         className={cn(
           "fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r border-slate-DEFAULT/20 bg-midnight-plum transition-transform duration-300 lg:hidden",

@@ -96,7 +96,7 @@ export function IncidentList() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex items-center gap-1">
           <FilterSelect label="Status" options={STATUS_OPTIONS} value={status} onChange={(v) => { setStatus(v); setOffset(0); }} />
           {status && helpContent.incidents.statuses[status as keyof typeof helpContent.incidents.statuses] && (

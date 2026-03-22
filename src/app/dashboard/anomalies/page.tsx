@@ -73,7 +73,7 @@ export default function AnomaliesPage() {
         description="Network anomaly detection and alerts"
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex items-center gap-1">
           <FilterSelect
             label="Type"

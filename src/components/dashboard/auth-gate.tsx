@@ -3,7 +3,7 @@
 import { useAuthContext } from "@/components/dashboard/auth-provider";
 import { ROLE_HIERARCHY } from "@/lib/constants";
 import { toast } from "sonner";
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactNode, type ReactElement } from "react";
 
 interface AuthGateProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface AuthGateProps {
 }
 
 /**
- * Action-gate wrapper: wraps a button/action that requires authentication.
+ * Action-gate wrapper: injects onClick into the child element.
  * - Unauthenticated: opens connect modal
  * - Insufficient role: shows toast
  * - Sufficient role: calls onAction
@@ -37,9 +37,15 @@ export function AuthGate({ children, requiredRole = "member", onAction }: AuthGa
     onAction?.();
   };
 
+  if (isValidElement(children)) {
+    return cloneElement(children as ReactElement<{ onClick?: () => void }>, {
+      onClick: handleClick,
+    });
+  }
+
   return (
-    <div role="button" tabIndex={0} onClick={handleClick} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }} className="contents">
+    <span role="button" tabIndex={0} onClick={handleClick} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}>
       {children}
-    </div>
+    </span>
   );
 }

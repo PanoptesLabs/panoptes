@@ -22,7 +22,7 @@ export function Pagination({
   const hasNext = offset + limit < total;
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-dusty-lavender/50">
         Showing {start}-{end} of {total.toLocaleString()}
       </p>
