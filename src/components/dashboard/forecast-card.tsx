@@ -100,7 +100,7 @@ export function ForecastCard({ forecast }: ForecastCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[10px] text-dusty-lavender/60">
+        <div className="flex items-center justify-between text-[11px] text-dusty-lavender/60">
           <span className="flex items-center gap-1">
             <TrendingUp className="size-3" />
             {new Date(forecast.validUntil) > new Date()

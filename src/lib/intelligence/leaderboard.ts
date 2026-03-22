@@ -144,6 +144,7 @@ async function getRisingLeaderboard(limit: number): Promise<LeaderboardEntry[]> 
       timestamp: { lte: twentyFourHoursAgo },
     },
     orderBy: { timestamp: "desc" },
+    // NOTE: distinct on large tables (500+ validators) may benefit from a materialized view
     distinct: ["validatorId"],
     select: { validatorId: true, score: true },
   });

@@ -109,7 +109,7 @@ export function EndpointCard({ endpoint: ep }: EndpointCardProps) {
               style={{ width: `${Math.min(ep.stats24h.uptimePercent, 100)}%` }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-dusty-lavender/50">
+          <div className="flex justify-between text-[11px] text-dusty-lavender/50">
             <span>Avg {formatLatency(ep.stats24h.avgLatency)}</span>
             <span>
               {formatNumber(ep.stats24h.checkCount)} checks / {ep.stats24h.errorCount} errors

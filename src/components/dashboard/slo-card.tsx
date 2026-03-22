@@ -95,7 +95,7 @@ export function SloCard({ slo }: SloCardProps) {
         </div>
 
         {/* Footer info */}
-        <div className="flex items-center justify-between text-[10px] text-dusty-lavender/60">
+        <div className="flex items-center justify-between text-[11px] text-dusty-lavender/60">
           <span className="flex items-center gap-1">
             {slo.windowDays}d window
             <HelpTooltip content={helpContent.slos.concepts.windowDays} side="top" />

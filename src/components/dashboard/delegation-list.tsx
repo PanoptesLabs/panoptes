@@ -111,7 +111,7 @@ export function DelegationList() {
                     <span className="font-mono text-xs text-mist shrink-0">
                       {formatAmountShort(e.amount)}
                     </span>
-                    <span className="text-[10px] text-dusty-lavender/60 shrink-0">
+                    <span className="text-[11px] text-dusty-lavender/60 shrink-0">
                       {timeAgo(e.timestamp)}
                     </span>
                   </div>

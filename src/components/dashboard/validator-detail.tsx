@@ -24,6 +24,7 @@ import {
   formatNumber,
 } from "@/lib/formatters";
 import { formatDate, timeAgo } from "@/lib/time";
+import { CHART_COLORS } from "@/lib/constants";
 import { ArrowLeft, ShieldAlert, Calendar } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
@@ -249,7 +250,7 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
                   snapshots={snapshots}
                   dataKey="tokens"
                   label="RAI"
-                  color="#8B5CF6"
+                  color={CHART_COLORS.primary}
                   formatter={(v) => `${(v / 1_000_000).toFixed(1)}M`}
                 />
               </CardContent>
@@ -265,7 +266,7 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
                   snapshots={snapshots}
                   dataKey="commission"
                   label=""
-                  color="#D97706"
+                  color={CHART_COLORS.secondary}
                   formatter={(v) => `${(v * 100).toFixed(1)}%`}
                 />
               </CardContent>

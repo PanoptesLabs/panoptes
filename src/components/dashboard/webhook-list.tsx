@@ -108,7 +108,7 @@ export function WebhookList() {
                     >
                       {webhook.isActive ? "Active" : "Inactive"}
                     </span>
-                    <span className="text-[10px] text-dusty-lavender/60">
+                    <span className="text-[11px] text-dusty-lavender/60">
                       {timeAgo(webhook.createdAt)}
                     </span>
                   </div>

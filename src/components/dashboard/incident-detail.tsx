@@ -179,7 +179,7 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-xs font-medium text-mist">{config.label}</span>
-                        <span className="text-[10px] text-dusty-lavender/60">{timeAgo(event.createdAt)}</span>
+                        <span className="text-[11px] text-dusty-lavender/60">{timeAgo(event.createdAt)}</span>
                       </div>
                       <p className="mt-0.5 text-xs text-dusty-lavender/60">{event.message}</p>
                     </div>
