@@ -27,7 +27,7 @@ export function DelegationFlow() {
     return (
       <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
         <CardContent className="flex flex-col items-center py-12">
-          <ArrowLeftRight className="mb-3 size-8 text-dusty-lavender/30" />
+          <ArrowLeftRight className="mb-3 size-8 text-dusty-lavender/50" />
           <p className="text-sm text-dusty-lavender/50">No delegation flow data yet</p>
         </CardContent>
       </Card>
@@ -43,7 +43,7 @@ export function DelegationFlow() {
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
-          <div className="grid grid-cols-2 gap-4 px-3 pb-2 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/30 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 px-3 pb-2 text-[10px] font-medium uppercase tracking-wider text-dusty-lavender/50 md:grid-cols-4">
             <span>Validator</span>
             <span className="text-right">Delegators</span>
             <span className="text-right">Total Delegated</span>

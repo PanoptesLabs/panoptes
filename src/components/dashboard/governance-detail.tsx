@@ -105,7 +105,7 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
         </CardHeader>
         <CardContent>
           {data.votes.length === 0 ? (
-            <p className="text-xs text-dusty-lavender/40">No votes recorded yet</p>
+            <p className="text-xs text-dusty-lavender/60">No votes recorded yet</p>
           ) : (
             <div className="space-y-1 max-h-96 overflow-auto">
               {data.votes.map((v) => {

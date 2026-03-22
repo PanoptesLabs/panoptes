@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
 import { resolveAuth, requireRole, rateLimitForRole } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const auth = await resolveAuth(request);
@@ -102,7 +103,7 @@ export async function GET(request: NextRequest) {
       { headers: rl.headers },
     );
   } catch (err) {
-    console.error("[admin/overview]", err);
+    logger.error("admin/overview", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500, headers: rl.headers },

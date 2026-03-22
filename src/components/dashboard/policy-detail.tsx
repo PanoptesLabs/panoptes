@@ -92,7 +92,7 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
                   <HelpTooltip content={helpContent.policies.concepts.dryRun} side="bottom" />
                 </span>
               )}
-              <span className={`text-xs ${data.isActive ? "text-teal-DEFAULT" : "text-dusty-lavender/40"}`}>
+              <span className={`text-xs ${data.isActive ? "text-teal-DEFAULT" : "text-dusty-lavender/60"}`}>
                 {data.isActive ? "Active" : "Paused"}
               </span>
             </div>
@@ -296,7 +296,7 @@ export function PolicyDetail({ policyId }: { policyId: string }) {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-dusty-lavender/40">No executions yet</p>
+            <p className="text-xs text-dusty-lavender/60">No executions yet</p>
           )}
         </CardContent>
       </Card>

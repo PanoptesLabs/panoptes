@@ -88,7 +88,7 @@ export function ForecastCard({ forecast }: ForecastCardProps) {
 
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/60">
               Confidence
               <HelpTooltip content={helpContent.forecasts.concepts.confidence} side="top" />
             </p>
@@ -97,7 +97,7 @@ export function ForecastCard({ forecast }: ForecastCardProps) {
             </p>
           </div>
           <div>
-            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/60">
               Horizon
               <HelpTooltip content={helpContent.forecasts.concepts.timeHorizon} side="top" />
             </p>
@@ -106,7 +106,7 @@ export function ForecastCard({ forecast }: ForecastCardProps) {
             </p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/60">
               Entity
             </p>
             <p className="font-mono text-xs font-medium text-mist truncate">
@@ -115,7 +115,7 @@ export function ForecastCard({ forecast }: ForecastCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[10px] text-dusty-lavender/40">
+        <div className="flex items-center justify-between text-[10px] text-dusty-lavender/60">
           <span className="flex items-center gap-1">
             <TrendingUp className="size-3" />
             {new Date(forecast.validUntil) > new Date()

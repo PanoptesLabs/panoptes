@@ -171,7 +171,7 @@ export function WebhookDetail({ webhookId }: WebhookDetailProps) {
                 >
                   {webhook.isActive ? "Active" : "Inactive"}
                 </span>
-                <span className="text-xs text-dusty-lavender/40">
+                <span className="text-xs text-dusty-lavender/60">
                   Created {timeAgo(webhook.createdAt)}
                 </span>
               </div>

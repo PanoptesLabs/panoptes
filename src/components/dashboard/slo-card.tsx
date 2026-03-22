@@ -63,7 +63,7 @@ export function SloCard({ slo }: SloCardProps) {
         {/* Target vs Current */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-dusty-lavender/60">
               Target
               <HelpTooltip content={helpContent.slos.concepts.target} side="top" />
             </p>
@@ -72,7 +72,7 @@ export function SloCard({ slo }: SloCardProps) {
             </p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/40">
+            <p className="text-[10px] uppercase tracking-wider text-dusty-lavender/60">
               Current
             </p>
             <p className="font-mono text-sm font-medium text-mist">
@@ -84,7 +84,7 @@ export function SloCard({ slo }: SloCardProps) {
         {/* Error budget bar */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1 text-dusty-lavender/40">
+            <span className="flex items-center gap-1 text-dusty-lavender/60">
               Error Budget
               <HelpTooltip content={helpContent.slos.concepts.errorBudget} side="top" />
             </span>
@@ -101,7 +101,7 @@ export function SloCard({ slo }: SloCardProps) {
         </div>
 
         {/* Footer info */}
-        <div className="flex items-center justify-between text-[10px] text-dusty-lavender/40">
+        <div className="flex items-center justify-between text-[10px] text-dusty-lavender/60">
           <span className="flex items-center gap-1">
             {slo.windowDays}d window
             <HelpTooltip content={helpContent.slos.concepts.windowDays} side="top" />

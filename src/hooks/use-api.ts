@@ -2,17 +2,20 @@
 
 import type { SWRConfiguration } from "swr";
 
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const error = new Error("API request failed");
-    (error as Error & { status: number }).status = res.status;
-    throw error;
-  }
-  return res.json();
-};
+function createFetcher(options?: RequestInit) {
+  return async (url: string) => {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const error = new Error("API request failed");
+      (error as Error & { status: number }).status = res.status;
+      throw error;
+    }
+    return res.json();
+  };
+}
 
-export { fetcher };
+export const fetcher = createFetcher();
+export const sessionFetcher = createFetcher({ credentials: "include" });
 
 export const defaultSwrConfig: SWRConfiguration = {
   fetcher,
@@ -25,18 +28,6 @@ export const pollingSwrConfig: SWRConfiguration = {
   ...defaultSwrConfig,
   refreshInterval: 30_000,
 };
-
-const sessionFetcher = async (url: string) => {
-  const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) {
-    const error = new Error("API request failed");
-    (error as Error & { status: number }).status = res.status;
-    throw error;
-  }
-  return res.json();
-};
-
-export { sessionFetcher };
 
 export const sessionSwrConfig: SWRConfiguration = {
   fetcher: sessionFetcher,

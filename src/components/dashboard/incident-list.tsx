@@ -133,7 +133,7 @@ export function IncidentList() {
       {data && data.incidents.length === 0 && (
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardContent className="flex flex-col items-center gap-3 py-12">
-            <Siren className="size-8 text-dusty-lavender/30" />
+            <Siren className="size-8 text-dusty-lavender/50" />
             <p className="text-sm text-dusty-lavender/50">No incidents found</p>
           </CardContent>
         </Card>
@@ -176,7 +176,7 @@ export function IncidentList() {
                         </span>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-4 text-[10px] text-dusty-lavender/40">
+                    <div className="mt-2 flex items-center gap-4 text-[10px] text-dusty-lavender/60">
                       <span>{incident.entityType}</span>
                       <span>Detected {timeAgo(incident.detectedAt)}</span>
                       {incident.resolvedAt && <span>Resolved {timeAgo(incident.resolvedAt)}</span>}

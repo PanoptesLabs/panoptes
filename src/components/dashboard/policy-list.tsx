@@ -220,7 +220,7 @@ export function PolicyList() {
       {policies.length === 0 && !showForm ? (
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardContent className="flex flex-col items-center py-12">
-            <ScrollText className="mb-3 size-8 text-dusty-lavender/30" />
+            <ScrollText className="mb-3 size-8 text-dusty-lavender/50" />
             <p className="text-sm text-dusty-lavender/50">No policies configured yet</p>
           </CardContent>
         </Card>
@@ -251,11 +251,11 @@ export function PolicyList() {
                   {policy.isActive ? (
                     <Play className="size-3.5 text-teal-DEFAULT" />
                   ) : (
-                    <Pause className="size-3.5 text-dusty-lavender/40" />
+                    <Pause className="size-3.5 text-dusty-lavender/60" />
                   )}
                   <span className={cn(
                     "text-xs",
-                    policy.isActive ? "text-teal-DEFAULT" : "text-dusty-lavender/40",
+                    policy.isActive ? "text-teal-DEFAULT" : "text-dusty-lavender/60",
                   )}>
                     {policy.isActive ? "Active" : "Paused"}
                   </span>

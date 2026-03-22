@@ -84,7 +84,7 @@ export function ForecastList() {
 
       {data && data.forecasts.length === 0 && (
         <EmptyState
-          icon={<TrendingUp className="size-5 text-dusty-lavender/40" />}
+          icon={<TrendingUp className="size-5 text-dusty-lavender/60" />}
           title="No forecasts available"
           description="Forecasts are generated automatically based on network metrics."
         />

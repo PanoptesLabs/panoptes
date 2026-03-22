@@ -77,8 +77,8 @@ export function DelegationList() {
         <CardContent>
           {events.length === 0 ? (
             <div className="flex flex-col items-center py-8">
-              <ArrowLeftRight className="mb-2 size-6 text-dusty-lavender/30" />
-              <p className="text-xs text-dusty-lavender/40">No delegation events yet</p>
+              <ArrowLeftRight className="mb-2 size-6 text-dusty-lavender/50" />
+              <p className="text-xs text-dusty-lavender/60">No delegation events yet</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -102,7 +102,7 @@ export function DelegationList() {
                         <span className="font-mono text-dusty-lavender/50 truncate max-w-[80px] sm:max-w-[120px]">
                           {e.delegator}
                         </span>
-                        <span className="text-dusty-lavender/30">→</span>
+                        <span className="text-dusty-lavender/50">→</span>
                         <span className="font-mono text-dusty-lavender/50 truncate max-w-[80px] sm:max-w-[120px]">
                           {e.validatorTo}
                         </span>
@@ -111,7 +111,7 @@ export function DelegationList() {
                     <span className="font-mono text-xs text-mist shrink-0">
                       {formatAmountShort(e.amount)}
                     </span>
-                    <span className="text-[10px] text-dusty-lavender/40 shrink-0">
+                    <span className="text-[10px] text-dusty-lavender/60 shrink-0">
                       {timeAgo(e.timestamp)}
                     </span>
                   </div>

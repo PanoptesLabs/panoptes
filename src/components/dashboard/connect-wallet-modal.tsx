@@ -124,7 +124,7 @@ export function ConnectWalletModal({
         </div>
 
         {error && (
-          <p className="mt-3 text-xs text-red-400">{error}</p>
+          <p className="mt-3 text-xs text-rose-light">{error}</p>
         )}
 
         <button

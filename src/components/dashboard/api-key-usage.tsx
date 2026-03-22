@@ -42,7 +42,7 @@ export function ApiKeyUsage({ keyId }: ApiKeyUsageProps) {
         </CardHeader>
         <CardContent>
           {dailyData.length === 0 ? (
-            <p className="py-6 text-center text-xs text-dusty-lavender/40">No usage data</p>
+            <p className="py-6 text-center text-xs text-dusty-lavender/60">No usage data</p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={dailyData}>

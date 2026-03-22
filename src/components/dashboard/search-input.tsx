@@ -32,7 +32,7 @@ export function SearchInput({
 
   return (
     <div className={`relative ${className ?? ""}`}>
-      <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-dusty-lavender/40" />
+      <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-dusty-lavender/60" />
       <Input
         value={query}
         onChange={(e) => setQuery(e.target.value)}

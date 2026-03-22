@@ -241,7 +241,7 @@ export function AdminAccess() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-medium text-mist">{key.name}</p>
-                      <span className="font-mono text-[10px] text-dusty-lavender/40">{key.keyPrefix}...</span>
+                      <span className="font-mono text-[10px] text-dusty-lavender/60">{key.keyPrefix}...</span>
                       <span className={cn(
                         "rounded px-1.5 py-0.5 text-[10px] font-medium",
                         key.tier === "pro" ? "bg-soft-violet/15 text-soft-violet" : "bg-dusty-lavender/10 text-dusty-lavender/50",

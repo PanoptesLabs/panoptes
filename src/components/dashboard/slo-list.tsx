@@ -101,7 +101,7 @@ export function SloList() {
       {/* Empty state */}
       {data && filteredSlos.length === 0 && (
         <EmptyState
-          icon={<Target className="size-5 text-dusty-lavender/40" />}
+          icon={<Target className="size-5 text-dusty-lavender/60" />}
           title="No SLOs found"
           description="Service level objectives help you track and maintain reliability targets."
         />

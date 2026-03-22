@@ -37,59 +37,11 @@ function evictOldest() {
   if (oldestKey) store.delete(oldestKey);
 }
 
-export function checkRateLimit(ip: string, maxOverride?: number): {
-  allowed: boolean;
-  remaining: number;
-  resetAt: number;
-} {
+function _checkLimit(
+  storeKey: string,
+  maxRequests: number,
+): { allowed: boolean; remaining: number; resetAt: number } {
   ensureCleanup();
-  const now = Date.now();
-  const maxRequests = maxOverride
-    ?? (ip === "unknown"
-      ? Math.floor(RATE_LIMIT.MAX_REQUESTS / 2)
-      : RATE_LIMIT.MAX_REQUESTS);
-  const entry = store.get(ip);
-
-  if (!entry || entry.resetAt < now) {
-    if (!entry && store.size >= MAX_ENTRIES) {
-      evictOldest();
-    }
-    const resetAt = now + RATE_LIMIT.WINDOW_MS;
-    store.set(ip, { count: 1, resetAt });
-    return {
-      allowed: true,
-      remaining: maxRequests - 1,
-      resetAt,
-    };
-  }
-
-  entry.count++;
-
-  if (entry.count > maxRequests) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetAt: entry.resetAt,
-    };
-  }
-
-  return {
-    allowed: true,
-    remaining: maxRequests - entry.count,
-    resetAt: entry.resetAt,
-  };
-}
-
-/**
- * Check rate limit for an API key (separate store from IP-based).
- */
-export function checkKeyRateLimit(keyId: string, maxRequests: number): {
-  allowed: boolean;
-  remaining: number;
-  resetAt: number;
-} {
-  ensureCleanup();
-  const storeKey = `key:${keyId}`;
   const now = Date.now();
   const entry = store.get(storeKey);
 
@@ -113,6 +65,29 @@ export function checkKeyRateLimit(keyId: string, maxRequests: number): {
     remaining: maxRequests - entry.count,
     resetAt: entry.resetAt,
   };
+}
+
+export function checkRateLimit(ip: string, maxOverride?: number): {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
+} {
+  const maxRequests = maxOverride
+    ?? (ip === "unknown"
+      ? Math.floor(RATE_LIMIT.MAX_REQUESTS / 2)
+      : RATE_LIMIT.MAX_REQUESTS);
+  return _checkLimit(ip, maxRequests);
+}
+
+/**
+ * Check rate limit for an API key (separate store from IP-based).
+ */
+export function checkKeyRateLimit(keyId: string, maxRequests: number): {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
+} {
+  return _checkLimit(`key:${keyId}`, maxRequests);
 }
 
 export function rateLimitHeaders(

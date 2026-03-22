@@ -27,7 +27,7 @@ export function ApiTeaser() {
   const prefersReduced = useReducedMotion();
 
   return (
-    <section className="bg-[#1a1230] px-4 py-24 md:py-32">
+    <section className="bg-midnight-plum px-4 py-24 md:py-32">
       {/* Section separator */}
       <div className="h-px bg-gradient-to-r from-transparent via-soft-violet/20 to-transparent" />
 

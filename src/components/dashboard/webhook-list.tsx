@@ -2,118 +2,29 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useWebhooks, createWebhook } from "@/hooks/use-webhooks";
+import { useWebhooks } from "@/hooks/use-webhooks";
 import { ErrorState } from "./error-state";
 import { EmptyState } from "./empty-state";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
-import { toast } from "sonner";
-import { Webhook, Plus, X, Loader2 } from "lucide-react";
+import { Webhook, Plus } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { AuthGate } from "./auth-gate";
 import { SecretBanner } from "./secret-banner";
-
-const EVENT_OPTIONS = [
-  "anomaly.created",
-  "anomaly.resolved",
-  "incident.created",
-  "incident.acknowledged",
-  "incident.resolved",
-  "slo.breached",
-  "slo.recovered",
-  "slo.budget_exhausted",
-];
+import { WebhookForm } from "./webhook-form";
 
 export function WebhookList() {
   const { data, error, isLoading, mutate } = useWebhooks();
   const [showForm, setShowForm] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formUrl, setFormUrl] = useState("");
-  const [formEvents, setFormEvents] = useState<string[]>([]);
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [eventsError, setEventsError] = useState<string | null>(null);
 
-  const toggleEvent = (event: string) => {
-    setFormEvents((prev) =>
-      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event],
-    );
-    setEventsError(null);
-  };
-
-  const validateForm = (): boolean => {
-    let valid = true;
-
-    if (!formName.trim()) {
-      setNameError("Name is required");
-      valid = false;
-    } else if (formName.trim().length > 100) {
-      setNameError("Name must be at most 100 characters");
-      valid = false;
-    } else {
-      setNameError(null);
-    }
-
-    const trimmedUrl = formUrl.trim();
-    if (!trimmedUrl) {
-      setUrlError("URL is required");
-      valid = false;
-    } else {
-      try {
-        const parsed = new URL(trimmedUrl);
-        if (parsed.protocol !== "https:") {
-          setUrlError("URL must use HTTPS");
-          valid = false;
-        } else {
-          setUrlError(null);
-        }
-      } catch {
-        setUrlError("Invalid URL format");
-        valid = false;
-      }
-    }
-
-    if (formEvents.length === 0) {
-      setEventsError("Select at least one event");
-      valid = false;
-    } else {
-      setEventsError(null);
-    }
-
-    return valid;
-  };
-
-  const handleCreate = async () => {
-    if (!validateForm()) return;
-    setCreating(true);
-    setCreateError(null);
-    try {
-      const result = await createWebhook({
-        name: formName.trim(),
-        url: formUrl.trim(),
-        events: formEvents,
-      });
-      if (result.secret) {
-        setCreatedSecret(result.secret);
-      }
-      setFormName("");
-      setFormUrl("");
-      setFormEvents([]);
-      setShowForm(false);
-      await mutate();
-      toast.success("Webhook created");
-    } catch {
-      setCreateError("Failed to create webhook. Check the URL and try again.");
-      toast.error("Failed to create webhook");
-    } finally {
-      setCreating(false);
-    }
+  const handleCreated = async (secret: string | null) => {
+    if (secret) setCreatedSecret(secret);
+    setShowForm(false);
+    await mutate();
   };
 
   if (error && !data) {
@@ -145,102 +56,7 @@ export function WebhookList() {
           </Button>
         </AuthGate>
       ) : (
-        <Card className="border-soft-violet/30 bg-midnight-plum">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-mist">New Webhook</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowForm(false)}
-                className="text-dusty-lavender/50 hover:text-mist"
-              >
-                <X className="size-3.5" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label htmlFor="webhook-name" className="mb-1 block text-xs text-dusty-lavender/50">Name</label>
-              <input
-                id="webhook-name"
-                type="text"
-                value={formName}
-                onChange={(e) => { setFormName(e.target.value); setNameError(null); }}
-                placeholder="My Webhook"
-                maxLength={100}
-                className={cn(
-                  "h-9 w-full rounded-lg border bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:ring-1",
-                  nameError
-                    ? "border-rose-DEFAULT/50 focus:border-rose-DEFAULT focus:ring-rose-DEFAULT/20"
-                    : "border-slate-DEFAULT/20 focus:border-soft-violet/50 focus:ring-soft-violet/20"
-                )}
-              />
-              {nameError && <p className="mt-1 text-xs text-rose-DEFAULT">{nameError}</p>}
-            </div>
-            <div>
-              <label htmlFor="webhook-url" className="mb-1 flex items-center gap-1 text-xs text-dusty-lavender/50">
-                URL
-                <HelpTooltip content={helpContent.webhooks.concepts.httpsRequired} side="right" />
-              </label>
-              <input
-                id="webhook-url"
-                type="url"
-                value={formUrl}
-                onChange={(e) => { setFormUrl(e.target.value); setUrlError(null); }}
-                placeholder="https://example.com/webhook"
-                maxLength={2048}
-                className={cn(
-                  "h-9 w-full rounded-lg border bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:ring-1",
-                  urlError
-                    ? "border-rose-DEFAULT/50 focus:border-rose-DEFAULT focus:ring-rose-DEFAULT/20"
-                    : "border-slate-DEFAULT/20 focus:border-soft-violet/50 focus:ring-soft-violet/20"
-                )}
-              />
-              {urlError && <p className="mt-1 text-xs text-rose-DEFAULT">{urlError}</p>}
-            </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1 text-xs text-dusty-lavender/50">
-                Events
-                <HelpTooltip content={helpContent.webhooks.concepts.eventSelection} side="right" />
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {EVENT_OPTIONS.map((event) => (
-                  <button
-                    key={event}
-                    onClick={() => toggleEvent(event)}
-                    className={cn(
-                      "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                      formEvents.includes(event)
-                        ? "border-soft-violet/50 bg-soft-violet/15 text-soft-violet"
-                        : "border-slate-DEFAULT/20 text-dusty-lavender/50 hover:border-slate-DEFAULT/40",
-                    )}
-                  >
-                    {event}
-                  </button>
-                ))}
-              </div>
-              {eventsError && <p className="mt-1 text-xs text-rose-DEFAULT">{eventsError}</p>}
-            </div>
-            {createError && (
-              <p className="text-xs text-rose-DEFAULT">{createError}</p>
-            )}
-            <Button
-              onClick={handleCreate}
-              disabled={creating}
-              className="bg-soft-violet text-white hover:bg-soft-violet/80 disabled:opacity-50"
-            >
-              {creating ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create"
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+        <WebhookForm onClose={() => setShowForm(false)} onCreated={handleCreated} />
       )}
 
       {/* Loading */}
@@ -253,7 +69,7 @@ export function WebhookList() {
       {/* Empty state */}
       {data && data.webhooks.length === 0 && (
         <EmptyState
-          icon={<Webhook className="size-5 text-dusty-lavender/40" />}
+          icon={<Webhook className="size-5 text-dusty-lavender/60" />}
           title="No webhooks configured"
           description="Create a webhook to receive real-time notifications for events."
         />
@@ -291,7 +107,7 @@ export function WebhookList() {
                     >
                       {webhook.isActive ? "Active" : "Inactive"}
                     </span>
-                    <span className="text-[10px] text-dusty-lavender/40">
+                    <span className="text-[10px] text-dusty-lavender/60">
                       {timeAgo(webhook.createdAt)}
                     </span>
                   </div>
