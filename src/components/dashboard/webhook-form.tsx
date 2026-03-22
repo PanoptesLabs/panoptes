@@ -110,7 +110,8 @@ export function WebhookForm({ onClose, onCreated }: WebhookFormProps) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
+        <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
         <div>
           <label htmlFor="webhook-name" className="mb-1 block text-xs text-dusty-lavender/50">Name</label>
           <input
@@ -120,6 +121,7 @@ export function WebhookForm({ onClose, onCreated }: WebhookFormProps) {
             onChange={(e) => { setName(e.target.value); setNameError(null); }}
             placeholder="My Webhook"
             maxLength={100}
+            autoFocus
             className={cn(
               "h-9 w-full rounded-lg border bg-slate-dark/50 px-3 text-sm text-mist placeholder:text-dusty-lavender/30 outline-none focus:ring-1",
               nameError
@@ -177,7 +179,7 @@ export function WebhookForm({ onClose, onCreated }: WebhookFormProps) {
           <p className="text-xs text-rose-DEFAULT">{createError}</p>
         )}
         <Button
-          onClick={handleCreate}
+          type="submit"
           disabled={creating}
           className="bg-soft-violet text-white hover:bg-soft-violet/80 disabled:opacity-50"
         >
@@ -190,6 +192,7 @@ export function WebhookForm({ onClose, onCreated }: WebhookFormProps) {
             "Create"
           )}
         </Button>
+        </form>
       </CardContent>
     </Card>
   );

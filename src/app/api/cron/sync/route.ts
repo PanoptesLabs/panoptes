@@ -2,20 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
 import { syncGovernance, syncDelegations } from "@/lib/indexer";
-import { logger } from "@/lib/logger";
-
-type StepError = { step: string; error: string };
-
-async function runStep<T>(name: string, fn: () => Promise<T>, errors: StepError[]): Promise<T | null> {
-  try {
-    return await fn();
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    logger.error(`Cron Sync: ${name}`, msg);
-    errors.push({ step: name, error: msg });
-    return null;
-  }
-}
+import { runStep, type StepError } from "@/lib/cron-helpers";
 
 export async function POST(request: NextRequest) {
   const authError = validateCronAuth(request);
@@ -25,10 +12,11 @@ export async function POST(request: NextRequest) {
   if ("response" in rl) return rl.response;
 
   const errors: StepError[] = [];
+  const LOG = "Cron Sync";
 
   const [governanceResults, delegationResults] = await Promise.all([
-    runStep("syncGovernance", syncGovernance, errors),
-    runStep("syncDelegations", syncDelegations, errors),
+    runStep("syncGovernance", syncGovernance, errors, LOG),
+    runStep("syncDelegations", syncDelegations, errors, LOG),
   ]);
 
   const status = errors.length === 0 ? 200 : 207;

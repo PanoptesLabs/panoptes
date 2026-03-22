@@ -3,20 +3,7 @@ import { validateCronAuth } from "@/lib/cron-auth";
 import { withRateLimit } from "@/lib/api-helpers";
 import { aggregateStats } from "@/lib/indexer";
 import { computeEndpointScores, computeValidatorScores, detectAnomalies, evaluateSlos, correlateIncidents, evaluatePolicies, detectWhaleMovement } from "@/lib/intelligence";
-import { logger } from "@/lib/logger";
-
-type StepError = { step: string; error: string };
-
-async function runStep<T>(name: string, fn: () => Promise<T>, errors: StepError[]): Promise<T | null> {
-  try {
-    return await fn();
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    logger.error(`Cron Stats: ${name}`, msg);
-    errors.push({ step: name, error: msg });
-    return null;
-  }
-}
+import { runStep, type StepError } from "@/lib/cron-helpers";
 
 export async function POST(request: NextRequest) {
   const authError = validateCronAuth(request);
@@ -27,25 +14,27 @@ export async function POST(request: NextRequest) {
 
   const errors: StepError[] = [];
 
+  const LOG = "Cron Stats";
+
   // Step 1: aggregateStats (serial — later steps depend on fresh data)
-  const stats = await runStep("aggregateStats", aggregateStats, errors);
+  const stats = await runStep("aggregateStats", aggregateStats, errors, LOG);
 
   // Step 2: scoring + anomalies + whale (independent, parallel)
   const [endpointScores, validatorScores, anomalies, whaleResults] = await Promise.all([
-    runStep("computeEndpointScores", computeEndpointScores, errors),
-    runStep("computeValidatorScores", computeValidatorScores, errors),
-    runStep("detectAnomalies", detectAnomalies, errors),
-    runStep("detectWhaleMovement", detectWhaleMovement, errors),
+    runStep("computeEndpointScores", computeEndpointScores, errors, LOG),
+    runStep("computeValidatorScores", computeValidatorScores, errors, LOG),
+    runStep("detectAnomalies", detectAnomalies, errors, LOG),
+    runStep("detectWhaleMovement", detectWhaleMovement, errors, LOG),
   ]);
 
   // Step 3: SLOs + policies (independent, parallel)
   const [sloResults, policyResults] = await Promise.all([
-    runStep("evaluateSlos", evaluateSlos, errors),
-    runStep("evaluatePolicies", evaluatePolicies, errors),
+    runStep("evaluateSlos", evaluateSlos, errors, LOG),
+    runStep("evaluatePolicies", evaluatePolicies, errors, LOG),
   ]);
 
   // Step 4: incidents (serial — needs SLO + anomaly data)
-  const incidentResults = await runStep("correlateIncidents", correlateIncidents, errors);
+  const incidentResults = await runStep("correlateIncidents", correlateIncidents, errors, LOG);
 
   const status = errors.length === 0 ? 200 : 207;
 
