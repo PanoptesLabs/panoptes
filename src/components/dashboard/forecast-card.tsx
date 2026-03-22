@@ -6,6 +6,7 @@ import { TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
 import { timeAgo } from "@/lib/time";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { PREDICTION_CONFIG, type PredictionLevel } from "@/lib/color-utils";
 
 interface ForecastItem {
   id: string;
@@ -27,26 +28,11 @@ interface ForecastCardProps {
   forecast: ForecastItem;
 }
 
-const predictionConfig = {
-  normal: {
-    label: "Normal",
-    classes: "bg-teal-dark/50 text-teal-light border-teal-DEFAULT/30",
-    icon: CheckCircle,
-    iconColor: "text-teal-DEFAULT",
-  },
-  warning: {
-    label: "Warning",
-    classes: "bg-amber-dark/50 text-amber-light border-amber-DEFAULT/30",
-    icon: AlertTriangle,
-    iconColor: "text-amber-DEFAULT",
-  },
-  critical: {
-    label: "Critical",
-    classes: "bg-rose-dark/50 text-rose-light border-rose-DEFAULT/30",
-    icon: AlertTriangle,
-    iconColor: "text-rose-DEFAULT",
-  },
-} as const;
+const predictionIcons: Record<string, typeof CheckCircle> = {
+  normal: CheckCircle,
+  warning: AlertTriangle,
+  critical: AlertTriangle,
+};
 
 const metricLabels: Record<string, string> = {
   latency: "Latency",
@@ -57,10 +43,9 @@ const metricLabels: Record<string, string> = {
 };
 
 export function ForecastCard({ forecast }: ForecastCardProps) {
-  const config =
-    predictionConfig[forecast.prediction as keyof typeof predictionConfig] ??
-    predictionConfig.normal;
-  const Icon = config.icon;
+  const level = (forecast.prediction in PREDICTION_CONFIG ? forecast.prediction : "normal") as PredictionLevel;
+  const config = PREDICTION_CONFIG[level];
+  const Icon = predictionIcons[level] ?? CheckCircle;
 
   return (
     <Card className="border-slate-DEFAULT/20 bg-midnight-plum transition-colors hover:border-soft-violet/20">

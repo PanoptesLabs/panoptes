@@ -48,7 +48,7 @@ async function getPublicWorkspace(): Promise<{ id: string; name: string; slug: s
 
 /**
  * Unified auth resolver. Tries (in order):
- * 1. Cookie `panoptes_session` → session lookup → user + WorkspaceMember role
+ * 1. Cookie `__Host-panoptes_session` → session lookup → user + WorkspaceMember role
  * 2. No credentials → public workspace lookup → role "anonymous"
  */
 export async function resolveAuth(request: NextRequest): Promise<AuthContext | null> {

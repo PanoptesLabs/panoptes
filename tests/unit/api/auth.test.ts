@@ -258,7 +258,7 @@ describe("POST /api/auth/verify", () => {
 
     // Check cookie was set
     const setCookie = res.headers.get("set-cookie");
-    expect(setCookie).toContain("panoptes_session=");
+    expect(setCookie).toContain("__Host-panoptes_session=");
     expect(setCookie).toContain("HttpOnly");
   });
 });
@@ -274,7 +274,7 @@ describe("POST /api/auth/logout", () => {
     const { POST } = await import("@/app/api/auth/logout/route");
     const req = new NextRequest("http://localhost/api/auth/logout", {
       method: "POST",
-      headers: { cookie: "panoptes_session=some-token" },
+      headers: { cookie: "__Host-panoptes_session=some-token" },
     });
     const res = await POST(req);
 
@@ -312,7 +312,7 @@ describe("GET /api/auth/me", () => {
 
     const { GET } = await import("@/app/api/auth/me/route");
     const req = new NextRequest("http://localhost/api/auth/me", {
-      headers: { cookie: "panoptes_session=some-token" },
+      headers: { cookie: "__Host-panoptes_session=some-token" },
     });
     const res = await GET(req);
     const body = await res.json();

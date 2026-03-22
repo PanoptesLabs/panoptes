@@ -6,10 +6,12 @@ import { useIncidents, useIncidentSummary } from "@/hooks/use-incidents";
 import { StatCard } from "./stat-card";
 import { FilterSelect } from "./filter-select";
 import { ErrorState } from "./error-state";
+import { EmptyState } from "./empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { SEVERITY_COLORS, STATUS_COLORS } from "@/lib/constants";
+import { SEVERITY_ICON_COLORS } from "@/lib/color-utils";
 import { Siren, AlertTriangle, CheckCircle, Eye, ShieldAlert } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "./pagination";
@@ -38,12 +40,6 @@ const ENTITY_OPTIONS = [
   { label: "Network", value: "network" },
 ];
 
-const severityIcons: Record<string, string> = {
-  critical: "text-rose-DEFAULT",
-  high: "text-amber-DEFAULT",
-  medium: "text-orange-400",
-  low: "text-dusty-lavender/50",
-};
 
 export function IncidentList() {
   const [status, setStatus] = useState("");
@@ -132,12 +128,11 @@ export function IncidentList() {
 
       {/* Empty state */}
       {data && data.incidents.length === 0 && (
-        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
-          <CardContent className="flex flex-col items-center gap-3 py-12">
-            <Siren className="size-8 text-dusty-lavender/50" />
-            <p className="text-sm text-dusty-lavender/50">No incidents found</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Siren className="size-5 text-dusty-lavender/60" />}
+          title="No incidents found"
+          description="Incidents are created automatically from anomalies and SLO breaches."
+        />
       )}
 
       {/* Incident list */}
@@ -149,7 +144,7 @@ export function IncidentList() {
                 <CardContent className="flex items-start gap-4 py-4">
                   <div className="mt-0.5">
                     <AlertTriangle
-                      className={cn("size-5", severityIcons[incident.severity] ?? severityIcons.low)}
+                      className={cn("size-5", SEVERITY_ICON_COLORS[incident.severity] ?? SEVERITY_ICON_COLORS.low)}
                     />
                   </div>
                   <div className="min-w-0 flex-1">

@@ -59,7 +59,7 @@ describe("resolveAuth", () => {
     mockFindFirstSession.mockResolvedValue(mockSession);
 
     const req = new NextRequest("http://localhost/api/test", {
-      headers: { cookie: "panoptes_session=session-token" },
+      headers: { cookie: "__Host-panoptes_session=session-token" },
     });
     const auth = await resolveAuth(req);
 
@@ -75,7 +75,7 @@ describe("resolveAuth", () => {
     mockFindFirstWorkspace.mockResolvedValue(publicWorkspace);
 
     const req = new NextRequest("http://localhost/api/test", {
-      headers: { cookie: "panoptes_session=session-token" },
+      headers: { cookie: "__Host-panoptes_session=session-token" },
     });
     const auth = await resolveAuth(req);
 
@@ -123,7 +123,7 @@ describe("resolveAuth", () => {
     mockFindFirstWorkspace.mockResolvedValue(publicWorkspace);
 
     const req = new NextRequest("http://localhost/api/test", {
-      headers: { cookie: "panoptes_session=expired-token" },
+      headers: { cookie: "__Host-panoptes_session=expired-token" },
     });
     const auth = await resolveAuth(req);
 
@@ -137,7 +137,7 @@ describe("resolveAuth", () => {
 
     const req = new NextRequest("http://localhost/api/test", {
       headers: {
-        cookie: "panoptes_session=session-token",
+        cookie: "__Host-panoptes_session=session-token",
         authorization: "Bearer ws_testtoken",
       },
     });
