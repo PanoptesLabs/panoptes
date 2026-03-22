@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSWRConfig } from "swr";
 import { useIncidentDetail, acknowledgeIncident, resolveIncident, addIncidentComment } from "@/hooks/use-incidents";
 import { ErrorState } from "./error-state";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { timeAgo, formatDateTime } from "@/lib/time";
 import { SEVERITY_COLORS, STATUS_COLORS } from "@/lib/constants";
 import {
+  ArrowLeft,
   Eye,
   CheckCircle,
   MessageSquare,
@@ -91,6 +93,15 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
 
   return (
     <div className="space-y-6">
+      {/* Back navigation */}
+      <Link
+        href="/dashboard/incidents"
+        className="inline-flex items-center gap-1.5 text-sm text-dusty-lavender/50 transition-colors hover:text-dusty-lavender"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Incidents
+      </Link>
+
       {/* Header card */}
       <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
         <CardContent className="py-5">
@@ -207,6 +218,7 @@ export function IncidentDetail({ incidentId }: IncidentDetailProps) {
           <CardContent className="py-4">
             <div className="flex gap-3">
               <textarea
+                aria-label="Add a comment"
                 rows={2}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}

@@ -156,6 +156,7 @@ export function ApiKeyList() {
               <div className="flex gap-2">
                 {TIER_OPTIONS.map((tier) => (
                   <button
+                    type="button"
                     key={tier}
                     onClick={() => setFormTier(tier)}
                     className={cn(

@@ -6,7 +6,8 @@ import { ForecastCard } from "./forecast-card";
 import { FilterSelect } from "./filter-select";
 import { ErrorState } from "./error-state";
 import { EmptyState } from "./empty-state";
-import { TrendingUp, Loader2 } from "lucide-react";
+import { TrendingUp } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "./pagination";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
@@ -78,7 +79,7 @@ export function ForecastList() {
 
       {isLoading && !data && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="size-6 animate-spin text-soft-violet" />
+          <Spinner />
         </div>
       )}
 

@@ -45,7 +45,7 @@ export function Topbar() {
 
   return (
     <div className="hidden lg:sticky lg:top-0 lg:z-30 lg:flex h-14 items-center justify-between border-b border-slate-DEFAULT/20 bg-slate-dark/95 px-6 backdrop-blur-sm">
-      <nav className="flex items-center gap-1 text-sm text-dusty-lavender/50">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-dusty-lavender/50">
         {crumbs.map((crumb) => (
           <span key={crumb.href} className="flex items-center gap-1">
             {crumb.href !== "/" + segments[0] && (

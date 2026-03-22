@@ -230,6 +230,8 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
+          role="presentation"
+          aria-hidden="true"
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
@@ -238,7 +240,8 @@ export function Sidebar() {
       {/* Mobile sidebar */}
       <aside
         ref={sidebarRef}
-        aria-label="Sidebar"
+        aria-label="Mobile sidebar"
+        aria-hidden={!mobileOpen}
         className={cn(
           "fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r border-slate-DEFAULT/20 bg-midnight-plum transition-transform duration-300 lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"

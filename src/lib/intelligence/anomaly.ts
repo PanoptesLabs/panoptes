@@ -7,28 +7,12 @@ import {
   ANOMALY_CREATE_EVENT_MAP,
   ANOMALY_RESOLVE_EVENT_MAP,
 } from "@/lib/events/event-types";
+import type { EndpointWithHealthChecks, ValidatorWithSnapshots } from "./types";
 
 interface DetectionResult {
   detected: number;
   resolved: number;
 }
-
-type ValidatorWithSnapshots = {
-  id: string;
-  moniker: string;
-  tokens: string;
-  jailed: boolean;
-  snapshots: { timestamp: Date; tokens: string; commission: number; jailed: boolean }[];
-};
-
-type EndpointWithHealthChecks = {
-  id: string;
-  url: string;
-  type: string;
-  isActive: boolean;
-  isOfficial: boolean;
-  healthChecks: { timestamp: Date; isHealthy: boolean; blockHeight: bigint | null }[];
-};
 
 export async function createOrSkipAnomaly(params: {
   type: string;

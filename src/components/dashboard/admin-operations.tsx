@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SEVERITY_BADGE_COLORS, STATUS_BADGE_COLORS } from "@/lib/constants";
 import { Settings, ScrollText, Siren, Ban } from "lucide-react";
+import { ConfirmBanner } from "./confirm-banner";
 
 interface PendingAction {
   type: "disable-webhook" | "disable-policy";
@@ -71,27 +72,11 @@ export function AdminOperations() {
     <div className="space-y-6">
       {/* Confirm banner */}
       {pending && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-DEFAULT/30 bg-amber-DEFAULT/5 px-4 py-3">
-          <p className="text-xs text-amber-DEFAULT">{pending.label}</p>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPending(null)}
-              className="h-6 px-2 text-[10px] text-dusty-lavender/70 hover:text-mist"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleConfirm}
-              className="h-6 px-2 text-[10px] text-rose-DEFAULT hover:bg-rose-DEFAULT/10"
-            >
-              Confirm
-            </Button>
-          </div>
-        </div>
+        <ConfirmBanner
+          message={pending.label}
+          onCancel={() => setPending(null)}
+          onConfirm={handleConfirm}
+        />
       )}
 
       {/* Webhooks */}

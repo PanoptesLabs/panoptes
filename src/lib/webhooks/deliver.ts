@@ -56,6 +56,7 @@ export async function deliverWebhook(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "User-Agent": "Panoptes-Webhook/1.0",
         "X-Webhook-Signature": signature,
         "X-Webhook-Event": event.eventType,
         "X-Webhook-Delivery": event.outboxEventId,

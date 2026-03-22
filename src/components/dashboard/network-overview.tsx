@@ -7,22 +7,25 @@ import { useHistorySparklines } from "@/hooks/use-history-sparklines";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const ChartSkeleton = () => <Skeleton className="h-64 w-full rounded-lg bg-deep-iris/20" />;
 
 const StakingTrendChart = dynamic(
   () => import("@/components/charts/staking-trend-chart").then((m) => m.StakingTrendChart),
-  { ssr: false },
+  { ssr: false, loading: ChartSkeleton },
 );
 const BlockHeightChart = dynamic(
   () => import("@/components/charts/block-height-chart").then((m) => m.BlockHeightChart),
-  { ssr: false },
+  { ssr: false, loading: ChartSkeleton },
 );
 const ValidatorCountChart = dynamic(
   () => import("@/components/charts/validator-count-chart").then((m) => m.ValidatorCountChart),
-  { ssr: false },
+  { ssr: false, loading: ChartSkeleton },
 );
 const BondedRatioChart = dynamic(
   () => import("@/components/charts/bonded-ratio-chart").then((m) => m.BondedRatioChart),
-  { ssr: false },
+  { ssr: false, loading: ChartSkeleton },
 );
 
 import {

@@ -2,6 +2,15 @@ import { prisma } from "@/lib/db";
 import { PREFLIGHT } from "@/lib/constants";
 import type { PreflightCheck, PreflightResponse, PreflightStatus } from "@/types";
 
+function createCheck(
+  name: string,
+  status: PreflightStatus,
+  message: string,
+  details?: Record<string, unknown>,
+): PreflightCheck {
+  return details ? { name, status, message, details } : { name, status, message };
+}
+
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
@@ -24,11 +33,7 @@ async function checkEndpointHealth(): Promise<PreflightCheck> {
     });
 
     if (!bestEndpoint) {
-      return {
-        name: "endpoint_health",
-        status: "warn",
-        message: "No scored endpoints available",
-      };
+      return createCheck("endpoint_health", "warn", "No scored endpoints available");
     }
 
     const score = bestEndpoint.score;
@@ -36,29 +41,21 @@ async function checkEndpointHealth(): Promise<PreflightCheck> {
     if (score < 50) status = "fail";
     else if (score < 70) status = "warn";
 
-    return {
-      name: "endpoint_health",
+    return createCheck(
+      "endpoint_health",
       status,
-      message: `Best RPC endpoint score: ${Math.round(score)}/100 (${bestEndpoint.endpoint.url})`,
-      details: { endpointUrl: bestEndpoint.endpoint.url, score },
-    };
+      `Best RPC endpoint score: ${Math.round(score)}/100 (${bestEndpoint.endpoint.url})`,
+      { endpointUrl: bestEndpoint.endpoint.url, score },
+    );
   } catch {
-    return {
-      name: "endpoint_health",
-      status: "warn",
-      message: "Unable to check endpoint health",
-    };
+    return createCheck("endpoint_health", "warn", "Unable to check endpoint health");
   }
 }
 
 async function checkAccountExists(address: string, restEndpoint: { url: string } | null): Promise<PreflightCheck> {
   try {
     if (!restEndpoint) {
-      return {
-        name: "account_exists",
-        status: "warn",
-        message: "No REST endpoint available to verify account",
-      };
+      return createCheck("account_exists", "warn", "No REST endpoint available to verify account");
     }
 
     const res = await fetch(
@@ -67,24 +64,12 @@ async function checkAccountExists(address: string, restEndpoint: { url: string }
     );
 
     if (res.ok) {
-      return {
-        name: "account_exists",
-        status: "pass",
-        message: `Account ${address} found on chain`,
-      };
+      return createCheck("account_exists", "pass", `Account ${address} found on chain`);
     }
 
-    return {
-      name: "account_exists",
-      status: "warn",
-      message: "Account not found on chain, may be new",
-    };
+    return createCheck("account_exists", "warn", "Account not found on chain, may be new");
   } catch {
-    return {
-      name: "account_exists",
-      status: "warn",
-      message: "Unable to verify account existence",
-    };
+    return createCheck("account_exists", "warn", "Unable to verify account existence");
   }
 }
 
@@ -96,11 +81,7 @@ async function checkBalance(
 ): Promise<PreflightCheck> {
   try {
     if (!restEndpoint) {
-      return {
-        name: "balance_check",
-        status: "warn",
-        message: "No REST endpoint available to check balance",
-      };
+      return createCheck("balance_check", "warn", "No REST endpoint available to check balance");
     }
 
     const res = await fetch(
@@ -109,11 +90,7 @@ async function checkBalance(
     );
 
     if (!res.ok) {
-      return {
-        name: "balance_check",
-        status: "warn",
-        message: "Unable to fetch balance",
-      };
+      return createCheck("balance_check", "warn", "Unable to fetch balance");
     }
 
     const data = await res.json();
@@ -124,49 +101,25 @@ async function checkBalance(
     const balance = BigInt(tokenBalance?.amount ?? "0");
     const required = BigInt(amount);
     const gasEstimate = BigInt(PREFLIGHT.DEFAULT_GAS_LIMIT);
+    const balDetails = { balance: balance.toString(), required: amount, denom };
 
     if (balance >= required + gasEstimate) {
-      return {
-        name: "balance_check",
-        status: "pass",
-        message: `Sufficient balance: ${balance} ${denom} (need ${required} + ~${gasEstimate} gas)`,
-        details: { balance: balance.toString(), required: amount, denom },
-      };
+      return createCheck("balance_check", "pass", `Sufficient balance: ${balance} ${denom} (need ${required} + ~${gasEstimate} gas)`, balDetails);
     }
 
     if (balance >= required) {
-      return {
-        name: "balance_check",
-        status: "warn",
-        message: `Balance covers amount but gas may be insufficient: ${balance} ${denom}`,
-        details: { balance: balance.toString(), required: amount, denom },
-      };
+      return createCheck("balance_check", "warn", `Balance covers amount but gas may be insufficient: ${balance} ${denom}`, balDetails);
     }
 
-    return {
-      name: "balance_check",
-      status: "fail",
-      message: `Insufficient balance: ${balance} ${denom} (need ${required})`,
-      details: { balance: balance.toString(), required: amount, denom },
-    };
+    return createCheck("balance_check", "fail", `Insufficient balance: ${balance} ${denom} (need ${required})`, balDetails);
   } catch {
-    return {
-      name: "balance_check",
-      status: "warn",
-      message: "Unable to verify balance",
-    };
+    return createCheck("balance_check", "warn", "Unable to verify balance");
   }
 }
 
 function checkGasEstimation(amount: string): PreflightCheck {
   const gasEstimate = PREFLIGHT.DEFAULT_GAS_LIMIT;
-
-  return {
-    name: "gas_estimation",
-    status: "pass",
-    message: `Estimated gas limit: ${gasEstimate}`,
-    details: { gasLimit: gasEstimate, amount },
-  };
+  return createCheck("gas_estimation", "pass", `Estimated gas limit: ${gasEstimate}`, { gasLimit: gasEstimate, amount });
 }
 
 async function checkValidatorStatus(
@@ -184,62 +137,31 @@ async function checkValidatorStatus(
     });
 
     if (!validator) {
-      return {
-        name: "validator_status",
-        status: "warn",
-        message: `Validator ${validatorAddress} not found in database`,
-      };
+      return createCheck("validator_status", "warn", `Validator ${validatorAddress} not found in database`);
     }
 
+    const valDetails = { moniker: validator.moniker, status: validator.status };
+
     if (validator.jailed) {
-      return {
-        name: "validator_status",
-        status: "fail",
-        message: `Validator ${validator.moniker} is jailed`,
-        details: { moniker: validator.moniker, status: validator.status },
-      };
+      return createCheck("validator_status", "fail", `Validator ${validator.moniker} is jailed`, valDetails);
     }
 
     if (validator.status === "BOND_STATUS_UNBONDING") {
-      return {
-        name: "validator_status",
-        status: "warn",
-        message: `Validator ${validator.moniker} is unbonding`,
-        details: { moniker: validator.moniker, status: validator.status },
-      };
+      return createCheck("validator_status", "warn", `Validator ${validator.moniker} is unbonding`, valDetails);
     }
 
     if (validator.status === "BOND_STATUS_UNBONDED") {
-      return {
-        name: "validator_status",
-        status: "warn",
-        message: `Validator ${validator.moniker} is unbonded`,
-        details: { moniker: validator.moniker, status: validator.status },
-      };
+      return createCheck("validator_status", "warn", `Validator ${validator.moniker} is unbonded`, valDetails);
     }
 
     const score = validator.scores[0]?.score;
     if (score !== undefined && score < 30) {
-      return {
-        name: "validator_status",
-        status: "warn",
-        message: `Validator ${validator.moniker} has low score: ${Math.round(score)}/100`,
-        details: { moniker: validator.moniker, score },
-      };
+      return createCheck("validator_status", "warn", `Validator ${validator.moniker} has low score: ${Math.round(score)}/100`, { moniker: validator.moniker, score });
     }
 
-    return {
-      name: "validator_status",
-      status: "pass",
-      message: `Validator ${validator.moniker} is active and bonded`,
-      details: { moniker: validator.moniker, status: validator.status, score },
-    };
+    return createCheck("validator_status", "pass", `Validator ${validator.moniker} is active and bonded`, { ...valDetails, score });
   } catch {
-    return {
-      name: "validator_status",
-      status: "warn",
-      message: "Unable to check validator status",
-    };
+    return createCheck("validator_status", "warn", "Unable to check validator status");
   }
 }
 

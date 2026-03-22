@@ -4,24 +4,15 @@ import { validateWebhookCreate } from "@/lib/webhook-validation";
 import { encryptSecret, generateWebhookSecret } from "@/lib/webhook-crypto";
 import { WEBHOOK_DEFAULTS } from "@/lib/constants";
 import type { GraphQLContext } from "../context";
+import { requireEditor } from "../auth-helpers";
 
 export const webhookResolvers = {
   Query: {
     webhooks: async (_: unknown, _args: unknown, context: GraphQLContext) => {
-      if (!context.workspace) {
-        throw new GraphQLError("Unauthorized", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
-      if (context.role === "viewer" || context.role === "anonymous") {
-        throw new GraphQLError("Insufficient permissions", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
+      const workspace = requireEditor(context);
 
       const webhooks = await prisma.webhook.findMany({
-        where: { workspaceId: context.workspace.id },
+        where: { workspaceId: workspace.id },
         select: {
           id: true,
           name: true,
@@ -45,17 +36,7 @@ export const webhookResolvers = {
       args: { input: { name: string; url: string; events: string[] } },
       context: GraphQLContext,
     ) => {
-      if (!context.workspace) {
-        throw new GraphQLError("Unauthorized", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
-      if (context.role === "viewer" || context.role === "anonymous") {
-        throw new GraphQLError("Insufficient permissions", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
+      requireEditor(context);
 
       const validated = validateWebhookCreate(args.input);
       if ("error" in validated) {
@@ -107,20 +88,10 @@ export const webhookResolvers = {
       args: { id: string },
       context: GraphQLContext,
     ) => {
-      if (!context.workspace) {
-        throw new GraphQLError("Unauthorized", {
-          extensions: { code: "UNAUTHORIZED" },
-        });
-      }
-
-      if (context.role === "viewer" || context.role === "anonymous") {
-        throw new GraphQLError("Insufficient permissions", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
+      const workspace = requireEditor(context);
 
       const existing = await prisma.webhook.findFirst({
-        where: { id: args.id, workspaceId: context.workspace.id },
+        where: { id: args.id, workspaceId: workspace.id },
       });
       if (!existing) {
         throw new GraphQLError("Webhook not found", {

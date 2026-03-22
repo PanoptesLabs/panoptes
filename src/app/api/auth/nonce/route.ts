@@ -9,7 +9,7 @@ function isValidBech32Address(address: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const rl = withRateLimit(request);
+  const rl = withRateLimit(request, 10);
   if ("response" in rl) return rl.response;
 
   let body: unknown;

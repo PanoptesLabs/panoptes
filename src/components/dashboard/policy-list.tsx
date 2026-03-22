@@ -118,7 +118,8 @@ export function PolicyList() {
 
       {showForm && (
         <Card className="border-soft-violet/30 bg-midnight-plum">
-          <CardContent className="space-y-3 pt-4">
+          <CardContent className="pt-4">
+            <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-3">
             <input
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
@@ -202,7 +203,7 @@ export function PolicyList() {
             </div>
             <div className="flex items-center gap-2">
               <Button
-                onClick={handleCreate}
+                type="submit"
                 disabled={isCreating || !formName.trim() || !formValue.trim()}
                 className="flex-1 bg-soft-violet text-white hover:bg-soft-violet/80"
               >
@@ -213,6 +214,7 @@ export function PolicyList() {
             {createError && (
               <p className="text-xs text-rose-DEFAULT">{createError}</p>
             )}
+            </form>
           </CardContent>
         </Card>
       )}
