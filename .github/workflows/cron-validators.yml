@@ -12,7 +12,7 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     if: ${{ vars.CRONS_ENABLED == 'true' }}
     steps:
       - uses: actions/checkout@v6
