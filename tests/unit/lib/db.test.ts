@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@neondatabase/serverless", () => ({
-  neonConfig: { webSocketConstructor: null },
-}));
-
-vi.mock("@prisma/adapter-neon", () => ({
-  PrismaNeon: vi.fn(),
+vi.mock("@prisma/adapter-pg", () => ({
+  PrismaPg: vi.fn(),
 }));
 
 vi.mock("@/generated/prisma/client", () => ({
@@ -14,8 +10,6 @@ vi.mock("@/generated/prisma/client", () => ({
     $disconnect: vi.fn(),
   })),
 }));
-
-vi.mock("ws", () => ({ default: vi.fn() }));
 
 describe("db", () => {
   beforeEach(() => {

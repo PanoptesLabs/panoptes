@@ -1,12 +1,8 @@
 /* eslint-disable no-console */
 import "dotenv/config";
-import { neonConfig } from "@neondatabase/serverless";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { AUTH_DEFAULTS } from "../src/lib/constants.js";
-import ws from "ws";
-
-neonConfig.webSocketConstructor = ws;
 
 const KNOWN_ENDPOINTS = [
   {
@@ -35,7 +31,10 @@ async function main() {
     throw new Error("DATABASE_URL is required");
   }
 
-  const adapter = new PrismaNeon({ connectionString });
+  const adapter = new PrismaPg({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  });
   const prisma = new PrismaClient({ adapter });
 
   console.log("[seed] Seeding endpoints...");
