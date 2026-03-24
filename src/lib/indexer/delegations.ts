@@ -78,22 +78,28 @@ async function processValidatorDelegations(val: { id: string; moniker: string })
     }> = [];
 
     // New delegations
+    const minAmount = BigInt(DELEGATION_DEFAULTS.MIN_AMOUNT);
     for (const [addr, amount] of currentDelegators) {
       const prevAmount = prevDelegators.get(addr);
       if (!prevAmount) {
-        newEvents.push({
-          type: "delegate",
-          delegator: addr,
-          validatorTo: val.id,
-          amount,
-        });
+        if (BigInt(amount) >= minAmount) {
+          newEvents.push({
+            type: "delegate",
+            delegator: addr,
+            validatorTo: val.id,
+            amount,
+          });
+        }
       } else if (BigInt(amount) > BigInt(prevAmount)) {
-        newEvents.push({
-          type: "delegate",
-          delegator: addr,
-          validatorTo: val.id,
-          amount: (BigInt(amount) - BigInt(prevAmount)).toString(),
-        });
+        const diff = (BigInt(amount) - BigInt(prevAmount)).toString();
+        if (BigInt(diff) >= minAmount) {
+          newEvents.push({
+            type: "delegate",
+            delegator: addr,
+            validatorTo: val.id,
+            amount: diff,
+          });
+        }
       }
     }
 
@@ -101,19 +107,24 @@ async function processValidatorDelegations(val: { id: string; moniker: string })
     for (const [addr, amount] of prevDelegators) {
       const currentAmount = currentDelegators.get(addr);
       if (!currentAmount) {
-        newEvents.push({
-          type: "undelegate",
-          delegator: addr,
-          validatorTo: val.id,
-          amount,
-        });
+        if (BigInt(amount) >= minAmount) {
+          newEvents.push({
+            type: "undelegate",
+            delegator: addr,
+            validatorTo: val.id,
+            amount,
+          });
+        }
       } else if (BigInt(currentAmount) < BigInt(amount)) {
-        newEvents.push({
-          type: "undelegate",
-          delegator: addr,
-          validatorTo: val.id,
-          amount: (BigInt(amount) - BigInt(currentAmount)).toString(),
-        });
+        const diff = (BigInt(amount) - BigInt(currentAmount)).toString();
+        if (BigInt(diff) >= minAmount) {
+          newEvents.push({
+            type: "undelegate",
+            delegator: addr,
+            validatorTo: val.id,
+            amount: diff,
+          });
+        }
       }
     }
 
