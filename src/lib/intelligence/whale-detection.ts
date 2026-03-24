@@ -10,8 +10,8 @@ interface WhaleResult {
 export async function detectWhaleMovement(): Promise<WhaleResult> {
   let detected = 0;
 
-  // Get recent delegation events (last 15 minutes)
-  const recentCutoff = new Date(Date.now() - 15 * 60_000);
+  // Get recent delegation events (last 65 minutes — aligned with hourly cron)
+  const recentCutoff = new Date(Date.now() - 65 * 60_000);
   const recentEvents = await prisma.delegationEvent.findMany({
     where: { timestamp: { gte: recentCutoff } },
   });
