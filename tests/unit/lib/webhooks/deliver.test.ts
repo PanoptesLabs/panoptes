@@ -6,7 +6,14 @@ vi.mock("@/lib/webhook-crypto", () => ({
 }));
 
 vi.mock("@/lib/webhook-validation", () => ({
-  assertUrlNotPrivate: vi.fn().mockResolvedValue(undefined),
+  assertUrlNotPrivate: vi.fn().mockResolvedValue({ address: "93.184.216.34", family: 4 }),
+}));
+
+const mockAgentClose = vi.fn();
+vi.mock("undici", () => ({
+  Agent: class MockAgent {
+    close = mockAgentClose;
+  },
 }));
 
 import { deliverWebhook, type DeliveryTarget, type DeliveryPayload } from "@/lib/webhooks/deliver";
@@ -33,7 +40,7 @@ beforeEach(() => {
   // Reset mocks to default behavior
   vi.mocked(decryptSecret).mockReturnValue("decrypted-secret");
   vi.mocked(signPayload).mockReturnValue("sig-abc");
-  vi.mocked(assertUrlNotPrivate).mockResolvedValue(undefined);
+  vi.mocked(assertUrlNotPrivate).mockResolvedValue({ address: "93.184.216.34", family: 4 });
 });
 
 describe("deliverWebhook", () => {
@@ -48,14 +55,21 @@ describe("deliverWebhook", () => {
     expect(result.statusCode).toBe(200);
   });
 
-  it("calls SSRF check before fetch", async () => {
+  it("resolves DNS once and pins via undici dispatcher", async () => {
     mockFetch.mockResolvedValue(new Response("ok", { status: 200 }));
 
     await deliverWebhook(target, event);
 
+    // DNS resolved exactly once (no post-fetch re-resolve)
     expect(assertUrlNotPrivate).toHaveBeenCalledWith(target.url);
-    // Called twice: before and after fetch
-    expect(assertUrlNotPrivate).toHaveBeenCalledTimes(2);
+    expect(assertUrlNotPrivate).toHaveBeenCalledTimes(1);
+    // fetch called with dispatcher option (undici Agent instance)
+    expect(mockFetch).toHaveBeenCalledWith(
+      target.url,
+      expect.objectContaining({
+        dispatcher: expect.objectContaining({ close: expect.any(Function) }),
+      }),
+    );
   });
 
   it("blocks SSRF on pre-fetch check", async () => {
@@ -66,18 +80,6 @@ describe("deliverWebhook", () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain("SSRF");
     expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it("detects DNS rebinding on post-fetch check", async () => {
-    vi.mocked(assertUrlNotPrivate)
-      .mockResolvedValueOnce(undefined) // pre-fetch OK
-      .mockRejectedValueOnce(new Error("private IP")); // post-fetch fails
-    mockFetch.mockResolvedValue(new Response("ok", { status: 200 }));
-
-    const result = await deliverWebhook(target, event);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toContain("DNS rebinding");
   });
 
   it("decrypts secret and signs payload", async () => {
@@ -192,5 +194,21 @@ describe("deliverWebhook", () => {
 
     expect(result.success).toBe(true);
     expect(result.responseBody).toBeNull();
+  });
+
+  it("closes undici agent after successful delivery", async () => {
+    mockFetch.mockResolvedValue(new Response("ok", { status: 200 }));
+
+    await deliverWebhook(target, event);
+
+    expect(mockAgentClose).toHaveBeenCalled();
+  });
+
+  it("closes undici agent after fetch error", async () => {
+    mockFetch.mockRejectedValue(new Error("network error"));
+
+    await deliverWebhook(target, event);
+
+    expect(mockAgentClose).toHaveBeenCalled();
   });
 });

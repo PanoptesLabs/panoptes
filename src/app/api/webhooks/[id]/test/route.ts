@@ -1,3 +1,4 @@
+import { Agent } from "undici";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withRateLimit } from "@/lib/api-helpers";
@@ -38,9 +39,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const signature = signPayload(plainSecret, testPayload);
 
-  // DNS resolution check — blocks SSRF via DNS rebinding / private IP resolution
+  // DNS resolution check + pin resolved IP to prevent TOCTOU / DNS rebinding
+  let resolvedAddress: string;
   try {
-    await assertUrlNotPrivate(webhook.url);
+    const resolved = await assertUrlNotPrivate(webhook.url);
+    resolvedAddress = resolved.address;
   } catch {
     return NextResponse.json(
       { success: false, error: "URL resolves to a blocked private/internal address" },
@@ -48,6 +51,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
+  const pinnedAgent = new Agent({ connect: { host: resolvedAddress } });
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   const startTime = Date.now();
@@ -62,6 +66,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       body: testPayload,
       signal: controller.signal,
       redirect: "manual",
+      // @ts-expect-error -- Node.js fetch supports undici dispatcher
+      dispatcher: pinnedAgent,
     });
 
     const responseTime = Date.now() - startTime;
@@ -90,5 +96,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   } finally {
     clearTimeout(timeout);
+    pinnedAgent.close();
   }
 }

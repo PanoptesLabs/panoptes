@@ -97,12 +97,17 @@ function validateUrl(raw: string): string | null {
   }
 }
 
+export interface ResolvedAddress {
+  address: string;
+  family: 4 | 6;
+}
+
 /**
  * DNS resolution + IP class check.
- * Must be called at fetch-time (not at validation-time) to prevent
- * DNS rebinding and catch hostnames that resolve to private IPs.
+ * Returns the resolved address so callers can pin DNS for the fetch,
+ * preventing TOCTOU / DNS rebinding attacks.
  */
-export async function assertUrlNotPrivate(url: string): Promise<void> {
+export async function assertUrlNotPrivate(url: string): Promise<ResolvedAddress> {
   const parsed = new URL(url);
   const { address, family } = await lookup(parsed.hostname);
 
@@ -112,6 +117,8 @@ export async function assertUrlNotPrivate(url: string): Promise<void> {
   if (family === 6 && isBlockedIpv6(address)) {
     throw new Error("URL resolves to a blocked private/internal address");
   }
+
+  return { address, family: family as 4 | 6 };
 }
 
 export function validateWebhookCreate(

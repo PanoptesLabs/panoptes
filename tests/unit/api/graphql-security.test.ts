@@ -161,6 +161,11 @@ describe("GraphQL Security", () => {
     vi.unstubAllEnvs();
   });
 
+  it("does not export a GET handler (CSRF prevention)", async () => {
+    const route = await import("@/app/api/graphql/route");
+    expect(route).not.toHaveProperty("GET");
+  });
+
   it("returns 429 when rate limited", async () => {
     const { checkRateLimit } = await import("@/lib/rate-limit");
     vi.mocked(checkRateLimit).mockReturnValue({

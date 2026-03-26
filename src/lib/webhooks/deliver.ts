@@ -1,3 +1,4 @@
+import { Agent } from "undici";
 import { decryptSecret, signPayload } from "@/lib/webhook-crypto";
 import { assertUrlNotPrivate } from "@/lib/webhook-validation";
 import { WEBHOOK_DISPATCH } from "@/lib/constants";
@@ -25,9 +26,11 @@ export async function deliverWebhook(
   target: DeliveryTarget,
   event: DeliveryPayload,
 ): Promise<DeliveryResult> {
-  // 1. SSRF check (DNS resolution time)
+  // 1. SSRF check — resolve DNS and pin the IP
+  let resolvedAddress: string;
   try {
-    await assertUrlNotPrivate(target.url);
+    const resolved = await assertUrlNotPrivate(target.url);
+    resolvedAddress = resolved.address;
   } catch {
     return { success: false, statusCode: null, responseBody: null, error: "SSRF: blocked address" };
   }
@@ -47,7 +50,10 @@ export async function deliverWebhook(
     };
   }
 
-  // 3. HTTP POST with timeout
+  // 3. HTTP POST with pinned DNS (prevents TOCTOU / DNS rebinding)
+  const pinnedAgent = new Agent({
+    connect: { host: resolvedAddress },
+  });
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), WEBHOOK_DISPATCH.TIMEOUT_MS);
 
@@ -64,14 +70,9 @@ export async function deliverWebhook(
       body: event.payload,
       signal: controller.signal,
       redirect: "manual",
+      // @ts-expect-error -- Node.js fetch supports undici dispatcher
+      dispatcher: pinnedAgent,
     });
-
-    // 4. Post-fetch DNS rebinding check: re-resolve and verify IP is still safe
-    try {
-      await assertUrlNotPrivate(target.url);
-    } catch {
-      return { success: false, statusCode: null, responseBody: null, error: "SSRF: DNS rebinding detected" };
-    }
 
     const responseBody = await response.text().catch(() => null);
 
@@ -89,5 +90,6 @@ export async function deliverWebhook(
     };
   } finally {
     clearTimeout(timeout);
+    pinnedAgent.close();
   }
 }

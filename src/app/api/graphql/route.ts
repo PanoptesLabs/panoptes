@@ -102,24 +102,18 @@ const yoga = createYoga({
   landingPage: false,
 });
 
-// Extract query string from either POST body or GET search params
+// Extract query string from POST body
 async function extractQuery(request: NextRequest): Promise<string | null> {
-  if (request.method === "POST") {
-    try {
-      const cloned = request.clone();
-      const body = await cloned.json();
-      if (body.query && typeof body.query === "string") {
-        return body.query;
-      }
-    } catch {
-      // JSON parse error
+  try {
+    const cloned = request.clone();
+    const body = await cloned.json();
+    if (body.query && typeof body.query === "string") {
+      return body.query;
     }
-    return null;
+  } catch {
+    // JSON parse error
   }
-
-  // GET request: query is in search params
-  const queryParam = request.nextUrl.searchParams.get("query");
-  return queryParam;
+  return null;
 }
 
 async function handler(request: NextRequest) {
@@ -179,4 +173,4 @@ async function handler(request: NextRequest) {
   });
 }
 
-export { handler as GET, handler as POST };
+export { handler as POST };
