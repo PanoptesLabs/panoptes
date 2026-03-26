@@ -192,10 +192,13 @@ describe("assertUrlNotPrivate — DNS resolution check", () => {
     vi.clearAllMocks();
   });
 
-  it("passes for public IPv4", async () => {
+  it("passes for public IPv4 and returns resolved address", async () => {
     const { lookup } = await import("dns/promises");
     vi.mocked(lookup).mockResolvedValue({ address: "93.184.216.34", family: 4 } as never);
-    await expect(assertUrlNotPrivate("https://example.com/hook")).resolves.toBeUndefined();
+    await expect(assertUrlNotPrivate("https://example.com/hook")).resolves.toMatchObject({
+      address: "93.184.216.34",
+      family: 4,
+    });
   });
 
   it("rejects when DNS resolves to loopback IPv4", async () => {
@@ -246,9 +249,12 @@ describe("assertUrlNotPrivate — DNS resolution check", () => {
     await expect(assertUrlNotPrivate("https://evil.com/hook")).rejects.toThrow("blocked");
   });
 
-  it("passes for public IPv6", async () => {
+  it("passes for public IPv6 and returns resolved address", async () => {
     const { lookup } = await import("dns/promises");
     vi.mocked(lookup).mockResolvedValue({ address: "2606:4700::6810:84e5", family: 6 } as never);
-    await expect(assertUrlNotPrivate("https://example.com/hook")).resolves.toBeUndefined();
+    await expect(assertUrlNotPrivate("https://example.com/hook")).resolves.toMatchObject({
+      address: "2606:4700::6810:84e5",
+      family: 6,
+    });
   });
 });

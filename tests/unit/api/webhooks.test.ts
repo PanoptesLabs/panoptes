@@ -49,9 +49,15 @@ vi.mock("@/lib/webhook-validation", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/webhook-validation")>();
   return {
     ...original,
-    assertUrlNotPrivate: vi.fn().mockResolvedValue(undefined),
+    assertUrlNotPrivate: vi.fn().mockResolvedValue({ address: "93.184.216.34", family: 4 }),
   };
 });
+
+vi.mock("undici", () => ({
+  Agent: class MockAgent {
+    close = vi.fn();
+  },
+}));
 
 import { prisma } from "@/lib/db";
 import { resolveAuth, requireRole } from "@/lib/auth";
@@ -372,7 +378,7 @@ describe("POST /api/webhooks/:id/test", () => {
     authSuccess("member");
   });
 
-  it("sends test request and returns result", async () => {
+  it("sends test request with pinned DNS dispatcher", async () => {
     vi.mocked(prisma.webhook.findFirst).mockResolvedValue(mockWebhook as never);
 
     const mockFetch = vi.fn().mockResolvedValue({
@@ -392,6 +398,8 @@ describe("POST /api/webhooks/:id/test", () => {
     expect(body.success).toBe(true);
     expect(body.statusCode).toBe(200);
     expect(body.responseTime).toBeGreaterThanOrEqual(0);
+    // DNS resolved once, fetch called with pinned dispatcher
+    expect(assertUrlNotPrivate).toHaveBeenCalledTimes(1);
     expect(mockFetch).toHaveBeenCalledWith(
       "https://example.com/hook",
       expect.objectContaining({
@@ -401,6 +409,7 @@ describe("POST /api/webhooks/:id/test", () => {
           "X-Webhook-Signature": "mocked-signature",
           "X-Webhook-Event": "webhook.test",
         }),
+        dispatcher: expect.objectContaining({ close: expect.any(Function) }),
       }),
     );
 
@@ -426,7 +435,7 @@ describe("POST /api/webhooks/:id/test", () => {
     expect(body.error).toContain("blocked");
 
     // Reset mock
-    vi.mocked(assertUrlNotPrivate).mockResolvedValue(undefined);
+    vi.mocked(assertUrlNotPrivate).mockResolvedValue({ address: "93.184.216.34", family: 4 });
   });
 
   it("returns 404 on wrong workspace", async () => {

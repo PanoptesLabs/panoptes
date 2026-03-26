@@ -20,7 +20,13 @@ vi.mock("@/lib/webhook-crypto", () => ({
 }));
 
 vi.mock("@/lib/webhook-validation", () => ({
-  assertUrlNotPrivate: vi.fn(),
+  assertUrlNotPrivate: vi.fn().mockResolvedValue({ address: "93.184.216.34", family: 4 }),
+}));
+
+vi.mock("undici", () => ({
+  Agent: class MockAgent {
+    close = vi.fn();
+  },
 }));
 
 const mockFetch = vi.fn();
@@ -92,7 +98,7 @@ describe("dispatchWebhooks", () => {
     mockPrisma.outboxEvent.findMany.mockResolvedValue([]);
     mockPrisma.webhookDelivery.findMany.mockResolvedValue([]);
     mockPrisma.$executeRaw.mockResolvedValue(1);
-    mockAssertUrl.mockResolvedValue(undefined);
+    mockAssertUrl.mockResolvedValue({ address: "93.184.216.34", family: 4 });
   });
 
   // ═══════════════════════════════════════════
@@ -614,7 +620,7 @@ describe("dispatchWebhooks", () => {
       mockPrisma.webhookCursor.upsert.mockResolvedValue({ id: "singleton", lastSeq: 0 });
       mockPrisma.outboxEvent.findMany.mockResolvedValue([]);
       mockPrisma.$executeRaw.mockResolvedValue(1);
-      mockAssertUrl.mockResolvedValue(undefined);
+      mockAssertUrl.mockResolvedValue({ address: "93.184.216.34", family: 4 });
 
       const pendingDelivery = {
         id: `del-${currentAttempts}`,
