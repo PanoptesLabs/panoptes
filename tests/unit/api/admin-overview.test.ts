@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
 vi.mock("@/lib/db", () => ({
@@ -69,7 +69,15 @@ function authNonAdmin(role: string) {
   );
 }
 
+// Pre-load route module outside test body to avoid timeout from module resolution
+let GET: (req: NextRequest) => Promise<Response>;
+
 describe("GET /api/admin/overview", () => {
+  beforeAll(async () => {
+    const mod = await import("@/app/api/admin/overview/route");
+    GET = mod.GET;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -93,7 +101,6 @@ describe("GET /api/admin/overview", () => {
     ] as never);
     vi.mocked(prisma.auditLog.findMany).mockResolvedValue([]);
 
-    const { GET } = await import("@/app/api/admin/overview/route");
     const req = new NextRequest("http://localhost/api/admin/overview");
     const res = await GET(req);
     const body = await res.json();
@@ -111,7 +118,6 @@ describe("GET /api/admin/overview", () => {
   it("returns 401 for anonymous", async () => {
     authAnonymous();
 
-    const { GET } = await import("@/app/api/admin/overview/route");
     const req = new NextRequest("http://localhost/api/admin/overview");
     const res = await GET(req);
 
@@ -121,7 +127,6 @@ describe("GET /api/admin/overview", () => {
   it("returns 403 for non-admin roles", async () => {
     authNonAdmin("viewer");
 
-    const { GET } = await import("@/app/api/admin/overview/route");
     const req = new NextRequest("http://localhost/api/admin/overview");
     const res = await GET(req);
 
@@ -132,7 +137,6 @@ describe("GET /api/admin/overview", () => {
     authSuccess();
     vi.mocked(prisma.workspaceMember.count).mockRejectedValue(new Error("DB connection lost"));
 
-    const { GET } = await import("@/app/api/admin/overview/route");
     const req = new NextRequest("http://localhost/api/admin/overview");
     const res = await GET(req);
     const body = await res.json();
