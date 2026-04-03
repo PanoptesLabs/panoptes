@@ -14,18 +14,22 @@ export async function GET(request: NextRequest) {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  const where = {
+  const baseWhere = {
     verifiedAt: { not: null },
     createdAt: { gte: since },
     ...(metric ? { metric } : {}),
   };
 
-  const [totalVerified, totalAccurate, byMetricRaw] = await Promise.all([
-    prisma.forecast.count({ where }),
-    prisma.forecast.count({ where: { ...where, wasAccurate: true } }),
+  // Only count forecasts where accuracy could be determined (wasAccurate is not null)
+  const verifiableWhere = { ...baseWhere, wasAccurate: { not: null } };
+
+  const [totalVerified, totalVerifiable, totalAccurate, byMetricRaw] = await Promise.all([
+    prisma.forecast.count({ where: baseWhere }),
+    prisma.forecast.count({ where: verifiableWhere }),
+    prisma.forecast.count({ where: { ...baseWhere, wasAccurate: true } }),
     prisma.forecast.groupBy({
       by: ["metric"],
-      where,
+      where: verifiableWhere,
       _count: { id: true },
     }),
   ]);
@@ -33,7 +37,7 @@ export async function GET(request: NextRequest) {
   // Get accurate count per metric
   const accurateByMetric = await prisma.forecast.groupBy({
     by: ["metric"],
-    where: { ...where, wasAccurate: true },
+    where: { ...baseWhere, wasAccurate: true },
     _count: { id: true },
   });
 
@@ -48,13 +52,15 @@ export async function GET(request: NextRequest) {
       : 0,
   }));
 
-  const overallAccuracy = totalVerified > 0
-    ? Math.round((totalAccurate / totalVerified) * 10000) / 100
+  const overallAccuracy = totalVerifiable > 0
+    ? Math.round((totalAccurate / totalVerifiable) * 10000) / 100
     : null;
 
   return jsonResponse({
     days,
     totalVerified,
+    totalVerifiable,
+    unverifiable: totalVerified - totalVerifiable,
     totalAccurate,
     overallAccuracy,
     byMetric,

@@ -112,7 +112,7 @@ describe("validators resolver", () => {
         tokens: "1000",
         commission: 0.1,
         jailed: false,
-        uptime: 99.5,
+        uptime: 0.995,
         votingPower: "100",
         missedBlocks: 2,
         jailCount: 0,

@@ -22,7 +22,7 @@ import type { NetworkHealthInput } from "@/lib/intelligence/scoring";
 const mockPrisma = prisma as any;
 
 function makeValidator(overrides: { status?: string; jailed?: boolean; uptime?: number } = {}) {
-  return { status: "BOND_STATUS_BONDED", jailed: false, uptime: 99, ...overrides };
+  return { status: "BOND_STATUS_BONDED", jailed: false, uptime: 0.99, ...overrides };
 }
 
 function makeHealthCheck(isHealthy: boolean) {
@@ -43,7 +43,7 @@ describe("computeNetworkHealthScore", () => {
 
     mockPrisma.validator.findMany.mockResolvedValue([
       makeValidator(),
-      makeValidator({ uptime: 98 }),
+      makeValidator({ uptime: 0.98 }),
     ]);
     mockPrisma.endpointHealth.findMany.mockResolvedValue([
       makeHealthCheck(true),
@@ -67,9 +67,9 @@ describe("computeNetworkHealthScore", () => {
     };
 
     mockPrisma.validator.findMany.mockResolvedValue([
-      makeValidator({ uptime: 100 }),
-      makeValidator({ uptime: 99.9 }),
-      makeValidator({ uptime: 99.8 }),
+      makeValidator({ uptime: 1.0 }),
+      makeValidator({ uptime: 0.999 }),
+      makeValidator({ uptime: 0.998 }),
     ]);
     mockPrisma.endpointHealth.findMany.mockResolvedValue([
       makeHealthCheck(true),
@@ -92,8 +92,8 @@ describe("computeNetworkHealthScore", () => {
     };
 
     mockPrisma.validator.findMany.mockResolvedValue([
-      makeValidator({ uptime: 95 }),
-      makeValidator({ uptime: 96 }),
+      makeValidator({ uptime: 0.95 }),
+      makeValidator({ uptime: 0.96 }),
     ]);
     mockPrisma.endpointHealth.findMany.mockResolvedValue([
       makeHealthCheck(true),
@@ -115,7 +115,7 @@ describe("computeNetworkHealthScore", () => {
 
     mockPrisma.validator.findMany.mockResolvedValue([
       makeValidator(),
-      makeValidator({ uptime: 98 }),
+      makeValidator({ uptime: 0.98 }),
     ]);
     mockPrisma.endpointHealth.findMany.mockResolvedValue([
       makeHealthCheck(false),
@@ -138,8 +138,8 @@ describe("computeNetworkHealthScore", () => {
     };
 
     mockPrisma.validator.findMany.mockResolvedValue([
-      makeValidator({ status: "BOND_STATUS_UNBONDING", uptime: 95 }),
-      makeValidator({ status: "BOND_STATUS_UNBONDING", uptime: 94 }),
+      makeValidator({ status: "BOND_STATUS_UNBONDING", uptime: 0.95 }),
+      makeValidator({ status: "BOND_STATUS_UNBONDING", uptime: 0.94 }),
     ]);
     mockPrisma.endpointHealth.findMany.mockResolvedValue([
       makeHealthCheck(true),

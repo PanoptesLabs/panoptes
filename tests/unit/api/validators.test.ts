@@ -29,7 +29,7 @@ const mockValidator = {
   tokens: "1000000000000000000000",
   commission: 0.1,
   jailed: false,
-  uptime: 99.5,
+  uptime: 0.995,
   votingPower: "1000",
   missedBlocks: 5,
   jailCount: 0,

@@ -302,8 +302,9 @@ export async function computeNetworkHealthScore(current: NetworkHealthInput): Pr
 
   // 3. Validator health score (20%) — low jailed ratio + high average uptime
   const jailedRatio = totalValidators > 0 ? jailedCount / totalValidators : 0;
+  // uptime is stored as 0..1 ratio by indexer, no extra division needed
   const avgUptime = totalValidators > 0
-    ? validatorStats.reduce((sum, v) => sum + v.uptime, 0) / totalValidators / 100
+    ? validatorStats.reduce((sum, v) => sum + v.uptime, 0) / totalValidators
     : 0;
   const validatorScore = (1 - clamp(jailedRatio * 10, 0, 1)) * 0.5 + clamp(avgUptime, 0, 1) * 0.5;
 

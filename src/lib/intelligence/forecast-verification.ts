@@ -4,20 +4,21 @@ import { prisma } from "@/lib/db";
 const ACCURACY_THRESHOLDS: Record<string, number> = {
   latency: 0.30,
   jail_risk: 0.50,
-  downtime: 0.50,
+  downtime: 0.30,
   unbonding: 0.30,
-  breach_risk: 0.50,
+  breach_risk: 0.30,
 };
 
 const DEFAULT_THRESHOLD = 0.30;
 
-// Metrics that represent risk probabilities (0-1 range)
-const RISK_METRICS = new Set(["jail_risk", "breach_risk"]);
+// Only jail_risk uses direction-based accuracy:
+// generator writes missedBlockRate (0-1 scale), verifier returns 0/1 jailed status
+const RISK_METRICS = new Set(["jail_risk"]);
 
 function checkAccuracy(metric: string, predictedValue: number, actualValue: number): boolean {
   const threshold = ACCURACY_THRESHOLDS[metric] ?? DEFAULT_THRESHOLD;
 
-  // For risk-based metrics (0-1 range), check if the predicted direction was correct
+  // For risk-based metrics, check if the predicted direction was correct
   if (RISK_METRICS.has(metric)) {
     const predictedHigh = predictedValue > 0.5;
     const actualHigh = actualValue > 0.5;
@@ -77,7 +78,7 @@ export async function verifyExpiredForecasts(): Promise<{ verified: number; accu
 }
 
 async function resolveActualValue(entityType: string, entityId: string, metric: string): Promise<number | null> {
-  // jail_risk — check if validator is currently jailed
+  // jail_risk — check if validator is currently jailed (binary 0/1, direction-based accuracy)
   if (metric === "jail_risk" && entityType === "validator") {
     const validator = await prisma.validator.findUnique({
       where: { id: entityId },
@@ -86,16 +87,22 @@ async function resolveActualValue(entityType: string, entityId: string, metric: 
     return validator ? (validator.jailed ? 1.0 : 0.0) : null;
   }
 
-  // unbonding — check if validator is no longer bonded
+  // unbonding — compute actual delegation change % (same scale as generator's changePct)
   if (metric === "unbonding" && entityType === "validator") {
-    const validator = await prisma.validator.findUnique({
-      where: { id: entityId },
-      select: { status: true },
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const snapshots = await prisma.delegationSnapshot.findMany({
+      where: { validatorId: entityId, timestamp: { gte: sevenDaysAgo } },
+      orderBy: { timestamp: "asc" },
+      select: { totalDelegated: true },
     });
-    return validator ? (validator.status !== "BOND_STATUS_BONDED" ? 1.0 : 0.0) : null;
+    if (snapshots.length < 2) return null;
+    const first = Number(BigInt(snapshots[0].totalDelegated));
+    const last = Number(BigInt(snapshots[snapshots.length - 1].totalDelegated));
+    if (first === 0) return null;
+    return ((last - first) / first) * 100;
   }
 
-  // latency — get latest endpoint latency
+  // latency — get latest endpoint latency in ms (same scale as generator)
   if (metric === "latency" && entityType === "endpoint") {
     const recentCheck = await prisma.endpointHealth.findFirst({
       where: { endpointId: entityId },
@@ -105,24 +112,27 @@ async function resolveActualValue(entityType: string, entityId: string, metric: 
     return recentCheck ? recentCheck.latencyMs : null;
   }
 
-  // downtime — check if endpoint is currently down
+  // downtime — compute actual failure rate % (same scale as generator's failureRate * 100)
   if (metric === "downtime" && entityType === "endpoint") {
-    const recentCheck = await prisma.endpointHealth.findFirst({
-      where: { endpointId: entityId },
-      orderBy: { timestamp: "desc" },
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentChecks = await prisma.endpointHealth.findMany({
+      where: { endpointId: entityId, timestamp: { gte: oneDayAgo } },
       select: { isHealthy: true },
     });
-    return recentCheck ? (recentCheck.isHealthy ? 0.0 : 1.0) : null;
+    if (recentChecks.length === 0) return null;
+    const failedCount = recentChecks.filter((c) => !c.isHealthy).length;
+    return (failedCount / recentChecks.length) * 100;
   }
 
-  // breach_risk — check if SLO is currently breaching
+  // breach_risk — get current budget consumption % (same scale as generator's projected budget)
   if (metric === "breach_risk") {
     const slo = await prisma.slo.findFirst({
       where: { entityId, entityType },
       orderBy: { updatedAt: "desc" },
-      select: { isBreaching: true },
+      include: { evaluations: { orderBy: { evaluatedAt: "desc" }, take: 1 } },
     });
-    return slo ? (slo.isBreaching ? 1.0 : 0.0) : null;
+    if (!slo || slo.evaluations.length === 0) return null;
+    return slo.evaluations[0].budgetConsumed;
   }
 
   return null;
