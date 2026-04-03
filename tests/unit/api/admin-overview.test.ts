@@ -25,6 +25,14 @@ vi.mock("@/lib/auth", () => ({
   rateLimitForRole: vi.fn(() => 120),
 }));
 
+vi.mock("@/lib/time", () => ({
+  hoursAgo: vi.fn(() => new Date(Date.now() - 24 * 60 * 60 * 1000)),
+}));
+
+vi.mock("@/lib/logger", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
+}));
+
 import { prisma } from "@/lib/db";
 import { resolveAuth, requireRole } from "@/lib/auth";
 
