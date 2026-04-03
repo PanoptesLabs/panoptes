@@ -5,8 +5,11 @@ import { publishEvent } from "@/lib/events/publish";
 import { CHANNELS } from "@/lib/events/event-types";
 import { REPUBLIC_CHAIN } from "@/lib/constants";
 import { logger } from "@/lib/logger";
+import { computeNetworkHealthScore } from "@/lib/intelligence/scoring";
 
 type BlockHeightSource = "rpc" | "rest" | "cache";
+
+const REST_TIMEOUT_MS = 5_000;
 
 async function fetchBlockHeight(): Promise<{ blockHeight: bigint; source: BlockHeightSource }> {
   // 1) RPC — primary source
@@ -22,7 +25,7 @@ async function fetchBlockHeight(): Promise<{ blockHeight: bigint; source: BlockH
   // 2) REST — secondary source
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), REST_TIMEOUT_MS);
     const res = await fetch(
       `${REPUBLIC_CHAIN.restUrl}/cosmos/base/tendermint/v1beta1/blocks/latest`,
       { signal: controller.signal },
@@ -45,6 +48,41 @@ async function fetchBlockHeight(): Promise<{ blockHeight: bigint; source: BlockH
   if (last) return { blockHeight: last.blockHeight, source: "cache" };
 
   return { blockHeight: 0n, source: "cache" };
+}
+
+async function fetchJsonSafe<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${REPUBLIC_CHAIN.restUrl}${path}`, {
+      signal: AbortSignal.timeout(REST_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+interface ChainPool { pool?: { bonded_tokens?: string; not_bonded_tokens?: string } }
+interface ChainInflation { inflation?: string }
+interface ChainSupply { supply?: Array<{ denom: string; amount: string }> }
+
+function computeNakamotoCoefficient(validators: Array<{ tokens: string; status: string }>): number {
+  const bonded = validators
+    .filter((v) => v.status === "BOND_STATUS_BONDED")
+    .map((v) => BigInt(v.tokens))
+    .sort((a, b) => (a > b ? -1 : a < b ? 1 : 0));
+
+  if (bonded.length === 0) return 0;
+
+  const totalPower = bonded.reduce((sum, t) => sum + t, 0n);
+  const threshold = (totalPower * 100n) / 300n; // 33.3%
+
+  let cumulative = 0n;
+  for (let i = 0; i < bonded.length; i++) {
+    cumulative += bonded[i];
+    if (cumulative >= threshold) return i + 1;
+  }
+  return bonded.length;
 }
 
 export async function aggregateStats(): Promise<{
@@ -105,6 +143,47 @@ export async function aggregateStats(): Promise<{
       }
     }
 
+    // Fetch chain economics data
+    const [poolData, inflationData, supplyData] = await Promise.all([
+      fetchJsonSafe<ChainPool>("/cosmos/staking/v1beta1/pool"),
+      fetchJsonSafe<ChainInflation>("/cosmos/mint/v1beta1/inflation"),
+      fetchJsonSafe<ChainSupply>("/cosmos/bank/v1beta1/supply"),
+    ]);
+
+    const bondedTokens = poolData?.pool?.bonded_tokens ?? null;
+    const notBondedTokens = poolData?.pool?.not_bonded_tokens ?? null;
+    const inflation = inflationData?.inflation ? parseFloat(inflationData.inflation) : null;
+    const totalSupplyEntry = supplyData?.supply?.find((s) => s.denom === "arai") ?? supplyData?.supply?.[0];
+    const totalSupply = totalSupplyEntry?.amount ?? null;
+
+    // Staking APR = inflation * totalSupply / bondedTokens
+    let stakingAPR: number | null = null;
+    if (inflation !== null && totalSupply && bondedTokens) {
+      const totalSupplyNum = parseFloat(totalSupply);
+      const bondedNum = parseFloat(bondedTokens);
+      if (bondedNum > 0) {
+        stakingAPR = (inflation * totalSupplyNum) / bondedNum;
+      }
+    }
+
+    // Nakamoto coefficient
+    const allValidators = await prisma.validator.findMany({
+      select: { tokens: true, status: true },
+    });
+    const nakamotoCoefficient = computeNakamotoCoefficient(allValidators);
+
+    // Network health score — pass fresh values from this run
+    let networkHealthScore: number | null = null;
+    try {
+      networkHealthScore = await computeNetworkHealthScore({
+        bondedRatio,
+        avgBlockTime,
+        nakamotoCoefficient,
+      });
+    } catch {
+      // Non-fatal: scoring may fail if data is sparse
+    }
+
     await prisma.networkStats.create({
       data: {
         totalValidators,
@@ -113,6 +192,13 @@ export async function aggregateStats(): Promise<{
         bondedRatio,
         blockHeight,
         avgBlockTime,
+        inflation,
+        totalSupply,
+        bondedTokens,
+        notBondedTokens,
+        stakingAPR,
+        nakamotoCoefficient,
+        networkHealthScore,
       },
     });
 

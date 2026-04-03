@@ -259,4 +259,75 @@ export async function computeValidatorScores(): Promise<{ scored: number; durati
   return { scored, duration: Date.now() - start };
 }
 
+export interface NetworkHealthInput {
+  bondedRatio: number | null;
+  avgBlockTime: number | null;
+  nakamotoCoefficient: number;
+}
+
+export async function computeNetworkHealthScore(current: NetworkHealthInput): Promise<number> {
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  // Fetch live data in parallel
+  const [
+    validatorStats,
+    endpointChecks,
+    anomalyCount,
+  ] = await Promise.all([
+    prisma.validator.findMany({
+      select: { status: true, jailed: true, uptime: true },
+    }),
+    prisma.endpointHealth.findMany({
+      where: { timestamp: { gte: oneDayAgo } },
+      select: { isHealthy: true },
+    }),
+    prisma.anomaly.count({
+      where: { detectedAt: { gte: oneDayAgo } },
+    }),
+  ]);
+
+  const totalValidators = validatorStats.length;
+  const bondedCount = validatorStats.filter((v) => v.status === "BOND_STATUS_BONDED").length;
+  const jailedCount = validatorStats.filter((v) => v.jailed).length;
+
+  // 1. Bonded ratio score (20%) — use fresh value from current run
+  const bondedRatio = current.bondedRatio ?? (totalValidators > 0 ? bondedCount / totalValidators : 0);
+  const bondedScore = clamp(bondedRatio / 0.67, 0, 1);
+
+  // 2. Endpoint health score (20%) — aggregate uptime
+  const totalChecks = endpointChecks.length;
+  const healthyChecks = endpointChecks.filter((c) => c.isHealthy).length;
+  const endpointScore = totalChecks > 0 ? healthyChecks / totalChecks : 0;
+
+  // 3. Validator health score (20%) — low jailed ratio + high average uptime
+  const jailedRatio = totalValidators > 0 ? jailedCount / totalValidators : 0;
+  const avgUptime = totalValidators > 0
+    ? validatorStats.reduce((sum, v) => sum + v.uptime, 0) / totalValidators / 100
+    : 0;
+  const validatorScore = (1 - clamp(jailedRatio * 10, 0, 1)) * 0.5 + clamp(avgUptime, 0, 1) * 0.5;
+
+  // 4. Anomaly density score (20%) — fewer anomalies = better
+  const anomalyDensity = totalValidators > 0 ? anomalyCount / totalValidators : anomalyCount;
+  const anomalyScore = 1 - clamp(anomalyDensity / 2, 0, 1);
+
+  // 5. Block production score (10%) — use fresh avgBlockTime
+  const blockTime = current.avgBlockTime;
+  const blockScore = blockTime !== null ? 1 - clamp(Math.abs(blockTime - 4) / 10, 0, 1) : 0.5;
+
+  // 6. Decentralization score (10%) — use fresh Nakamoto coefficient
+  const decentralizationScore = clamp(current.nakamotoCoefficient / 10, 0, 1);
+
+  // Weighted composite
+  const score =
+    bondedScore * 0.20 +
+    endpointScore * 0.20 +
+    validatorScore * 0.20 +
+    anomalyScore * 0.20 +
+    blockScore * 0.10 +
+    decentralizationScore * 0.10;
+
+  return Math.round(score * 10000) / 100; // 0-100 with 2 decimals
+}
+
 export { clamp, getEmaScore };

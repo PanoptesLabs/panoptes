@@ -25,6 +25,7 @@ vi.mock("@/lib/db", () => ({
     incident: incidentModel,
     incidentEvent: incidentEventModel,
     $transaction: vi.fn((fn: (tx: typeof txMock) => unknown) => fn(txMock)),
+    $queryRaw: vi.fn().mockResolvedValue([{ mtta_minutes: null, mttr_minutes: null }]),
   },
 }));
 

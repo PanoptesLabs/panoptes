@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
 import { Hero } from "@/components/landing/hero";
 import { CallToAction } from "@/components/landing/cta";
+import { LandingNavbar } from "@/components/landing/navbar";
 
 const Features = dynamic(
   () => import("@/components/landing/features").then((m) => m.Features),
@@ -24,6 +25,7 @@ export default function Home() {
   return (
     <main className="relative min-h-screen bg-midnight-plum">
       <div className="landing-gradient-glow pointer-events-none fixed inset-0" />
+      <LandingNavbar />
       <div className="relative">
         <Hero />
         <Features />
