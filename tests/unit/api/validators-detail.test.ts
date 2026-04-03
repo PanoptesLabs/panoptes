@@ -10,6 +10,15 @@ vi.mock("@/lib/db", () => ({
       findMany: vi.fn(),
       count: vi.fn(),
     },
+    delegationSnapshot: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
+    governanceVote: {
+      count: vi.fn().mockResolvedValue(0),
+    },
+    governanceProposal: {
+      count: vi.fn().mockResolvedValue(0),
+    },
     $queryRaw: vi.fn(),
   },
 }));
@@ -33,11 +42,15 @@ const mockValidator = {
   tokens: "1000000000000000000000",
   commission: 0.1,
   jailed: false,
-  uptime: 99.5,
+  uptime: 0.995,
   votingPower: "1000",
   missedBlocks: 5,
   jailCount: 0,
   lastJailedAt: null,
+  consensusPubkey: null,
+  consensusAddress: null,
+  commissionRewards: "0",
+  outstandingRewards: "0",
   firstSeen: new Date("2025-01-01"),
   lastUpdated: new Date("2025-06-01"),
 };
@@ -56,6 +69,8 @@ const mockSnapshot = {
 describe("GET /api/validators/[id]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default mock for rank query
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ rank: 1n }]);
   });
 
   it("returns 404 for non-existent validator", async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("republic-sdk", () => ({
@@ -38,7 +38,15 @@ import { prisma } from "@/lib/db";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockPrisma = prisma as any;
 
+// Pre-load route module outside test body to avoid timeout from module resolution
+let POST: (req: NextRequest) => Promise<Response>;
+
 describe("POST /api/preflight", () => {
+  beforeAll(async () => {
+    const mod = await import("@/app/api/preflight/route");
+    POST = mod.POST;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -58,7 +66,6 @@ describe("POST /api/preflight", () => {
   });
 
   it("returns preflight result with valid body", async () => {
-    const { POST } = await import("@/app/api/preflight/route");
     const req = new NextRequest("http://localhost/api/preflight", {
       method: "POST",
       body: JSON.stringify({
@@ -79,7 +86,6 @@ describe("POST /api/preflight", () => {
   });
 
   it("returns 400 for missing required fields", async () => {
-    const { POST } = await import("@/app/api/preflight/route");
     const req = new NextRequest("http://localhost/api/preflight", {
       method: "POST",
       body: JSON.stringify({ from: "rai1abc..." }),
@@ -101,7 +107,6 @@ describe("POST /api/preflight", () => {
       scores: [{ score: 80 }],
     });
 
-    const { POST } = await import("@/app/api/preflight/route");
     const req = new NextRequest("http://localhost/api/preflight", {
       method: "POST",
       body: JSON.stringify({
@@ -123,7 +128,6 @@ describe("POST /api/preflight", () => {
   });
 
   it("returns 400 for non-numeric amount", async () => {
-    const { POST } = await import("@/app/api/preflight/route");
     const req = new NextRequest("http://localhost/api/preflight", {
       method: "POST",
       body: JSON.stringify({
@@ -141,7 +145,6 @@ describe("POST /api/preflight", () => {
   });
 
   it("returns 400 for invalid address format", async () => {
-    const { POST } = await import("@/app/api/preflight/route");
     const req = new NextRequest("http://localhost/api/preflight", {
       method: "POST",
       body: JSON.stringify({
@@ -159,7 +162,6 @@ describe("POST /api/preflight", () => {
   });
 
   it("returns 400 for invalid bech32 checksum", async () => {
-    const { POST } = await import("@/app/api/preflight/route");
     const req = new NextRequest("http://localhost/api/preflight", {
       method: "POST",
       body: JSON.stringify({
@@ -177,7 +179,6 @@ describe("POST /api/preflight", () => {
   });
 
   it("returns 400 for invalid JSON", async () => {
-    const { POST } = await import("@/app/api/preflight/route");
     const req = new NextRequest("http://localhost/api/preflight", {
       method: "POST",
       body: "invalid-json",

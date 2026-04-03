@@ -9,6 +9,13 @@ interface StatsRow {
   bondedRatio: number | null;
   blockHeight: bigint;
   avgBlockTime: number | null;
+  inflation: number | null;
+  totalSupply: string | null;
+  bondedTokens: string | null;
+  notBondedTokens: string | null;
+  stakingAPR: number | null;
+  nakamotoCoefficient: number | null;
+  networkHealthScore: number | null;
   timestamp: Date;
 }
 
@@ -20,6 +27,13 @@ function formatStats(s: StatsRow) {
     bondedRatio: s.bondedRatio,
     blockHeight: s.blockHeight.toString(),
     avgBlockTime: s.avgBlockTime,
+    inflation: s.inflation,
+    totalSupply: s.totalSupply,
+    bondedTokens: s.bondedTokens,
+    notBondedTokens: s.notBondedTokens,
+    stakingAPR: s.stakingAPR,
+    nakamotoCoefficient: s.nakamotoCoefficient,
+    networkHealthScore: s.networkHealthScore,
     timestamp: s.timestamp.toISOString(),
   };
 }
@@ -40,7 +54,10 @@ export async function GET(request: NextRequest) {
   const dailyHistory: StatsRow[] = await prisma.$queryRaw`
     SELECT DISTINCT ON (DATE("timestamp"))
       "totalValidators", "activeValidators", "totalStaked",
-      "bondedRatio", "blockHeight", "avgBlockTime", "timestamp"
+      "bondedRatio", "blockHeight", "avgBlockTime",
+      "inflation", "totalSupply", "bondedTokens", "notBondedTokens",
+      "stakingAPR", "nakamotoCoefficient", "networkHealthScore",
+      "timestamp"
     FROM "NetworkStats"
     WHERE "timestamp" >= ${ninetyDaysAgo}
     ORDER BY DATE("timestamp") ASC, "timestamp" DESC

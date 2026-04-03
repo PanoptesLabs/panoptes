@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { FORECAST_DEFAULTS, FORECAST_THRESHOLDS } from "@/lib/constants";
 import { hoursAgo, daysAgo } from "@/lib/time";
+import { verifyExpiredForecasts } from "./forecast-verification";
 import type { EndpointWithHealthChecks } from "./types";
 
 export interface ForecastResult {
@@ -443,12 +444,23 @@ export async function generateForecasts(): Promise<{
     ...breachRisk,
   ];
 
+  // Verify expired forecasts before cleaning them up
+  try {
+    await verifyExpiredForecasts();
+  } catch {
+    // Non-fatal: verification failure shouldn't block forecast generation
+  }
+
+  // Clean up old verified forecasts (>30 days) to prevent unbounded growth
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  await prisma.forecast.deleteMany({
+    where: {
+      verifiedAt: { not: null, lt: thirtyDaysAgo },
+    },
+  });
+
   if (allForecasts.length > 0) {
     await prisma.$transaction(async (tx) => {
-      // Delete expired forecasts first
-      await tx.forecast.deleteMany({
-        where: { validUntil: { lt: new Date() } },
-      });
 
       // Bulk create new forecasts
       await tx.forecast.createMany({

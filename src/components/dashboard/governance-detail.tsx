@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { timeAgo } from "@/lib/time";
 import { truncateAddress } from "@/lib/formatters";
 import { ArrowLeft, Loader2, Vote, CheckCircle, XCircle, MinusCircle, ShieldAlert } from "lucide-react";
+import { VoteBarChart } from "@/components/charts/vote-bar-chart";
 
 export function GovernanceDetail({ proposalId }: { proposalId: string }) {
   const { data, error, isLoading, mutate } = useGovernanceProposal(proposalId);
@@ -63,6 +64,23 @@ export function GovernanceDetail({ proposalId }: { proposalId: string }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Vote Distribution Chart */}
+      {totalVotes > 0 && (
+        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-mist">Vote Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <VoteBarChart
+              yes={data.voteSummary.yes}
+              no={data.voteSummary.no}
+              abstain={data.voteSummary.abstain}
+              veto={data.voteSummary.veto}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Vote Summary */}
       <div className="grid gap-4 sm:grid-cols-4">

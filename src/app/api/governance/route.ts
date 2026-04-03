@@ -37,5 +37,8 @@ export async function GET(request: NextRequest) {
     prisma.governanceProposal.count({ where }),
   ]);
 
-  return jsonResponse({ proposals, total, limit, offset }, rl.headers);
+  return jsonResponse({ proposals, total, limit, offset }, rl.headers, 200, {
+    sMaxAge: 300,
+    staleWhileRevalidate: 600,
+  });
 }

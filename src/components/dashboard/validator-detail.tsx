@@ -25,7 +25,7 @@ import {
 } from "@/lib/formatters";
 import { formatDate, timeAgo } from "@/lib/time";
 import { CHART_COLORS } from "@/lib/constants";
-import { ArrowLeft, ShieldAlert, Calendar } from "lucide-react";
+import { ArrowLeft, ShieldAlert, Calendar, Trophy, Users, Vote, Activity } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { subDays } from "date-fns";
@@ -173,8 +173,8 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
         </Card>
       </div>
 
-      {/* Metric cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Enriched metric cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardHeader className="pb-1">
             <CardTitle className="text-xs text-dusty-lavender/50">
@@ -182,10 +182,10 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-mono text-xl font-bold text-mist">
+            <p className="font-mono text-lg font-bold text-mist">
               {formatTokensShort(v.tokens)}
             </p>
-            <p className="mt-1 text-xs text-dusty-lavender/60">
+            <p className="mt-0.5 text-[10px] text-dusty-lavender/40">
               {formatTokens(v.tokens)}
             </p>
           </CardContent>
@@ -193,16 +193,61 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardHeader className="pb-1">
             <CardTitle className="flex items-center gap-1 text-xs text-dusty-lavender/50">
-              Voting Power
-              <HelpTooltip content={helpContent.validators.fields.votingPower} side="right" />
+              <Activity className="size-3" />
+              Uptime
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-mono text-xl font-bold text-mist">
-              {formatTokensShort(v.votingPower)}
+            <p className="font-mono text-lg font-bold text-mist">
+              {(v.uptime * 100).toFixed(2)}%
             </p>
           </CardContent>
         </Card>
+        {v.rank !== null && v.rank !== undefined && (
+          <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
+            <CardHeader className="pb-1">
+              <CardTitle className="flex items-center gap-1 text-xs text-dusty-lavender/50">
+                <Trophy className="size-3" />
+                Rank
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="font-mono text-lg font-bold text-mist">
+                #{v.rank}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+        {v.delegatorCount !== null && v.delegatorCount !== undefined && (
+          <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
+            <CardHeader className="pb-1">
+              <CardTitle className="flex items-center gap-1 text-xs text-dusty-lavender/50">
+                <Users className="size-3" />
+                Delegators
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="font-mono text-lg font-bold text-mist">
+                {formatNumber(v.delegatorCount)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+        {v.governanceRate !== null && v.governanceRate !== undefined && (
+          <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
+            <CardHeader className="pb-1">
+              <CardTitle className="flex items-center gap-1 text-xs text-dusty-lavender/50">
+                <Vote className="size-3" />
+                Gov. Rate
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="font-mono text-lg font-bold text-mist">
+                {(v.governanceRate * 100).toFixed(1)}%
+              </p>
+            </CardContent>
+          </Card>
+        )}
         <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
           <CardHeader className="pb-1">
             <CardTitle className="text-xs text-dusty-lavender/50">
@@ -213,6 +258,34 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
             <p className="text-sm text-mist">{timeAgo(v.lastUpdated)}</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Related links */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={`/dashboard/anomalies?entityId=${validatorId}&entityType=validator`}
+          className="rounded-lg border border-slate-DEFAULT/20 px-3 py-1.5 text-xs text-dusty-lavender/70 transition-colors hover:border-soft-violet/30 hover:text-soft-violet"
+        >
+          Related Anomalies
+        </Link>
+        <Link
+          href={`/dashboard/incidents?entityId=${validatorId}&entityType=validator`}
+          className="rounded-lg border border-slate-DEFAULT/20 px-3 py-1.5 text-xs text-dusty-lavender/70 transition-colors hover:border-soft-violet/30 hover:text-soft-violet"
+        >
+          Related Incidents
+        </Link>
+        <Link
+          href={`/dashboard/delegations?validatorId=${validatorId}`}
+          className="rounded-lg border border-slate-DEFAULT/20 px-3 py-1.5 text-xs text-dusty-lavender/70 transition-colors hover:border-soft-violet/30 hover:text-soft-violet"
+        >
+          Delegations
+        </Link>
+        <Link
+          href="/dashboard/governance"
+          className="rounded-lg border border-slate-DEFAULT/20 px-3 py-1.5 text-xs text-dusty-lavender/70 transition-colors hover:border-soft-violet/30 hover:text-soft-violet"
+        >
+          Governance
+        </Link>
       </div>
 
       {/* Snapshot charts */}
@@ -251,7 +324,7 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
                   dataKey="tokens"
                   label="RAI"
                   color={CHART_COLORS.primary}
-                  formatter={(v) => `${(v / 1_000_000).toFixed(1)}M`}
+                  formatter={(val) => `${(val / 1_000_000).toFixed(1)}M`}
                 />
               </CardContent>
             </Card>
@@ -267,7 +340,7 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
                   dataKey="commission"
                   label=""
                   color={CHART_COLORS.secondary}
-                  formatter={(v) => `${(v * 100).toFixed(1)}%`}
+                  formatter={(val) => `${(val * 100).toFixed(1)}%`}
                 />
               </CardContent>
             </Card>

@@ -64,5 +64,7 @@ export async function GET(request: NextRequest) {
       },
     },
     rl.headers,
+    200,
+    { sMaxAge: 10, staleWhileRevalidate: 20 },
   );
 }

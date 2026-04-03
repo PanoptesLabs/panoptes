@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useValidators } from "@/hooks/use-validators";
 import { DataTable, type Column } from "./data-table";
@@ -15,6 +15,7 @@ import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { ScoreBadge } from "./score-badge";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { ValidatorCompare } from "./validator-compare";
 import type { ValidatorListItem } from "@/types";
 
 const STATUS_OPTIONS = [
@@ -147,6 +148,11 @@ export function ValidatorsList() {
     },
   ];
 
+  const availableValidators = useMemo(
+    () => (data?.validators ?? []).map((v) => ({ id: v.id, moniker: v.moniker })),
+    [data?.validators],
+  );
+
   if (error && !data) {
     return (
       <ErrorState
@@ -157,7 +163,7 @@ export function ValidatorsList() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
@@ -188,6 +194,9 @@ export function ValidatorsList() {
         emptyMessage="No validators found"
         onRowClick={(row) => router.push(`/dashboard/validators/${row.id}`)}
       />
+
+      {/* Validator Compare */}
+      <ValidatorCompare availableValidators={availableValidators} />
     </div>
   );
 }

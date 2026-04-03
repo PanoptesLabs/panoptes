@@ -12,11 +12,19 @@ import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { SEVERITY_COLORS, STATUS_COLORS } from "@/lib/constants";
 import { SEVERITY_ICON_COLORS } from "@/lib/color-utils";
-import { Siren, AlertTriangle, CheckCircle, Eye, ShieldAlert } from "lucide-react";
+import { Siren, AlertTriangle, CheckCircle, Eye, ShieldAlert, Timer, Clock } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Pagination } from "./pagination";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+
+function formatDuration(minutes: number | null): string {
+  if (minutes === null) return "--";
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
 
 const STATUS_OPTIONS = [
   { label: "All Statuses", value: "" },
@@ -64,7 +72,7 @@ export function IncidentList() {
   return (
     <div className="space-y-6">
       {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard
           title="Open"
           value={summary ? String(summary.open) : "--"}
@@ -87,6 +95,18 @@ export function IncidentList() {
           title="Critical"
           value={summary ? String(summary.critical) : "--"}
           icon={<ShieldAlert className="size-4" />}
+          isLoading={summaryLoading}
+        />
+        <StatCard
+          title="MTTA"
+          value={summary ? formatDuration(summary.mttaMinutes) : "--"}
+          icon={<Timer className="size-4" />}
+          isLoading={summaryLoading}
+        />
+        <StatCard
+          title="MTTR"
+          value={summary ? formatDuration(summary.mttrMinutes) : "--"}
+          icon={<Clock className="size-4" />}
           isLoading={summaryLoading}
         />
       </div>

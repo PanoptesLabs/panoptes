@@ -8,25 +8,30 @@ datasource db {
 }
 
 model Validator {
-  id               String              @id // operatorAddress
-  moniker          String
-  status           String
-  tokens           String
-  commission       Float
-  jailed           Boolean             @default(false)
-  uptime           Float               @default(0)
-  votingPower      String
-  missedBlocks     Int                 @default(0)
-  jailCount        Int                 @default(0)
-  lastJailedAt     DateTime?
-  firstSeen        DateTime            @default(now())
-  lastUpdated      DateTime            @updatedAt
-  snapshots        ValidatorSnapshot[]
-  scores           ValidatorScore[]
+  id                String              @id // operatorAddress
+  moniker           String
+  status            String
+  tokens            String
+  commission        Float
+  jailed            Boolean             @default(false)
+  uptime            Float               @default(0)
+  votingPower       String
+  missedBlocks      Int                 @default(0)
+  jailCount         Int                 @default(0)
+  lastJailedAt      DateTime?
+  consensusPubkey    String?
+  consensusAddress   String?
+  commissionRewards  String              @default("0")
+  outstandingRewards String              @default("0")
+  firstSeen          DateTime            @default(now())
+  lastUpdated       DateTime            @updatedAt
+  snapshots         ValidatorSnapshot[]
+  scores            ValidatorScore[]
   delegationSnapshots DelegationSnapshot[]
 
   @@index([status])
   @@index([jailed])
+  @@index([consensusAddress])
 }
 
 model ValidatorSnapshot {
@@ -75,14 +80,21 @@ model EndpointHealth {
 }
 
 model NetworkStats {
-  id               String   @id @default(cuid())
-  totalValidators  Int
-  activeValidators Int
-  totalStaked      String
-  bondedRatio      Float?
-  blockHeight      BigInt
-  avgBlockTime     Float?
-  timestamp        DateTime @default(now())
+  id                  String   @id @default(cuid())
+  totalValidators     Int
+  activeValidators    Int
+  totalStaked         String
+  bondedRatio         Float?
+  blockHeight         BigInt
+  avgBlockTime        Float?
+  inflation           Float?
+  totalSupply         String?
+  bondedTokens        String?
+  notBondedTokens     String?
+  stakingAPR          Float?
+  nakamotoCoefficient Int?
+  networkHealthScore  Float?
+  timestamp           DateTime @default(now())
 
   @@index([timestamp])
 }
@@ -467,7 +479,7 @@ model DelegationSnapshot {
 }
 
 model Forecast {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   entityType     String
   entityId       String
   metric         String
@@ -479,7 +491,10 @@ model Forecast {
   threshold      Float?
   reasoning      String
   validUntil     DateTime
-  createdAt      DateTime @default(now())
+  actualValue    Float?
+  wasAccurate    Boolean?
+  verifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
 
   @@index([entityType, entityId])
   @@index([metric])

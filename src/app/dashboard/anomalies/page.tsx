@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAnomalies } from "@/hooks/use-anomalies";
+import { useAnomalies, useAnomalyTrend } from "@/hooks/use-anomalies";
+import { AnomalyTrendChart } from "@/components/charts/anomaly-trend-chart";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { FilterSelect } from "@/components/dashboard/filter-select";
 import { ErrorState } from "@/components/dashboard/error-state";
@@ -46,6 +47,7 @@ export default function AnomaliesPage() {
   const [offset, setOffset] = useState(0);
   const limit = 20;
 
+  const { data: trendData } = useAnomalyTrend(30);
   const { data, error, isLoading, mutate } = useAnomalies({
     type: type || undefined,
     severity: severity || undefined,
@@ -72,6 +74,14 @@ export default function AnomaliesPage() {
         title="Anomalies"
         description="Network anomaly detection and alerts"
       />
+
+      {/* Anomaly trend chart */}
+      {trendData && trendData.trend.length > 0 && (
+        <div className="rounded-xl border border-soft-violet/20 bg-deep-iris/10 p-4">
+          <h3 className="mb-3 text-sm font-medium text-dusty-lavender">Anomaly Trend (30 days)</h3>
+          <AnomalyTrendChart data={trendData.trend} />
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex items-center gap-1">

@@ -49,7 +49,23 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const flow = [...validatorFlow.values()].sort((a, b) => b.avgChurnRate - a.avgChurnRate);
+  // Fetch monikers for all validators in flow
+  const validatorIds = [...validatorFlow.keys()];
+  const validators = validatorIds.length > 0
+    ? await prisma.validator.findMany({
+        where: { id: { in: validatorIds } },
+        select: { id: true, moniker: true },
+      })
+    : [];
+
+  const monikerMap = new Map(validators.map((v) => [v.id, v.moniker]));
+
+  const flow = [...validatorFlow.values()]
+    .sort((a, b) => b.avgChurnRate - a.avgChurnRate)
+    .map((v) => ({
+      ...v,
+      moniker: monikerMap.get(v.validatorId) || null,
+    }));
 
   return jsonResponse({ flow, days }, rl.headers);
 }

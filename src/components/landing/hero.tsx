@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { ChevronDown, Github } from "lucide-react";
@@ -15,6 +15,7 @@ const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL
 
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
+  const [previewError, setPreviewError] = useState(false);
   const prefersReduced = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -127,6 +128,27 @@ export function Hero() {
             GitHub
           </a>
         </motion.div>
+
+        {/* Dashboard preview — hidden if asset not available */}
+        {!previewError && (
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            custom={0.6}
+            className="mt-4"
+          >
+            <Image
+              src="/dashboard-preview.webp"
+              alt="Panoptes Dashboard Preview"
+              width={1200}
+              height={675}
+              className="mx-auto w-full max-w-4xl rounded-xl border border-soft-violet/20 shadow-2xl shadow-soft-violet/10"
+              priority={false}
+              onError={() => setPreviewError(true)}
+            />
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Scroll indicator */}

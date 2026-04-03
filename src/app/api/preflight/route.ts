@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { withRateLimit, jsonResponse } from "@/lib/api-helpers";
-import { validatePreflight } from "@/lib/intelligence";
+import { validatePreflight } from "@/lib/intelligence/preflight";
 import { addressToBytes } from "republic-sdk";
 
 export async function POST(request: NextRequest) {

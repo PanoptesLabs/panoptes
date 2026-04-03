@@ -65,7 +65,7 @@ const features = [
 
 export function Features() {
   return (
-    <section className="bg-midnight-plum px-4 py-24 md:py-32">
+    <section id="features" className="bg-midnight-plum px-4 py-24 md:py-32">
       {/* Section separator */}
       <div className="h-px bg-gradient-to-r from-transparent via-soft-violet/20 to-transparent" />
 

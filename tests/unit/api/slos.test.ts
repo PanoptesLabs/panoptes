@@ -36,6 +36,20 @@ vi.mock("@/lib/auth", () => ({
   rateLimitForRole: vi.fn((role: string) => (role === "anonymous" ? 30 : 120)),
 }));
 
+vi.mock("@/lib/cron-auth", () => ({
+  validateCronAuth: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock("@/lib/indexer", () => ({
+  aggregateStats: vi.fn().mockResolvedValue({
+    totalValidators: 50,
+    activeValidators: 40,
+    blockHeight: 12345,
+  }),
+  syncGovernance: vi.fn().mockResolvedValue({ proposalsSynced: 0, votesSynced: 0, duration: 10 }),
+  syncDelegations: vi.fn().mockResolvedValue({ eventsSynced: 0, snapshotsTaken: 0, duration: 10 }),
+}));
+
 vi.mock("@/lib/intelligence", () => ({
   computeEndpointScores: vi.fn().mockResolvedValue({ scored: 3, duration: 100 }),
   computeValidatorScores: vi.fn().mockResolvedValue({ scored: 5, duration: 200 }),
@@ -467,20 +481,6 @@ describe("Stats cron SLO integration", () => {
   });
 
   it("includes slos field in stats cron response", async () => {
-    // Mock cron auth
-    vi.mock("@/lib/cron-auth", () => ({
-      validateCronAuth: vi.fn().mockReturnValue(null),
-    }));
-    vi.mock("@/lib/indexer", () => ({
-      aggregateStats: vi.fn().mockResolvedValue({
-        totalValidators: 50,
-        activeValidators: 40,
-        blockHeight: 12345,
-      }),
-      syncGovernance: vi.fn().mockResolvedValue({ proposalsSynced: 0, votesSynced: 0, duration: 10 }),
-      syncDelegations: vi.fn().mockResolvedValue({ eventsSynced: 0, snapshotsTaken: 0, duration: 10 }),
-    }));
-
     const { POST } = await import("@/app/api/cron/stats/route");
     const req = new NextRequest("http://localhost/api/cron/stats", {
       method: "POST",

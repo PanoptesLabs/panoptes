@@ -4,6 +4,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     validator: {
       count: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     networkStats: {
       create: vi.fn(),
@@ -67,6 +68,12 @@ describe("aggregateStats", () => {
     });
 
     setupValidatorMocks();
+
+    // Stub global fetch for REST calls (pool, inflation, supply, REST fallback)
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    }));
   });
 
   it("aggregates stats from chain and DB", async () => {

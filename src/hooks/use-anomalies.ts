@@ -25,3 +25,23 @@ export function useAnomalies(filters?: AnomalyFilters) {
 
   return useSWR<AnomalyApiResponse>(url, pollingSwrConfig);
 }
+
+interface AnomalyTrendEntry {
+  date: string;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+interface AnomalyTrendResponse {
+  trend: AnomalyTrendEntry[];
+  days: number;
+}
+
+export function useAnomalyTrend(days = 30) {
+  return useSWR<AnomalyTrendResponse>(
+    `/api/anomalies/trend?days=${days}`,
+    pollingSwrConfig,
+  );
+}

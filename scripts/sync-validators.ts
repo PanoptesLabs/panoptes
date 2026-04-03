@@ -9,6 +9,7 @@ interface ChainValidator {
   tokens: string;
   commission?: { commission_rates?: { rate?: string } };
   jailed?: boolean;
+  consensus_pubkey?: { key?: string };
 }
 
 interface SyncResult {
