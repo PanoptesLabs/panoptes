@@ -64,7 +64,7 @@ export function Overview() {
     endpoints?.endpoints.filter((e) => e.latestCheck?.isHealthy).length ?? 0;
   const totalEndpoints = endpoints?.endpoints.length ?? 0;
 
-  const { stakingSparkline, blockSparkline, validatorSparkline } =
+  const { stakingSparkline, blockSparkline, validatorSparkline, stakingTrend, validatorTrend } =
     useHistorySparklines(history);
 
   if (statsError && !stats) {
@@ -83,6 +83,7 @@ export function Overview() {
               : "--"
           }
           subtitle="active / total"
+          trend={validatorTrend}
           icon={<Shield className="size-4" />}
           sparklineData={validatorSparkline}
           isLoading={statsLoading}
@@ -103,6 +104,7 @@ export function Overview() {
               ? `${(current.bondedRatio * 100).toFixed(1)}% bonded`
               : undefined
           }
+          trend={stakingTrend}
           icon={<Coins className="size-4" />}
           sparklineData={stakingSparkline}
           isLoading={statsLoading}

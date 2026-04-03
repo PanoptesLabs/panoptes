@@ -233,9 +233,13 @@ describe("syncValidators", () => {
     );
 
     const mockFn = vi.fn()
+      // Validator pages
       .mockResolvedValueOnce(mockFetchResponse(page1, "page2key"))
       .mockResolvedValueOnce(mockFetchResponse(page2, "page3key"))
-      .mockResolvedValueOnce(mockFetchResponse(page3, null));
+      .mockResolvedValueOnce(mockFetchResponse(page3, null))
+      // Signing infos + slashing params (called after validators sync)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ info: [], pagination: {} }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ params: { signed_blocks_window: "10000" } }) });
     globalThis.fetch = mockFn;
 
     mockPrisma.validator.findMany.mockResolvedValue([]);
@@ -243,6 +247,7 @@ describe("syncValidators", () => {
     const result = await syncValidators();
 
     expect(result.synced).toBe(460);
-    expect(mockFn).toHaveBeenCalledTimes(3);
+    // 3 validator pages + 1 signing_infos + 1 slashing params = 5 calls
+    expect(mockFn).toHaveBeenCalledTimes(5);
   });
 });

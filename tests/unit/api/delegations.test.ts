@@ -8,6 +8,7 @@ vi.mock("@/lib/db", () => ({
       count: vi.fn(),
     },
     delegationSnapshot: { findMany: vi.fn() },
+    validator: { findMany: vi.fn().mockResolvedValue([]) },
     anomaly: { findMany: vi.fn() },
   },
 }));

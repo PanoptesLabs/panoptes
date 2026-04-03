@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import {
   Trophy,
   ArrowUpCircle,
@@ -166,19 +167,27 @@ export function LeaderboardTable() {
                   : data?.entries.map((entry) => (
                       <TableRow
                         key={entry.validatorId}
-                        className="border-slate-DEFAULT/10 transition-colors hover:bg-deep-iris/10"
+                        className="border-slate-DEFAULT/10 cursor-pointer transition-colors hover:bg-deep-iris/10"
                       >
                         <TableCell className="font-mono text-sm text-dusty-lavender/70">
-                          #{entry.rank}
+                          <Link href={`/dashboard/validators/${entry.validatorId}`} className="block">
+                            #{entry.rank}
+                          </Link>
                         </TableCell>
                         <TableCell className="font-medium text-mist">
-                          {entry.moniker}
+                          <Link href={`/dashboard/validators/${entry.validatorId}`} className="block">
+                            {entry.moniker}
+                          </Link>
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm text-dusty-lavender">
-                          {formatValue(category, entry.value)}
+                          <Link href={`/dashboard/validators/${entry.validatorId}`} className="block">
+                            {formatValue(category, entry.value)}
+                          </Link>
                         </TableCell>
                         <TableCell className="text-right">
-                          <ScoreBadge score={entry.score} />
+                          <Link href={`/dashboard/validators/${entry.validatorId}`} className="block">
+                            <ScoreBadge score={entry.score} />
+                          </Link>
                         </TableCell>
                       </TableRow>
                     ))}

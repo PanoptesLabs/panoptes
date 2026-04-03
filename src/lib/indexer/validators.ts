@@ -2,6 +2,9 @@ import { prisma } from "@/lib/db";
 import { IndexerError } from "@/lib/errors";
 import { REPUBLIC_CHAIN, VALIDATOR_DEFAULTS } from "@/lib/constants";
 import { fetchPaginated } from "./paginate";
+import { sha256 } from "@cosmjs/crypto";
+import { fromBase64, toBech32 } from "@cosmjs/encoding";
+import { logger } from "@/lib/logger";
 
 interface SyncOptions {
   forceDailySnapshot?: boolean;
@@ -11,6 +14,7 @@ interface SyncResult {
   synced: number;
   snapshotsCreated: number;
   newValidators: number;
+  signingInfosSynced: number;
   duration: number;
 }
 
@@ -21,10 +25,25 @@ interface ChainValidator {
   tokens: string;
   commission?: { commission_rates?: { rate?: string } };
   jailed?: boolean;
+  consensus_pubkey?: { key?: string };
+}
+
+interface SigningInfo {
+  address: string;
+  missed_blocks_counter: string;
 }
 
 const BATCH_SIZE = 25;
 const TX_TIMEOUT_MS = 15_000;
+const SIGNING_INFO_TIMEOUT_MS = 10_000;
+const CONSENSUS_ADDRESS_PREFIX = "raivalcons";
+
+function deriveConsensusAddress(pubkeyBase64: string): string {
+  const pubkeyBytes = fromBase64(pubkeyBase64);
+  const hash = sha256(pubkeyBytes);
+  const addr = hash.slice(0, 20);
+  return toBech32(CONSENSUS_ADDRESS_PREFIX, addr);
+}
 
 function fetchAllValidators(): Promise<ChainValidator[]> {
   return fetchPaginated<ChainValidator>(
@@ -35,6 +54,31 @@ function fetchAllValidators(): Promise<ChainValidator[]> {
     (data) => ((data.validators as ChainValidator[]) ?? []),
     { timeoutMs: VALIDATOR_DEFAULTS.FETCH_TIMEOUT_MS, label: "validators" },
   );
+}
+
+async function fetchSigningInfos(): Promise<SigningInfo[]> {
+  return fetchPaginated<SigningInfo>(
+    (nextKey) => {
+      const base = `${REPUBLIC_CHAIN.restUrl}/cosmos/slashing/v1beta1/signing_infos?pagination.limit=200`;
+      return nextKey ? `${base}&pagination.key=${encodeURIComponent(nextKey)}` : base;
+    },
+    (data) => ((data.info as SigningInfo[]) ?? []),
+    { timeoutMs: SIGNING_INFO_TIMEOUT_MS, label: "signing-infos" },
+  );
+}
+
+async function fetchSignedBlocksWindow(): Promise<number> {
+  try {
+    const res = await fetch(
+      `${REPUBLIC_CHAIN.restUrl}/cosmos/slashing/v1beta1/params`,
+      { signal: AbortSignal.timeout(SIGNING_INFO_TIMEOUT_MS) },
+    );
+    if (!res.ok) return 10_000;
+    const data = (await res.json()) as { params?: { signed_blocks_window?: string } };
+    return parseInt(data.params?.signed_blocks_window ?? "10000", 10) || 10_000;
+  } catch {
+    return 10_000;
+  }
 }
 
 export async function syncValidators(
@@ -59,6 +103,7 @@ export async function syncValidators(
       tokens: v.tokens || "0",
       commission: v.commission?.commission_rates?.rate || "0",
       jailed: v.jailed || false,
+      consensusPubkey: v.consensus_pubkey?.key ?? null,
     }));
 
     const existing = await prisma.validator.findMany();
@@ -93,6 +138,16 @@ export async function syncValidators(
             lastJailedAt = new Date();
           }
 
+          // Derive consensus address from pubkey
+          let consensusAddress = prev?.consensusAddress ?? null;
+          if (val.consensusPubkey && !consensusAddress) {
+            try {
+              consensusAddress = deriveConsensusAddress(val.consensusPubkey);
+            } catch {
+              // skip if derivation fails
+            }
+          }
+
           if (!prev) newValidators++;
 
           await tx.validator.upsert({
@@ -107,6 +162,8 @@ export async function syncValidators(
               votingPower: val.tokens,
               jailCount,
               lastJailedAt,
+              consensusPubkey: val.consensusPubkey,
+              consensusAddress,
             },
             update: {
               moniker: val.moniker,
@@ -117,6 +174,8 @@ export async function syncValidators(
               votingPower: val.tokens,
               jailCount,
               lastJailedAt,
+              consensusPubkey: val.consensusPubkey,
+              consensusAddress,
             },
           });
 
@@ -137,10 +196,50 @@ export async function syncValidators(
       }, { timeout: TX_TIMEOUT_MS });
     }
 
+    // Sync signing infos → missedBlocks + uptime
+    let signingInfosSynced = 0;
+    try {
+      const [signingInfos, window] = await Promise.all([
+        fetchSigningInfos(),
+        fetchSignedBlocksWindow(),
+      ]);
+
+      // Build consensus address → signing info map
+      const signingMap = new Map(signingInfos.map((si) => [si.address, si]));
+
+      // Get all validators with consensus addresses
+      const validatorsWithConsensus = await prisma.validator.findMany({
+        where: { consensusAddress: { not: null } },
+        select: { id: true, consensusAddress: true },
+      });
+
+      for (let i = 0; i < validatorsWithConsensus.length; i += BATCH_SIZE) {
+        const batch = validatorsWithConsensus.slice(i, i + BATCH_SIZE);
+        await prisma.$transaction(async (tx) => {
+          for (const v of batch) {
+            const info = signingMap.get(v.consensusAddress!);
+            if (!info) continue;
+
+            const missedBlocks = parseInt(info.missed_blocks_counter, 10) || 0;
+            const uptime = Math.max(0, Math.min(1, (window - missedBlocks) / window));
+
+            await tx.validator.update({
+              where: { id: v.id },
+              data: { missedBlocks, uptime },
+            });
+            signingInfosSynced++;
+          }
+        }, { timeout: TX_TIMEOUT_MS });
+      }
+    } catch (err) {
+      logger.warn("validators", `Signing info sync failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
     return {
       synced: validators.length,
       snapshotsCreated,
       newValidators,
+      signingInfosSynced,
       duration: Date.now() - start,
     };
   } catch (error) {

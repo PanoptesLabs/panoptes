@@ -36,5 +36,7 @@ export async function GET(request: NextRequest) {
       offset,
     },
     rl.headers,
+    200,
+    { sMaxAge: 120, staleWhileRevalidate: 300 },
   );
 }

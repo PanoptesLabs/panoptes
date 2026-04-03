@@ -54,7 +54,7 @@ export function DelegationFlow() {
           </div>
           {flow.map((v) => (
             <div key={v.validatorId} className="grid grid-cols-2 gap-4 rounded bg-slate-dark/20 px-3 py-2 text-xs md:grid-cols-4">
-              <span className="font-mono text-dusty-lavender truncate" title={v.validatorId}>{truncateAddress(v.validatorId, 8, 6)}</span>
+              <span className="font-mono text-dusty-lavender truncate" title={v.validatorId}>{v.moniker || truncateAddress(v.validatorId, 8, 6)}</span>
               <span className="text-right text-mist">{v.latestDelegators}</span>
               <span className="text-right font-mono text-mist">
                 {formatAmountShort(v.latestDelegated)}

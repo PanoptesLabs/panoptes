@@ -28,6 +28,7 @@ export function useDelegationFlow(days?: number) {
       latestDelegated: string;
       avgChurnRate: number;
       snapshotCount: number;
+      moniker: string | null;
     }>;
     days: number;
   }>(`/api/delegations/flow${params}`, defaultSwrConfig);

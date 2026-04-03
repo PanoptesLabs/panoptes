@@ -36,13 +36,15 @@ export function jsonResponse(
   data: unknown,
   headers: Record<string, string>,
   status = 200,
-  options?: { cache?: boolean },
+  options?: { cache?: boolean; sMaxAge?: number; staleWhileRevalidate?: number },
 ): NextResponse {
+  const sMaxAge = options?.sMaxAge ?? 30;
+  const staleWhileRevalidate = options?.staleWhileRevalidate ?? 60;
   const allHeaders =
     options?.cache !== false
       ? {
           ...headers,
-          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+          "Cache-Control": `public, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
         }
       : headers;
   return NextResponse.json(data, { status, headers: allHeaders });
