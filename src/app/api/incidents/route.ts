@@ -20,12 +20,15 @@ export async function GET(request: NextRequest) {
   const severity = parseStringParam(searchParams.get("severity"), ["critical", "high", "medium", "low"]);
   const entityType = parseStringParam(searchParams.get("entityType"), ["endpoint", "validator"]);
 
+  const entityId = searchParams.get("entityId") || undefined;
+
   const where: Record<string, unknown> = {
     workspaceId: auth!.workspace.id,
   };
   if (status) where.status = status;
   if (severity) where.severity = severity;
   if (entityType) where.entityType = entityType;
+  if (entityId) where.entityId = entityId;
 
   const [incidents, total] = await Promise.all([
     prisma.incident.findMany({

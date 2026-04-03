@@ -111,8 +111,18 @@ export interface ValidatorSnapshotItem {
   timestamp: string;
 }
 
+export interface ValidatorDetailItem extends ValidatorListItem {
+  rank?: number | null;
+  delegatorCount?: number | null;
+  governanceRate?: number | null;
+  commissionRewards?: string;
+  outstandingRewards?: string;
+  consensusPubkey?: string | null;
+  consensusAddress?: string | null;
+}
+
 export interface ValidatorDetailResponse {
-  validator: ValidatorListItem;
+  validator: ValidatorDetailItem;
   snapshots: ValidatorSnapshotItem[];
   snapshotCount: number;
   period: { from: string; to: string };
@@ -161,6 +171,13 @@ export interface NetworkStatsItem {
   bondedRatio: number | null;
   blockHeight: string;
   avgBlockTime: number | null;
+  inflation: number | null;
+  totalSupply: string | null;
+  bondedTokens: string | null;
+  notBondedTokens: string | null;
+  stakingAPR: number | null;
+  nakamotoCoefficient: number | null;
+  networkHealthScore: number | null;
   timestamp: string;
 }
 
@@ -250,6 +267,8 @@ export interface IncidentSummary {
   acknowledged: number;
   resolved: number;
   critical: number;
+  mttaMinutes: number | null;
+  mttrMinutes: number | null;
 }
 
 // Webhook Types

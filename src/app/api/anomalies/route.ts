@@ -53,10 +53,15 @@ export async function GET(request: NextRequest) {
   const limit = parseIntParam(searchParams.get("limit"), 50, 1, 200);
   const offset = parseIntParam(searchParams.get("offset"), 0, 0, 10000);
 
+  const entityType = searchParams.get("entityType") || undefined;
+  const entityId = searchParams.get("entityId") || undefined;
+
   const where: Record<string, unknown> = {};
   if (type) where.type = type;
   if (severity) where.severity = severity;
   if (resolved !== undefined) where.resolved = resolved;
+  if (entityType) where.entityType = entityType;
+  if (entityId) where.entityId = entityId;
 
   const [anomalies, total] = await Promise.all([
     prisma.anomaly.findMany({

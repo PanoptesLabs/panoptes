@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, Wallet, LogOut } from "lucide-react";
 import { useAuthContext } from "@/components/dashboard/auth-provider";
+import { NotificationBell } from "./notification-bell";
 
 const ROUTE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -65,7 +66,8 @@ export function Topbar() {
         ))}
       </nav>
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-3">
+        <NotificationBell />
         {isAuthenticated && user ? (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs text-teal-DEFAULT">

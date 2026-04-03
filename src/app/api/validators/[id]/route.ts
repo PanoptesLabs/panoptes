@@ -39,6 +39,32 @@ export async function GET(
     });
   }
 
+  // Parallel queries for enrichment
+  const [rankResult, delegationSnapshot, govVotes, totalProposals] = await Promise.all([
+    // Rank by tokens among bonded validators
+    prisma.$queryRaw<Array<{ rank: bigint }>>`
+      SELECT COUNT(*) + 1 AS rank FROM "Validator"
+      WHERE status = 'BOND_STATUS_BONDED'
+        AND CAST(tokens AS NUMERIC) > CAST(${validator.tokens} AS NUMERIC)
+    `,
+    // Latest delegation snapshot
+    prisma.delegationSnapshot.findFirst({
+      where: { validatorId: id },
+      orderBy: { timestamp: "desc" },
+      select: { totalDelegators: true },
+    }),
+    // Governance participation: votes by this validator
+    prisma.governanceVote.count({
+      where: { voter: id },
+    }),
+    // Total proposals for participation rate
+    prisma.governanceProposal.count(),
+  ]);
+
+  const rank = rankResult[0]?.rank !== undefined ? Number(rankResult[0].rank) : null;
+  const delegatorCount = delegationSnapshot?.totalDelegators ?? null;
+  const governanceRate = totalProposals > 0 ? govVotes / totalProposals : null;
+
   let snapshots;
   let snapshotCount: number;
 
@@ -97,6 +123,9 @@ export async function GET(
         lastJailedAt: validator.lastJailedAt?.toISOString() ?? null,
         firstSeen: validator.firstSeen.toISOString(),
         lastUpdated: validator.lastUpdated.toISOString(),
+        rank,
+        delegatorCount,
+        governanceRate,
       },
       snapshots: snapshots.map((s) => ({
         id: s.id,
