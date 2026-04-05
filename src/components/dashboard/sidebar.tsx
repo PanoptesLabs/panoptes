@@ -23,6 +23,7 @@ import {
   Key,
   Wallet,
   Users,
+  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PrismIcon } from "@/components/icons/prism-icon";
@@ -30,6 +31,7 @@ import { PrismIcon } from "@/components/icons/prism-icon";
 const monitoringItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/validators", label: "Validators", icon: Shield },
+  { href: "/dashboard/jobs", label: "Compute Jobs", icon: Cpu },
   { href: "/dashboard/endpoints", label: "Endpoints", icon: Globe },
   { href: "/dashboard/anomalies", label: "Anomalies", icon: AlertTriangle },
   { href: "/dashboard/network", label: "Network", icon: Activity },

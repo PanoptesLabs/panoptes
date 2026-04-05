@@ -135,6 +135,7 @@ export const helpContent = {
       governance: "Ranked by governance participation — percentage of proposals voted on.",
       rising: "Validators showing the most improvement in score over recent periods.",
       stake_magnet: "Validators attracting the most new delegations recently.",
+      compute: "Ranked by compute jobs processed — validators handling the most AI/ML workloads.",
     },
   },
 
@@ -180,6 +181,22 @@ export const helpContent = {
     concepts: {
       severity: "Impact level of the incident: critical, high, medium, or low.",
       entityType: "The type of entity affected: validator, endpoint, or network.",
+    },
+  },
+
+  // ── Compute ──
+  compute: {
+    fields: {
+      job_id: "Unique identifier for the compute job.",
+      status: "Current state of the job: PENDING (queued), COMPLETED (success), or FAILED (error).",
+      execution_image: "The AI/ML model container image used to process this job.",
+      fee_amount: "Fee paid for processing this compute job.",
+      target_validator: "The validator responsible for executing this compute job.",
+    },
+    statuses: {
+      COMPLETED: "Job was processed successfully and results are available.",
+      PENDING: "Job is queued and waiting to be processed by the target validator.",
+      FAILED: "Job processing failed. The validator was unable to complete the computation.",
     },
   },
 

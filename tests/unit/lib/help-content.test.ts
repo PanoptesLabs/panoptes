@@ -39,8 +39,8 @@ describe("helpContent", () => {
     expect(Object.keys(helpContent.slos.concepts).length).toBe(4);
   });
 
-  it("leaderboard.categories has 6 keys", () => {
-    expect(Object.keys(helpContent.leaderboard.categories).length).toBe(6);
+  it("leaderboard.categories has 7 keys", () => {
+    expect(Object.keys(helpContent.leaderboard.categories).length).toBe(7);
   });
 
   it("validators.fields has 5 keys", () => {

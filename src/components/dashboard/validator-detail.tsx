@@ -15,6 +15,10 @@ const ValidatorHistoryChart = dynamic(
   () => import("@/components/charts/validator-history-chart").then((m) => m.ValidatorHistoryChart),
   { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-lg bg-deep-iris/20" /> },
 );
+const ComputeSection = dynamic(
+  () => import("@/components/dashboard/compute-section").then((m) => m.ComputeSection),
+  { ssr: false, loading: () => <Skeleton className="h-48 w-full rounded-lg bg-deep-iris/20" /> },
+);
 import { getValidatorStatusInfo } from "@/lib/status";
 import {
   formatTokens,
@@ -259,6 +263,9 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Compute performance */}
+      <ComputeSection validatorId={validatorId} />
 
       {/* Related links */}
       <div className="flex flex-wrap gap-2">
