@@ -7,6 +7,7 @@ import { useEndpoints } from "@/hooks/use-endpoints";
 import { useAnomalies } from "@/hooks/use-anomalies";
 import { useSloSummary } from "@/hooks/use-slos";
 import { useIncidentSummary } from "@/hooks/use-incidents";
+import { useComputeStats } from "@/hooks/use-compute";
 import { useHistorySparklines } from "@/hooks/use-history-sparklines";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
@@ -40,6 +41,9 @@ import {
   AlertTriangle,
   Target,
   Siren,
+  Cpu,
+  CheckCircle,
+  Clock,
 } from "lucide-react";
 
 export function Overview() {
@@ -56,6 +60,7 @@ export function Overview() {
   const { data: anomalyData } = useAnomalies({ resolved: false });
   const { data: sloSummary } = useSloSummary();
   const { data: incidentSummary } = useIncidentSummary();
+  const { data: computeStats } = useComputeStats();
 
   const current = stats?.current;
   const history = useMemo(() => stats?.history ?? [], [stats?.history]);
@@ -147,6 +152,34 @@ export function Overview() {
               icon={<Siren className="size-4" />}
             />
           )}
+        </div>
+      )}
+
+      {/* Compute stats */}
+      {computeStats && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard
+            title="Compute Jobs"
+            value={computeStats.total_jobs.toLocaleString()}
+            subtitle={`${computeStats.completed_jobs.toLocaleString()} completed`}
+            icon={<Cpu className="size-4" />}
+          />
+          <StatCard
+            title="Success Rate"
+            value={
+              computeStats.total_jobs > 0
+                ? `${((computeStats.completed_jobs / computeStats.total_jobs) * 100).toFixed(1)}%`
+                : "--"
+            }
+            subtitle={`${computeStats.failed_jobs.toLocaleString()} failed`}
+            icon={<CheckCircle className="size-4" />}
+          />
+          <StatCard
+            title="Pending Queue"
+            value={computeStats.pending_jobs.toLocaleString()}
+            subtitle="awaiting processing"
+            icon={<Clock className="size-4" />}
+          />
         </div>
       )}
 

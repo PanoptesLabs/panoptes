@@ -371,6 +371,55 @@ export interface DelegationEventItem {
   timestamp: string;
 }
 
+// Compute Types
+export interface ComputeJob {
+  job_id: number;
+  status: "PENDING" | "COMPLETED" | "FAILED";
+  creator: string;
+  target_validator: string;
+  execution_image: string;
+  verification_image: string | null;
+  fee_amount: string;
+  fee_denom: string;
+  result_hash: string | null;
+  result_fetch_endpoint: string | null;
+  result_upload_endpoint: string | null;
+  submit_tx_hash: string | null;
+  submit_height: number | null;
+  submit_time: string | null;
+  result_tx_hash: string | null;
+  result_height: number | null;
+  result_time: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComputeStats {
+  total_jobs: number;
+  pending_jobs: number;
+  completed_jobs: number;
+  failed_jobs: number;
+}
+
+export interface ComputeLeaderboardEntry {
+  target_validator: string;
+  moniker: string;
+  total_jobs: number;
+  completed_jobs: number;
+  success_rate: number;
+}
+
+export interface ComputeJobsResponse {
+  data: ComputeJob[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
+
 export interface DelegationSnapshotItem {
   id: string;
   validatorId: string;

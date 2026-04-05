@@ -23,11 +23,13 @@ import {
   Vote,
   TrendingUp,
   Users,
+  Cpu,
 } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { SearchInput } from "./search-input";
 import { Pagination } from "./pagination";
+import { useComputeLeaderboard } from "@/hooks/use-compute";
 
 const CATEGORIES = [
   { key: "overall", label: "Overall", icon: Trophy },
@@ -36,6 +38,7 @@ const CATEGORIES = [
   { key: "governance", label: "Governance", icon: Vote },
   { key: "rising", label: "Rising", icon: TrendingUp },
   { key: "stake_magnet", label: "Stake Magnet", icon: Users },
+  { key: "compute", label: "Compute", icon: Cpu },
 ] as const;
 
 function formatValue(category: string, value: number): string {
@@ -50,6 +53,8 @@ function formatValue(category: string, value: number): string {
       return value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
     case "stake_magnet":
       return value >= 0 ? `+${value}` : `${value}`;
+    case "compute":
+      return value.toLocaleString();
     default:
       return value.toFixed(2);
   }
@@ -61,10 +66,26 @@ export function LeaderboardTable() {
   const [category, setCategory] = useState("overall");
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
-  const { data, error, isLoading, mutate } = useLeaderboard(category);
+  const isCompute = category === "compute";
+  const { data, error, isLoading, mutate } = useLeaderboard(isCompute ? undefined : category);
+  const { data: computeData, error: computeError, isLoading: computeLoading, mutate: computeMutate } = useComputeLeaderboard();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const entries = data?.entries ?? [];
+  const activeData = isCompute ? computeData : data;
+  const activeError = isCompute ? computeError : error;
+  const activeLoading = isCompute ? computeLoading : isLoading;
+  const activeMutate = isCompute ? computeMutate : mutate;
+
+  // Normalize compute entries to the standard leaderboard shape
+  const entries = isCompute
+    ? (computeData?.entries ?? []).map((e, i) => ({
+        rank: i + 1,
+        validatorId: e.target_validator,
+        moniker: e.moniker || e.target_validator.slice(0, 12),
+        value: e.total_jobs,
+        score: e.success_rate,
+      }))
+    : data?.entries ?? [];
   const filteredEntries = search
     ? entries.filter((e) => e.moniker.toLowerCase().includes(search.toLowerCase()))
     : entries;
@@ -93,8 +114,8 @@ export function LeaderboardTable() {
     [],
   );
 
-  if (error && !data) {
-    return <ErrorState message="Failed to load leaderboard" onRetry={() => mutate()} />;
+  if (activeError && !activeData) {
+    return <ErrorState message="Failed to load leaderboard" onRetry={() => activeMutate()} />;
   }
 
   return (
@@ -153,12 +174,16 @@ export function LeaderboardTable() {
               <TableRow className="border-slate-DEFAULT/20 hover:bg-transparent">
                 <TableHead className="w-16 text-dusty-lavender/70">Rank</TableHead>
                 <TableHead className="text-dusty-lavender/70">Validator</TableHead>
-                <TableHead className="text-right text-dusty-lavender/70">Value</TableHead>
-                <TableHead className="w-20 text-right text-dusty-lavender/70">Score</TableHead>
+                <TableHead className="text-right text-dusty-lavender/70">
+                  {isCompute ? "Total Jobs" : "Value"}
+                </TableHead>
+                <TableHead className="w-20 text-right text-dusty-lavender/70">
+                  {isCompute ? "Success %" : "Score"}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && !data
+              {activeLoading && !activeData
                 ? Array.from({ length: 10 }).map((_, i) => (
                     <TableRow key={i} className="border-slate-DEFAULT/10">
                       <TableCell>
@@ -208,7 +233,13 @@ export function LeaderboardTable() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Link href={`/dashboard/validators/${entry.validatorId}`} className="block">
-                            <ScoreBadge score={entry.score} />
+                            {isCompute ? (
+                              <span className="font-mono text-sm text-dusty-lavender">
+                                {entry.score.toFixed(1)}%
+                              </span>
+                            ) : (
+                              <ScoreBadge score={entry.score} />
+                            )}
                           </Link>
                         </TableCell>
                       </TableRow>
