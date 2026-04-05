@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
+import { SearchInput } from "./search-input";
+import { Pagination } from "./pagination";
 
 const CATEGORIES = [
   { key: "overall", label: "Overall", icon: Trophy },
@@ -53,10 +55,20 @@ function formatValue(category: string, value: number): string {
   }
 }
 
+const PAGE_SIZE = 20;
+
 export function LeaderboardTable() {
   const [category, setCategory] = useState("overall");
+  const [search, setSearch] = useState("");
+  const [offset, setOffset] = useState(0);
   const { data, error, isLoading, mutate } = useLeaderboard(category);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const entries = data?.entries ?? [];
+  const filteredEntries = search
+    ? entries.filter((e) => e.moniker.toLowerCase().includes(search.toLowerCase()))
+    : entries;
+  const pagedEntries = filteredEntries.slice(offset, offset + PAGE_SIZE);
 
   const handleTabKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -73,6 +85,8 @@ export function LeaderboardTable() {
       if (next >= 0) {
         e.preventDefault();
         setCategory(CATEGORIES[next].key);
+        setSearch("");
+        setOffset(0);
         tabRefs.current[next]?.focus();
       }
     },
@@ -98,7 +112,7 @@ export function LeaderboardTable() {
               aria-selected={active}
               aria-controls="leaderboard-tabpanel"
               tabIndex={active ? 0 : -1}
-              onClick={() => setCategory(cat.key)}
+              onClick={() => { setCategory(cat.key); setSearch(""); setOffset(0); }}
               onKeyDown={(e) => handleTabKeyDown(e, index)}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all",
@@ -117,6 +131,14 @@ export function LeaderboardTable() {
           );
         })}
       </div>
+
+      {/* Search */}
+      <SearchInput
+        key={category}
+        placeholder="Search validator..."
+        onSearch={(q) => { setSearch(q); setOffset(0); }}
+        className="max-w-sm"
+      />
 
       {/* Table */}
       <Card
@@ -153,18 +175,18 @@ export function LeaderboardTable() {
                       </TableCell>
                     </TableRow>
                   ))
-                : data && data.entries.length === 0
+                : pagedEntries.length === 0
                   ? (
                       <TableRow>
                         <TableCell
                           colSpan={4}
                           className="h-24 text-center text-dusty-lavender/50"
                         >
-                          No validators found
+                          {search ? "No validators matching your search" : "No validators found"}
                         </TableCell>
                       </TableRow>
                     )
-                  : data?.entries.map((entry) => (
+                  : pagedEntries.map((entry) => (
                       <TableRow
                         key={entry.validatorId}
                         className="border-slate-DEFAULT/10 cursor-pointer transition-colors hover:bg-deep-iris/10"
@@ -194,6 +216,16 @@ export function LeaderboardTable() {
             </TableBody>
           </Table>
         </CardContent>
+        {filteredEntries.length > PAGE_SIZE && (
+          <div className="border-t border-slate-DEFAULT/20 px-4 py-3">
+            <Pagination
+              total={filteredEntries.length}
+              limit={PAGE_SIZE}
+              offset={offset}
+              onPageChange={setOffset}
+            />
+          </div>
+        )}
       </Card>
     </div>
   );

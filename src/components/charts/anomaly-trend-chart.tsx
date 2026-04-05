@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ChartTooltip } from "./chart-tooltip";
 
 interface TrendEntry {
   date: string;
@@ -41,14 +42,7 @@ export function AnomalyTrendChart({ data }: AnomalyTrendChartProps) {
           tickLine={false}
           width={30}
         />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "#1a1329",
-            border: "1px solid rgba(139,92,246,0.2)",
-            borderRadius: "8px",
-            fontSize: "12px",
-          }}
-        />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(139,92,246,0.08)" }} />
         <Legend
           iconSize={10}
           wrapperStyle={{ fontSize: "11px", color: "#a78bfa" }}

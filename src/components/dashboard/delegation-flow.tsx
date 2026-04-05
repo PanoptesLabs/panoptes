@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useDelegationFlow } from "@/hooks/use-delegations";
 import { ErrorState } from "./error-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +8,19 @@ import { Loader2, ArrowLeftRight, TrendingUp, TrendingDown } from "lucide-react"
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { formatAmountShort, truncateAddress } from "@/lib/formatters";
+import { SearchInput } from "./search-input";
 
 export function DelegationFlow() {
+  const [search, setSearch] = useState("");
   const { data, error, isLoading, mutate } = useDelegationFlow(7);
+
+  const flow = data?.flow ?? [];
+  const filteredFlow = search
+    ? flow.filter((v) => {
+        const q = search.toLowerCase();
+        return (v.moniker?.toLowerCase().includes(q)) || v.validatorId.toLowerCase().includes(q);
+      })
+    : flow;
 
   if (error) return <ErrorState message="Failed to load delegation flow" onRetry={() => mutate()} />;
 
@@ -20,8 +31,6 @@ export function DelegationFlow() {
       </div>
     );
   }
-
-  const flow = data.flow;
 
   if (flow.length === 0) {
     return (
@@ -37,9 +46,16 @@ export function DelegationFlow() {
   return (
     <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
       <CardHeader>
-        <CardTitle className="text-sm text-mist">
-          Validator Delegation Flow (Last {data.days} days)
-        </CardTitle>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-sm text-mist">
+            Validator Delegation Flow (Last {data.days} days)
+          </CardTitle>
+          <SearchInput
+            placeholder="Search validator..."
+            onSearch={setSearch}
+            className="sm:w-64"
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
@@ -52,7 +68,7 @@ export function DelegationFlow() {
               <HelpTooltip content={helpContent.delegations.fields.churnRate} side="left" />
             </span>
           </div>
-          {flow.map((v) => (
+          {filteredFlow.map((v) => (
             <div key={v.validatorId} className="grid grid-cols-2 gap-4 rounded bg-slate-dark/20 px-3 py-2 text-xs md:grid-cols-4">
               <span className="font-mono text-dusty-lavender truncate" title={v.validatorId}>{v.moniker || truncateAddress(v.validatorId, 8, 6)}</span>
               <span className="text-right text-mist">{v.latestDelegators}</span>

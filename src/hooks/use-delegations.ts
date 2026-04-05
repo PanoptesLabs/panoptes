@@ -4,12 +4,13 @@ import useSWR from "swr";
 import { defaultSwrConfig } from "./use-api";
 import type { DelegationEventItem } from "@/types";
 
-export function useDelegationEvents(opts?: { type?: string; validatorId?: string; limit?: number; offset?: number }) {
+export function useDelegationEvents(opts?: { type?: string; validatorId?: string; limit?: number; offset?: number; search?: string }) {
   const params = new URLSearchParams();
   if (opts?.type) params.set("type", opts.type);
   if (opts?.validatorId) params.set("validatorId", opts.validatorId);
   if (opts?.limit) params.set("limit", String(opts.limit));
   if (opts?.offset) params.set("offset", String(opts.offset));
+  if (opts?.search) params.set("search", opts.search);
   const query = params.toString();
   const url = `/api/delegations${query ? `?${query}` : ""}`;
 
