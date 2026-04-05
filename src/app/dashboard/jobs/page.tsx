@@ -17,10 +17,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pagination } from "@/components/dashboard/pagination";
 import { HelpTooltip } from "@/components/dashboard/help-tooltip";
+import { Button } from "@/components/ui/button";
 import { helpContent } from "@/lib/help-content";
-import { Cpu } from "lucide-react";
+import { Cpu, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatAmountShort, truncateAddress } from "@/lib/formatters";
 import { timeAgo } from "@/lib/time";
@@ -188,14 +188,33 @@ export default function ComputeJobsPage() {
               </TableBody>
             </Table>
           </CardContent>
-          {data.total > limit && (
-            <div className="border-t border-slate-DEFAULT/20 px-4 py-3">
-              <Pagination
-                total={data.total}
-                limit={limit}
-                offset={offset}
-                onPageChange={setOffset}
-              />
+          {(offset > 0 || data.hasNext) && (
+            <div className="flex items-center justify-between border-t border-slate-DEFAULT/20 px-4 py-3">
+              <p className="text-sm text-dusty-lavender/50">
+                Page {Math.floor(offset / limit) + 1}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset === 0}
+                  onClick={() => setOffset(Math.max(0, offset - limit))}
+                  className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ChevronLeft className="size-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!data.hasNext}
+                  onClick={() => setOffset(offset + limit)}
+                  className="border-slate-DEFAULT/20 bg-midnight-plum text-dusty-lavender hover:bg-deep-iris/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
             </div>
           )}
         </Card>

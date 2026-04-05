@@ -48,7 +48,7 @@ export function useComputeStats() {
 
 interface ComputeJobsListResponse {
   jobs: ComputeJob[];
-  total: number;
+  hasNext: boolean;
   limit: number;
   offset: number;
 }

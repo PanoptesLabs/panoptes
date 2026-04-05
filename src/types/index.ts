@@ -409,17 +409,6 @@ export interface ComputeLeaderboardEntry {
   success_rate: number;
 }
 
-export interface ComputeJobsResponse {
-  data: ComputeJob[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    has_next: boolean;
-    has_prev: boolean;
-  };
-}
-
 export interface DelegationSnapshotItem {
   id: string;
   validatorId: string;

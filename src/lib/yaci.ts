@@ -1,7 +1,7 @@
 import { YACI_EXPLORER } from "@/lib/constants";
 import { logger } from "@/lib/logger";
 
-const TIMEOUT_MS = 5_000;
+const TIMEOUT_MS = 12_000;
 
 export type YaciResult<T> =
   | { ok: true; data: T }

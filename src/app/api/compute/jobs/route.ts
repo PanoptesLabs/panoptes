@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { withRateLimit, jsonResponse } from "@/lib/api-helpers";
 import { parseIntParam, parseStringParam } from "@/lib/validation";
 import { fetchYaci } from "@/lib/yaci";
-import type { ComputeJobsResponse } from "@/types";
+import type { ComputeJob } from "@/types";
 
 export async function GET(request: NextRequest) {
   const rl = withRateLimit(request);
@@ -14,15 +14,16 @@ export async function GET(request: NextRequest) {
   const status = parseStringParam(params.get("status"), ["PENDING", "COMPLETED", "FAILED"]);
   const validator = params.get("validator") || undefined;
 
+  // Use PostgREST table endpoint — supports filters natively.
+  // Fetch limit+1 to determine hasNext without a separate count query.
   const filters: string[] = [];
   if (validator) filters.push(`target_validator=eq.${encodeURIComponent(validator)}`);
   if (status) filters.push(`status=eq.${status}`);
 
   const filterStr = filters.length > 0 ? `&${filters.join("&")}` : "";
-  // /rpc/get_compute_jobs returns { data: [...], pagination: {...} }
-  const path = `/rpc/get_compute_jobs?_limit=${limit}&_offset=${offset}${filterStr}`;
+  const path = `/compute_jobs?limit=${limit + 1}&offset=${offset}&order=created_at.desc${filterStr}`;
 
-  const result = await fetchYaci<ComputeJobsResponse>(path);
+  const result = await fetchYaci<ComputeJob[]>(path);
 
   if (!result.ok) {
     return jsonResponse(
@@ -33,10 +34,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const jobs = result.data.data ?? [];
-  const total = result.data.pagination?.total ?? jobs.length;
+  const hasNext = result.data.length > limit;
+  const jobs = hasNext ? result.data.slice(0, limit) : result.data;
 
-  return jsonResponse({ jobs, total, limit, offset }, rl.headers, 200, {
+  return jsonResponse({ jobs, hasNext, limit, offset }, rl.headers, 200, {
     sMaxAge: 10,
     staleWhileRevalidate: 30,
   });

@@ -44,13 +44,10 @@ describe("GET /api/compute/jobs", () => {
     vi.clearAllMocks();
   });
 
-  it("returns jobs from rpc/get_compute_jobs wrapped response", async () => {
+  it("returns jobs from PostgREST table endpoint", async () => {
     vi.mocked(fetchYaci).mockResolvedValue({
       ok: true,
-      data: {
-        data: [SAMPLE_JOB],
-        pagination: { total: 2618549, limit: 20, offset: 0, has_next: true, has_prev: false },
-      },
+      data: [SAMPLE_JOB],
     });
 
     const { GET } = await import("@/app/api/compute/jobs/route");
@@ -61,16 +58,27 @@ describe("GET /api/compute/jobs", () => {
     expect(res.status).toBe(200);
     expect(body.jobs).toHaveLength(1);
     expect(body.jobs[0].job_id).toBe(970475);
-    expect(body.total).toBe(2618549);
+    expect(body.hasNext).toBe(false);
     expect(body.limit).toBe(20);
     expect(body.offset).toBe(0);
   });
 
+  it("sets hasNext when more results exist (limit+1 trick)", async () => {
+    // Route requests limit+1 (21), receiving 21 means hasNext=true
+    const jobs = Array.from({ length: 21 }, (_, i) => ({ ...SAMPLE_JOB, job_id: i }));
+    vi.mocked(fetchYaci).mockResolvedValue({ ok: true, data: jobs });
+
+    const { GET } = await import("@/app/api/compute/jobs/route");
+    const req = new NextRequest("http://localhost/api/compute/jobs");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(body.hasNext).toBe(true);
+    expect(body.jobs).toHaveLength(20); // sliced to limit
+  });
+
   it("passes status filter to yaci", async () => {
-    vi.mocked(fetchYaci).mockResolvedValue({
-      ok: true,
-      data: { data: [], pagination: { total: 0, limit: 20, offset: 0, has_next: false, has_prev: false } },
-    });
+    vi.mocked(fetchYaci).mockResolvedValue({ ok: true, data: [] });
 
     const { GET } = await import("@/app/api/compute/jobs/route");
     const req = new NextRequest("http://localhost/api/compute/jobs?status=COMPLETED&limit=5");
@@ -78,14 +86,12 @@ describe("GET /api/compute/jobs", () => {
 
     const calledPath = vi.mocked(fetchYaci).mock.calls[0][0];
     expect(calledPath).toContain("status=eq.COMPLETED");
-    expect(calledPath).toContain("_limit=5");
+    expect(calledPath).toContain("limit=6"); // limit+1
+    expect(calledPath).toContain("/compute_jobs?");
   });
 
   it("passes validator filter to yaci", async () => {
-    vi.mocked(fetchYaci).mockResolvedValue({
-      ok: true,
-      data: { data: [], pagination: { total: 0, limit: 20, offset: 0, has_next: false, has_prev: false } },
-    });
+    vi.mocked(fetchYaci).mockResolvedValue({ ok: true, data: [] });
 
     const { GET } = await import("@/app/api/compute/jobs/route");
     const req = new NextRequest("http://localhost/api/compute/jobs?validator=raivaloper1abc");
