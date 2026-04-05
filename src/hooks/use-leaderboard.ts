@@ -44,10 +44,10 @@ interface TrendResponse {
   trend: TrendPoint[];
 }
 
-export function useLeaderboard(category?: string, limit?: number) {
+export function useLeaderboard(category?: string, limit = 100) {
   const params = new URLSearchParams();
   if (category) params.set("category", category);
-  if (limit) params.set("limit", String(limit));
+  params.set("limit", String(limit));
 
   const query = params.toString();
   const url = `/api/validators/leaderboard${query ? `?${query}` : ""}`;

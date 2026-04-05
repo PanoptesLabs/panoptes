@@ -63,7 +63,7 @@ describe("GET /api/delegations", () => {
     expect(body.events).toHaveLength(0);
     expect(prisma.delegationEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ type: "undelegate" }),
+        where: { AND: [{ type: "undelegate" }] },
       }),
     );
   });
@@ -78,9 +78,7 @@ describe("GET /api/delegations", () => {
 
     expect(prisma.delegationEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          OR: [{ validatorTo: "val-1" }, { validatorFrom: "val-1" }],
-        }),
+        where: { AND: [{ OR: [{ validatorTo: "val-1" }, { validatorFrom: "val-1" }] }] },
       }),
     );
   });
@@ -119,6 +117,51 @@ describe("GET /api/delegations", () => {
     const body = await res.json();
 
     expect(body.offset).toBe(0);
+  });
+
+  it("searches across delegator, validatorTo, and validatorFrom", async () => {
+    vi.mocked(prisma.delegationEvent.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.delegationEvent.count).mockResolvedValue(0);
+
+    const { GET } = await import("@/app/api/delegations/route");
+    const req = new NextRequest("http://localhost/api/delegations?search=val-source");
+    await GET(req);
+
+    expect(prisma.delegationEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            {
+              OR: [
+                { delegator: { contains: "val-source", mode: "insensitive" } },
+                { validatorTo: { contains: "val-source", mode: "insensitive" } },
+                { validatorFrom: { contains: "val-source", mode: "insensitive" } },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+  });
+
+  it("combines search with type filter", async () => {
+    vi.mocked(prisma.delegationEvent.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.delegationEvent.count).mockResolvedValue(0);
+
+    const { GET } = await import("@/app/api/delegations/route");
+    const req = new NextRequest("http://localhost/api/delegations?type=redelegate&search=rai1abc");
+    await GET(req);
+
+    const call = vi.mocked(prisma.delegationEvent.findMany).mock.calls[0][0] as { where: { AND: unknown[] } };
+    expect(call.where.AND).toHaveLength(2);
+    expect(call.where.AND[0]).toEqual({ type: "redelegate" });
+    expect(call.where.AND[1]).toEqual({
+      OR: [
+        { delegator: { contains: "rai1abc", mode: "insensitive" } },
+        { validatorTo: { contains: "rai1abc", mode: "insensitive" } },
+        { validatorFrom: { contains: "rai1abc", mode: "insensitive" } },
+      ],
+    });
   });
 });
 

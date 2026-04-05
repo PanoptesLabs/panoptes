@@ -26,7 +26,7 @@ describe("useLeaderboard", () => {
   it("calls SWR with /api/validators/leaderboard when no params", () => {
     useLeaderboard();
     expect(useSWR).toHaveBeenCalledWith(
-      "/api/validators/leaderboard",
+      "/api/validators/leaderboard?limit=100",
       expect.any(Object),
     );
   });
