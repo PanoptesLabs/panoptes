@@ -15,6 +15,13 @@ vi.mock("@/lib/yaci", () => ({
   fetchYaci: vi.fn(),
 }));
 
+vi.mock("republic-sdk", () => ({
+  addressToBytes: vi.fn((addr: string) => {
+    if (!addr.startsWith("raivaloper1")) throw new Error("Invalid bech32");
+    return new Uint8Array([1, 2, 3]);
+  }),
+}));
+
 import { fetchYaci } from "@/lib/yaci";
 
 describe("GET /api/validators/[id]/jailing", () => {
@@ -80,6 +87,17 @@ describe("GET /api/validators/[id]/jailing", () => {
     expect(res.status).toBe(502);
     expect(body.error).toMatch(/unavailable/i);
     expect(vi.mocked(fetchYaci)).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns 400 for invalid validator address", async () => {
+    const { GET } = await import("@/app/api/validators/[id]/jailing/route");
+    const req = new NextRequest("http://localhost/api/validators/INVALID/jailing");
+    const res = await GET(req, { params: Promise.resolve({ id: "INVALID" }) });
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/invalid/i);
+    expect(vi.mocked(fetchYaci)).not.toHaveBeenCalled();
   });
 
   it("returns empty array when validator has no consensus address", async () => {

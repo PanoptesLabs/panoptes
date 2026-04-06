@@ -11,6 +11,10 @@ const envSchema = z.object({
     .length(64, "STREAM_TOKEN_SECRET must be 64 hex characters")
     .regex(/^[0-9a-f]+$/i, "STREAM_TOKEN_SECRET must be hex"),
   CRON_SECRET: z.string().min(1, "CRON_SECRET is required"),
+  YACI_EXPLORER_BASE_URL: z
+    .string()
+    .url()
+    .default("https://yaci-explorer-apis.fly.dev"),
 });
 
 /**

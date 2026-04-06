@@ -1,4 +1,4 @@
-import { YACI_EXPLORER } from "@/lib/constants";
+import { z } from "zod";
 import { logger } from "@/lib/logger";
 
 const TIMEOUT_MS = 12_000;
@@ -12,23 +12,35 @@ export type YaciResult<T> =
  * Returns a discriminated union so callers can distinguish
  * upstream errors from genuinely empty data.
  */
-export async function fetchYaci<T>(path: string, options?: { signal?: AbortSignal }): Promise<YaciResult<T>> {
+export async function fetchYaci<T>(
+  path: string,
+  options?: { signal?: AbortSignal; schema?: z.ZodType<T> },
+): Promise<YaciResult<T>> {
   try {
-    const res = await fetch(`${YACI_EXPLORER.baseUrl}${path}`, {
+    const baseUrl = process.env.YACI_EXPLORER_BASE_URL ?? "https://yaci-explorer-apis.fly.dev";
+    const res = await fetch(`${baseUrl}${path}`, {
       signal: options?.signal ?? AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) {
       logger.warn("yaci", `HTTP ${res.status} for ${path}`);
       return { ok: false, error: "http" };
     }
-    let data: T;
+    let raw: unknown;
     try {
-      data = (await res.json()) as T;
+      raw = await res.json();
     } catch {
       logger.warn("yaci", `JSON parse error for ${path}`);
       return { ok: false, error: "parse" };
     }
-    return { ok: true, data };
+    if (options?.schema) {
+      const parsed = options.schema.safeParse(raw);
+      if (!parsed.success) {
+        logger.warn("yaci", `Schema validation failed for ${path}: ${parsed.error.message}`);
+        return { ok: false, error: "parse" };
+      }
+      return { ok: true, data: parsed.data };
+    }
+    return { ok: true, data: raw as T };
   } catch (err) {
     // AbortSignal.timeout() throws TimeoutError in Node ≥18, AbortError in browsers/older Node
     const isTimeout =

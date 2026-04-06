@@ -15,6 +15,13 @@ vi.mock("@/lib/yaci", () => ({
   fetchYaci: vi.fn(),
 }));
 
+vi.mock("republic-sdk", () => ({
+  addressToBytes: vi.fn((addr: string) => {
+    if (!addr.startsWith("raivaloper1")) throw new Error("Invalid bech32");
+    return new Uint8Array([1, 2, 3]);
+  }),
+}));
+
 import { fetchYaci } from "@/lib/yaci";
 
 describe("GET /api/validators/[id]/signing", () => {
@@ -62,6 +69,17 @@ describe("GET /api/validators/[id]/signing", () => {
 
     expect(res.status).toBe(502);
     expect(body.error).toMatch(/unavailable/i);
+  });
+
+  it("returns 400 for invalid validator address", async () => {
+    const { GET } = await import("@/app/api/validators/[id]/signing/route");
+    const req = new NextRequest("http://localhost/api/validators/INVALID/signing");
+    const res = await GET(req, { params: Promise.resolve({ id: "INVALID" }) });
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/invalid/i);
+    expect(vi.mocked(fetchYaci)).not.toHaveBeenCalled();
   });
 
   it("returns null when yaci returns empty array", async () => {

@@ -11,7 +11,7 @@ import { helpContent } from "@/lib/help-content";
 import { formatAmountShort, truncateAddress } from "@/lib/formatters";
 import { SearchInput } from "./search-input";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export function DelegationFlow() {
   const [search, setSearch] = useState("");

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { withRateLimit, jsonResponse } from "@/lib/api-helpers";
 import { fetchYaci } from "@/lib/yaci";
+import { isValidValoperAddress } from "@/lib/validation";
 import type { YaciValidatorSigningStats } from "@/types";
 
 export async function GET(
@@ -11,6 +12,9 @@ export async function GET(
   if ("response" in rl) return rl.response;
 
   const { id } = await params;
+  if (!isValidValoperAddress(id)) {
+    return jsonResponse({ error: "Invalid validator address" }, rl.headers, 400);
+  }
   const encoded = encodeURIComponent(id);
 
   const result = await fetchYaci<YaciValidatorSigningStats[]>(

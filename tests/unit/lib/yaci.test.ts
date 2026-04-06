@@ -1,13 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { z } from "zod";
 
 vi.mock("@/lib/logger", () => ({
   logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));
 
 describe("yaci", () => {
+  const originalEnv = process.env.YACI_EXPLORER_BASE_URL;
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.restoreAllMocks();
+    vi.resetModules();
+    delete process.env.YACI_EXPLORER_BASE_URL;
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env.YACI_EXPLORER_BASE_URL = originalEnv;
+    } else {
+      delete process.env.YACI_EXPLORER_BASE_URL;
+    }
   });
 
   describe("fetchYaci", () => {
@@ -62,6 +75,59 @@ describe("yaci", () => {
       const result = await fetchYaci("/compute_stats");
 
       expect(result).toEqual({ ok: false, error: "timeout" });
+    });
+
+    it("uses custom base URL from YACI_EXPLORER_BASE_URL env", async () => {
+      process.env.YACI_EXPLORER_BASE_URL = "https://custom-yaci.example.com";
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ data: true }),
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const { fetchYaci } = await import("@/lib/yaci");
+      await fetchYaci("/test-path");
+
+      expect(mockFetch.mock.calls[0][0]).toBe("https://custom-yaci.example.com/test-path");
+    });
+
+    it("uses default base URL when env is not set", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ data: true }),
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const { fetchYaci } = await import("@/lib/yaci");
+      await fetchYaci("/test-path");
+
+      expect(mockFetch.mock.calls[0][0]).toBe("https://yaci-explorer-apis.fly.dev/test-path");
+    });
+
+    it("returns ok:false with error:'parse' when schema validation fails", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ unexpected: "data" }),
+      }));
+
+      const schema = z.object({ total_jobs: z.number() });
+      const { fetchYaci } = await import("@/lib/yaci");
+      const result = await fetchYaci("/test", { schema });
+
+      expect(result).toEqual({ ok: false, error: "parse" });
+    });
+
+    it("validates data with schema when provided", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ total_jobs: 42 }),
+      }));
+
+      const schema = z.object({ total_jobs: z.number() });
+      const { fetchYaci } = await import("@/lib/yaci");
+      const result = await fetchYaci("/test", { schema });
+
+      expect(result).toEqual({ ok: true, data: { total_jobs: 42 } });
     });
 
     it("returns ok:false with error:'parse' on invalid JSON", async () => {
