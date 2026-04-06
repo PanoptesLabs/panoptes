@@ -354,10 +354,6 @@ export const ROLE_HIERARCHY: Record<string, number> = {
   admin: 4,
 };
 
-export const YACI_EXPLORER = {
-  baseUrl: "https://yaci-explorer-apis.fly.dev",
-} as const;
-
 export const CHART_COLORS = {
   primary: "#8B5CF6",
   secondary: "#D97706",

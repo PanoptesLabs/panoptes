@@ -44,6 +44,7 @@ export function GasDistributionChart({ data }: GasDistributionChartProps) {
           width={60}
         />
         <Tooltip
+          cursor={{ fill: "rgba(139, 92, 246, 0.08)" }}
           content={
             <ChartTooltip
               labelFormatter={(label) => `Gas: ${label}`}

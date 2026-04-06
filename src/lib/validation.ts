@@ -1,3 +1,5 @@
+import { addressToBytes } from "republic-sdk";
+
 export function parseIntParam(
   value: string | null | undefined,
   defaultValue: number,
@@ -33,4 +35,14 @@ export function parseDateParam(
   if (!value) return undefined;
   const date = new Date(value);
   return isNaN(date.getTime()) ? undefined : date;
+}
+
+export function isValidValoperAddress(id: string): boolean {
+  if (!id.startsWith("raivaloper1") || id.length > 100) return false;
+  try {
+    addressToBytes(id);
+    return true;
+  } catch {
+    return false;
+  }
 }
