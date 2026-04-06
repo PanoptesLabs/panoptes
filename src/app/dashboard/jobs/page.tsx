@@ -169,9 +169,9 @@ export default function ComputeJobsPage() {
                     <TableCell>
                       <Link
                         href={`/dashboard/validators/${job.target_validator}`}
-                        className="font-mono text-sm text-soft-violet hover:underline"
+                        className="text-sm text-soft-violet hover:underline"
                       >
-                        {truncateAddress(job.target_validator)}
+                        {data.monikers[job.target_validator] || truncateAddress(job.target_validator)}
                       </Link>
                     </TableCell>
                     <TableCell className="text-sm text-mist">
@@ -192,6 +192,12 @@ export default function ComputeJobsPage() {
             <div className="flex items-center justify-between border-t border-slate-DEFAULT/20 px-4 py-3">
               <p className="text-sm text-dusty-lavender/50">
                 Page {Math.floor(offset / limit) + 1}
+                {data.total != null && ` of ${Math.ceil(data.total / limit).toLocaleString()}`}
+                {data.total != null && (
+                  <span className="ml-2 text-dusty-lavender/30">
+                    ({data.total.toLocaleString()} jobs)
+                  </span>
+                )}
               </p>
               <div className="flex gap-2">
                 <Button
