@@ -8,6 +8,7 @@ import { useAnomalies } from "@/hooks/use-anomalies";
 import { useSloSummary } from "@/hooks/use-slos";
 import { useIncidentSummary } from "@/hooks/use-incidents";
 import { useComputeStats } from "@/hooks/use-compute";
+import { useYaciNetworkOverview } from "@/hooks/use-network-analytics";
 import { useHistorySparklines } from "@/hooks/use-history-sparklines";
 import { StatCard } from "./stat-card";
 import { ErrorState } from "./error-state";
@@ -44,6 +45,7 @@ import {
   Cpu,
   CheckCircle,
   Clock,
+  Users,
 } from "lucide-react";
 
 export function Overview() {
@@ -61,6 +63,7 @@ export function Overview() {
   const { data: sloSummary } = useSloSummary();
   const { data: incidentSummary } = useIncidentSummary();
   const { data: computeStats } = useComputeStats();
+  const { data: yaciOverview } = useYaciNetworkOverview();
 
   const current = stats?.current;
   const history = useMemo(() => stats?.history ?? [], [stats?.history]);
@@ -178,6 +181,30 @@ export function Overview() {
             title="Pending Queue"
             value={computeStats.pending_jobs.toLocaleString()}
             subtitle="awaiting processing"
+            icon={<Clock className="size-4" />}
+          />
+        </div>
+      )}
+
+      {/* Yaci network stats */}
+      {yaciOverview && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard
+            title="Total Transactions"
+            value={yaciOverview.total_transactions.toLocaleString()}
+            subtitle="across all blocks"
+            icon={<Activity className="size-4" />}
+          />
+          <StatCard
+            title="Unique Addresses"
+            value={yaciOverview.unique_addresses.toLocaleString()}
+            subtitle="distinct accounts"
+            icon={<Users className="size-4" />}
+          />
+          <StatCard
+            title="Avg Block Time"
+            value={`${yaciOverview.avg_block_time.toFixed(2)}s`}
+            subtitle={`${yaciOverview.active_validators} / ${yaciOverview.max_validators} active validators`}
             icon={<Clock className="size-4" />}
           />
         </div>

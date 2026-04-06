@@ -19,6 +19,18 @@ const ComputeSection = dynamic(
   () => import("@/components/dashboard/compute-section").then((m) => m.ComputeSection),
   { ssr: false, loading: () => <Skeleton className="h-48 w-full rounded-lg bg-deep-iris/20" /> },
 );
+const ValidatorSigningStats = dynamic(
+  () => import("@/components/dashboard/validator-signing-stats").then((m) => m.ValidatorSigningStats),
+  { ssr: false },
+);
+const ValidatorJailingTimeline = dynamic(
+  () => import("@/components/dashboard/validator-jailing-timeline").then((m) => m.ValidatorJailingTimeline),
+  { ssr: false },
+);
+const RewardHistoryChart = dynamic(
+  () => import("@/components/charts/reward-history-chart").then((m) => m.RewardHistoryChart),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-lg bg-deep-iris/20" /> },
+);
 import { getValidatorStatusInfo } from "@/lib/status";
 import {
   formatTokens,
@@ -29,7 +41,8 @@ import {
 } from "@/lib/formatters";
 import { formatDate, timeAgo } from "@/lib/time";
 import { CHART_COLORS } from "@/lib/constants";
-import { ArrowLeft, ShieldAlert, Calendar, Trophy, Users, Vote, Activity } from "lucide-react";
+import { useValidatorRewards } from "@/hooks/use-validator-yaci";
+import { ArrowLeft, ShieldAlert, Calendar, Trophy, Users, Vote, Activity, Coins } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
 import { helpContent } from "@/lib/help-content";
 import { subDays } from "date-fns";
@@ -52,6 +65,7 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
     [range]
   );
 
+  const { data: rewardsData, error: rewardsError } = useValidatorRewards(validatorId);
   const { data, error, isLoading, mutate } = useValidatorDetail(validatorId, {
     from,
     limit: 500,
@@ -266,6 +280,39 @@ export function ValidatorDetail({ validatorId }: ValidatorDetailProps) {
 
       {/* Compute performance */}
       <ComputeSection validatorId={validatorId} />
+
+      {/* Signing & Jailing (Yaci) */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ValidatorSigningStats validatorId={validatorId} />
+        <ValidatorJailingTimeline validatorId={validatorId} />
+      </div>
+
+      {/* Reward History (Yaci) */}
+      {rewardsError ? (
+        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-dusty-lavender/70">
+              <Coins className="size-4" />
+              Reward History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-dusty-lavender/50">Reward data temporarily unavailable</p>
+          </CardContent>
+        </Card>
+      ) : rewardsData && rewardsData.length > 0 ? (
+        <Card className="border-slate-DEFAULT/20 bg-midnight-plum">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-dusty-lavender/70">
+              <Coins className="size-4" />
+              Reward History (Last {rewardsData.length} blocks)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RewardHistoryChart data={rewardsData} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Related links */}
       <div className="flex flex-wrap gap-2">

@@ -417,3 +417,95 @@ export interface DelegationSnapshotItem {
   churnRate: number;
   timestamp: string;
 }
+
+// ── Yaci Explorer Types ──
+
+export interface YaciDailyTxStats {
+  date: string;
+  total_txs: number;
+  successful_txs: number;
+  failed_txs: number;
+  unique_senders: number;
+}
+
+export interface YaciTxSuccessRate {
+  total: number;
+  successful: number;
+  failed: number;
+  success_rate_percent: number;
+}
+
+export interface YaciMessageTypeStat {
+  message_type: string;
+  count: number;
+  percentage: number;
+}
+
+export interface YaciNetworkOverview {
+  total_validators: number;
+  active_validators: number;
+  jailed_validators: number;
+  total_bonded_tokens: string;
+  total_rewards_24h: number;
+  total_commission_24h: number;
+  avg_block_time: number;
+  total_transactions: number;
+  unique_addresses: number;
+  max_validators: number;
+}
+
+export interface YaciBlockMetric {
+  height: number;
+  block_time: string | null;
+  tx_count: number;
+  gas_used: number;
+  total_rewards: string;
+  total_commission: string;
+  validator_count: number;
+  created_at: string;
+}
+
+export interface YaciGasDistribution {
+  gas_range: string;
+  count: number;
+}
+
+export interface YaciFeeRevenue {
+  denom: string;
+  total_amount: string;
+}
+
+export interface YaciDailyRewards {
+  date: string;
+  total_rewards: string;
+  total_commission: string;
+}
+
+export interface YaciJailingEvent {
+  id: number;
+  validator_address: string;
+  operator_address: string | null;
+  height: number;
+  detected_at: string;
+  prev_block_flag: string;
+  current_block_flag: string;
+}
+
+export interface YaciValidatorSigningStats {
+  consensus_address: string;
+  operator_address: string;
+  total_blocks: number;
+  blocks_signed: number;
+  blocks_missed: number;
+  signing_percentage: number;
+  last_height: number;
+}
+
+export interface YaciValidatorReward {
+  id: number;
+  height: number;
+  validator_address: string;
+  rewards: string;
+  commission: string;
+  created_at: string;
+}

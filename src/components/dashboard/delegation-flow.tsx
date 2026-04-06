@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useDelegationFlow } from "@/hooks/use-delegations";
 import { ErrorState } from "./error-state";
+import { Pagination } from "./pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeftRight, TrendingUp, TrendingDown } from "lucide-react";
 import { HelpTooltip } from "./help-tooltip";
@@ -10,8 +11,11 @@ import { helpContent } from "@/lib/help-content";
 import { formatAmountShort, truncateAddress } from "@/lib/formatters";
 import { SearchInput } from "./search-input";
 
+const PAGE_SIZE = 10;
+
 export function DelegationFlow() {
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const { data, error, isLoading, mutate } = useDelegationFlow(7);
 
   const flow = data?.flow ?? [];
@@ -21,6 +25,9 @@ export function DelegationFlow() {
         return (v.moniker?.toLowerCase().includes(q)) || v.validatorId.toLowerCase().includes(q);
       })
     : flow;
+  const maxPage = Math.max(0, Math.ceil(filteredFlow.length / PAGE_SIZE) - 1);
+  const safePage = Math.min(page, maxPage);
+  const paginatedFlow = filteredFlow.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   if (error) return <ErrorState message="Failed to load delegation flow" onRetry={() => mutate()} />;
 
@@ -52,7 +59,7 @@ export function DelegationFlow() {
           </CardTitle>
           <SearchInput
             placeholder="Search validator..."
-            onSearch={setSearch}
+            onSearch={(q) => { setSearch(q); setPage(0); }}
             className="sm:w-64"
           />
         </div>
@@ -68,7 +75,7 @@ export function DelegationFlow() {
               <HelpTooltip content={helpContent.delegations.fields.churnRate} side="left" />
             </span>
           </div>
-          {filteredFlow.map((v) => (
+          {paginatedFlow.map((v) => (
             <div key={v.validatorId} className="grid grid-cols-2 gap-4 rounded bg-slate-dark/20 px-3 py-2 text-xs md:grid-cols-4">
               <span className="font-mono text-dusty-lavender truncate" title={v.validatorId}>{v.moniker || truncateAddress(v.validatorId, 8, 6)}</span>
               <span className="text-right text-mist">{v.latestDelegators}</span>
@@ -88,6 +95,16 @@ export function DelegationFlow() {
             </div>
           ))}
         </div>
+        {filteredFlow.length > PAGE_SIZE && (
+          <div className="mt-4">
+            <Pagination
+              total={filteredFlow.length}
+              limit={PAGE_SIZE}
+              offset={safePage * PAGE_SIZE}
+              onPageChange={(offset) => setPage(Math.floor(offset / PAGE_SIZE))}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

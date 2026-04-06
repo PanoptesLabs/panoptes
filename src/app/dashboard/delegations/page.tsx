@@ -12,14 +12,12 @@ export default function DelegationsPage() {
         title="Delegations"
         description="Stake movements, delegation flow, and whale detection"
       />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <DelegationFlow />
-          <DelegationList />
-        </div>
-        <div className="lg:col-span-1">
-          <WhaleMovements />
-        </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <DelegationFlow />
+        <DelegationList />
+      </div>
+      <div className="mt-6">
+        <WhaleMovements />
       </div>
     </div>
   );
