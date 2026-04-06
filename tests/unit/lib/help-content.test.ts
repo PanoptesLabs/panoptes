@@ -94,7 +94,7 @@ describe("helpContent", () => {
     expect(Object.keys(helpContent.delegations.types).length).toBe(4);
   });
 
-  it("network.fields has 3 keys", () => {
-    expect(Object.keys(helpContent.network.fields).length).toBe(3);
+  it("network.fields has 10 keys", () => {
+    expect(Object.keys(helpContent.network.fields).length).toBe(10);
   });
 });

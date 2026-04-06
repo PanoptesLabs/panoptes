@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/dashboard/page-header";
 import { NetworkOverview } from "@/components/dashboard/network-overview";
+import { NetworkActivity } from "@/components/dashboard/network-activity";
 
 export const metadata = {
   title: "Network | Panoptes",
@@ -14,6 +15,9 @@ export default function NetworkPage() {
         description="Chain statistics, validator trends, and staking analytics"
       />
       <NetworkOverview />
+      <div className="mt-6">
+        <NetworkActivity />
+      </div>
     </div>
   );
 }

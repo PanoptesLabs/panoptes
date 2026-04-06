@@ -145,6 +145,13 @@ export const helpContent = {
       bondedRatio: "Percentage of total token supply currently staked. Higher ratio = more network security.",
       blockHeight: "The latest confirmed block number on the chain.",
       avgBlockTime: "Average time between consecutive blocks. Indicates chain speed.",
+      txSuccessRate: "Percentage of transactions that completed successfully across the network lifetime.",
+      feeRevenue: "Total transaction fees collected by the network across all blocks.",
+      gasDistribution: "Distribution of gas usage across transactions. Shows the most common gas consumption ranges.",
+      messageTypes: "Breakdown of transaction types on the network. Shows which operations are most common.",
+      blockTime: "Time between consecutive blocks. Spikes may indicate network congestion or validator issues.",
+      dailyTxVolume: "Number of transactions processed each day over the last 30 days.",
+      dailyRewards: "Total validator rewards and commissions distributed each day across the network.",
     },
   },
 
